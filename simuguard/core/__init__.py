@@ -1,10 +1,11 @@
 from .adapter import AdapterCapabilities, HookHandle, SimAdapter
+from .controls import ControlLog
+from .statelog import StateLog
 from .events import Event, EventStatus, ReviewStatus
 from .monitor import MonitorConfig, SubstepMonitor
 from .recorder import EpisodeRecorder
 from .replay import ReplayResult, replay_bundle
 from .snapshot import (
-    ControlLog,
     ControlRecord,
     ReplayBundle,
     RestoreReport,
@@ -37,6 +38,7 @@ __all__ = [
     "SimAdapter",
     "Snapshot",
     "SnapshotRing",
+    "StateLog",
     "SubstepFrame",
     "SubstepMonitor",
     "build_replay_bundle",

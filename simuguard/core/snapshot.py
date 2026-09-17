@@ -21,12 +21,15 @@ import copy
 import gzip
 import hashlib
 import json
-from collections import OrderedDict, deque
+from collections import OrderedDict
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
 import numpy as np
+
+from .controls import ControlLog
+from .snapshot_types import ControlRecord
 
 SNAPSHOT_SCHEMA = "simuguard-snapshot-v1"
 BUNDLE_SCHEMA = "simuguard-replay-bundle-v1"
@@ -35,22 +38,6 @@ BUNDLE_SCHEMA = "simuguard-replay-bundle-v1"
 def json_sha256(payload: Any) -> str:
     data = json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
     return hashlib.sha256(data).hexdigest()
-
-
-@dataclass
-class ControlRecord:
-    """Actuation state in effect for one substep (adapter-specific payload)."""
-
-    substep: int
-    control_step: int
-    payload: dict[str, Any]
-
-    def to_dict(self) -> dict[str, Any]:
-        return {"substep": self.substep, "control_step": self.control_step, "payload": self.payload}
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "ControlRecord":
-        return cls(int(data["substep"]), int(data["control_step"]), data["payload"])
 
 
 @dataclass
@@ -182,41 +169,6 @@ class SnapshotRing:
         return sorted(set(self._ring) | set(self._pinned))
 
 
-class ControlLog:
-    """Bounded per-substep control history."""
-
-    def __init__(self, maxlen: int | None = 20000) -> None:
-        self._records: deque[ControlRecord] = deque(maxlen=maxlen)
-
-    def append(self, record: ControlRecord) -> None:
-        if self._records and record.substep <= self._records[-1].substep:
-            raise ValueError("control records must have strictly increasing substeps")
-        self._records.append(record)
-
-    def between(self, after_substep: int, until_substep: int) -> list[ControlRecord]:
-        """Controls for substeps in ``(after_substep, until_substep]``; raises on gaps."""
-
-        selected = [r for r in self._records if after_substep < r.substep <= until_substep]
-        expected = list(range(after_substep + 1, until_substep + 1))
-        if [r.substep for r in selected] != expected:
-            raise LookupError(
-                f"control log does not cover substeps ({after_substep}, {until_substep}]; "
-                f"oldest={self.oldest_substep}, newest={self.newest_substep}"
-            )
-        return selected
-
-    @property
-    def oldest_substep(self) -> int | None:
-        return self._records[0].substep if self._records else None
-
-    @property
-    def newest_substep(self) -> int | None:
-        return self._records[-1].substep if self._records else None
-
-    def __len__(self) -> int:
-        return len(self._records)
-
-
 @dataclass
 class ReplayBundle:
     """Snapshot + subsequent controls + reference trace for one trigger."""
@@ -242,7 +194,8 @@ class ReplayBundle:
             "trigger": self.trigger,
             "metadata": self.metadata,
             "snapshot": self.snapshot.to_dict(),
-            "controls": [record.to_dict() for record in self.controls],
+            "controls_encoding": "control_log_npz_b64",
+            "controls": base64.b64encode(ControlLog.from_records(self.controls).to_bytes()).decode("ascii"),
             "reference_frames": self.reference_frames,
         }
 
@@ -252,7 +205,7 @@ class ReplayBundle:
             raise ValueError(f"unsupported bundle schema: {data.get('schema_version')!r}")
         return cls(
             snapshot=Snapshot.from_dict(data["snapshot"]),
-            controls=[ControlRecord.from_dict(item) for item in data["controls"]],
+            controls=_decode_controls(data),
             reference_frames=data.get("reference_frames", []),
             trigger=data.get("trigger", {}),
             metadata=data.get("metadata", {}),
@@ -287,6 +240,12 @@ def build_replay_bundle(
         trigger=dict(trigger or {"substep": trigger_substep}),
         metadata=dict(metadata or {}),
     )
+
+
+def _decode_controls(data: dict[str, Any]) -> list[ControlRecord]:
+    if data.get("controls_encoding") == "control_log_npz_b64":
+        return list(ControlLog.from_bytes(base64.b64decode(data["controls"])).records())
+    return [ControlRecord.from_dict(item) for item in data["controls"]]  # legacy JSON list
 
 
 def compare_states(expected: Any, actual: Any, *, ignore_keys: tuple[str, ...] = ()) -> dict[str, Any]:

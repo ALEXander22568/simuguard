@@ -7,6 +7,9 @@ Layout (one directory per monitored episode)::
       trace.jsonl.gz        decimated substep frames (tracked non-robot bodies + their contacts)
       events.jsonl          every event status update, append-only
       bundles/<name>.json.gz replay bundles for triggering events
+      controls.npz          compact per-substep actuation (exact replay input)
+      states.npz            float64 per-substep state of non-robot tracked bodies (replay reference)
+      initial_snapshot.json.gz state at attach (verifies a rebuilt env)
       summary.json          final counts and the latest status of each event
 """
 
@@ -18,8 +21,10 @@ import re
 from pathlib import Path
 from typing import Any
 
+from .controls import ControlLog
 from .events import Event
-from .snapshot import ReplayBundle
+from .snapshot import ReplayBundle, Snapshot
+from .statelog import StateLog
 from .types import SubstepFrame
 
 
@@ -57,6 +62,20 @@ class EpisodeRecorder:
     def bundle(self, event_id: str, bundle: ReplayBundle) -> Path:
         safe = re.sub(r"[^A-Za-z0-9_.-]+", "_", event_id)[-150:]
         return bundle.save(self.output_dir / "bundles" / f"{safe}.json.gz")
+
+    def episode_logs(
+        self,
+        *,
+        controls: ControlLog | None,
+        states: StateLog | None,
+        initial_snapshot: Snapshot | None,
+    ) -> None:
+        if controls is not None and len(controls):
+            controls.save(self.output_dir / "controls.npz")
+        if states is not None and len(states):
+            states.save(self.output_dir / "states.npz")
+        if initial_snapshot is not None:
+            initial_snapshot.save(self.output_dir / "initial_snapshot.json.gz")
 
     def end(self, summary: dict[str, Any]) -> None:
         for handle in (self._trace, self._events):

@@ -109,6 +109,27 @@ exceeding tolerance, and whether detectors fire again.  Only a bundle whose
 unchanged-settings replay reproduces the event may be used for intervention
 analysis.
 
+## Compact episode logs
+
+* `ControlLog` keeps the `ControlRecord` API but stores one template per payload
+  structure plus a flat numeric row per substep; float32 is used only while every
+  value round-trips exactly, otherwise the log is promoted to float64.  Measured on
+  aloha-agilex: 4,032 JSON bytes -> 114 numbers per substep; `controls.npz` ≈ 85–105
+  bytes per substep after compression.  Rebuilt replays from float32 logs were
+  bit-identical to the live runs.
+* `StateLog` stores float64 pose/velocity of non-robot tracked bodies every substep
+  (`states.npz`) as the exact-replay reference.
+* Replay bundles embed their controls in the same compact encoding
+  (`controls_encoding = control_log_npz_b64`); legacy JSON lists still load.
+
+## Official evaluator integration
+
+`simuguard.integrations.robotwin_eval` imports the official evaluator, wraps
+`class_decorator`, and installs instance-level hooks on the task env:
+`setup_demo` (after) starts a segment, `play_once` marks it `expert`,
+`close_env` (before) finalizes it.  Monitoring failures are recorded in
+`run_summary.json` and never raised into the evaluator.
+
 ## Known limitations
 
 * RoboTwin's Python planner state (TOPP trajectories, gripper schedules) is not
@@ -122,3 +143,6 @@ analysis.
   body pair.  Net impulses of different hulls can cancel (e.g. a squeezing
   grasp), so both net and absolute impulse sums are reported.
 * Contact force is estimated as impulse/dt (PhysX reports impulses).
+* Monitoring overhead is currently ~7–12 ms per substep (physics alone 0.5–0.8 ms).
+* Episode-start bundles embed the whole episode's controls, duplicating
+  `controls.npz` for every confirmed event.

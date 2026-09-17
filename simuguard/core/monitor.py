@@ -17,7 +17,9 @@ from .adapter import HookHandle, SimAdapter
 from .detectors.base import Detector, DetectorContext
 from .events import Event, EventStatus
 from .recorder import EpisodeRecorder
-from .snapshot import ControlLog, ReplayBundle, SnapshotRing, build_replay_bundle
+from .controls import ControlLog
+from .snapshot import ReplayBundle, SnapshotRing, build_replay_bundle
+from .statelog import StateLog
 from .types import BodyRole, SubstepFrame
 
 MONITOR_SCHEMA = "simuguard-monitor-v1"
@@ -41,13 +43,15 @@ class MonitorConfig:
     bundle_mode: str = "episode_start"
     bundle_post_substeps: int = 250
     # artefacts
+    save_episode_logs: bool = True  # controls.npz + states.npz + initial_snapshot.json.gz (exact replay inputs)
+    state_log_roles: tuple[str, ...] = ("target", "container", "object")
     trace_decimation: int = 1
     max_recorded_errors: int = 50
 
     @classmethod
     def from_dict(cls, data: dict[str, Any] | None) -> "MonitorConfig":
         data = dict(data or {})
-        for key in ("track_roles", "bundle_statuses"):
+        for key in ("track_roles", "bundle_statuses", "state_log_roles"):
             if key in data:
                 data[key] = tuple(data[key])
         return cls(**data)
@@ -87,6 +91,7 @@ class SubstepMonitor:
         self.controls = ControlLog(maxlen=self.cfg.control_log_maxlen)
         self.bundles: dict[str, str] = {}
         self._pending_bundles: dict[str, tuple[int, int, dict[str, Any]]] = {}
+        self.state_log: StateLog | None = None
         self._hook: HookHandle | None = None
         self._last_frame: SubstepFrame | None = None
         self._started = 0.0
@@ -110,6 +115,8 @@ class SubstepMonitor:
         self.context = DetectorContext(episode_id=self.episode_id, timestep=self.adapter.timestep(), bodies=bodies)
         for detector in self.detectors:
             detector.reset(self.context)
+        state_roles = {BodyRole(role) for role in self.cfg.state_log_roles}
+        self.state_log = StateLog(sorted(b for b in self.tracked_ids if bodies[b].role in state_roles))
         if self.recorder is not None:
             trace_ids = {b for b in self.tracked_ids if bodies[b].role != BodyRole.ROBOT}
             if self.recorder.trace_body_ids is None:
@@ -150,6 +157,8 @@ class SubstepMonitor:
         self.context.previous = self._last_frame
         self.frames.append(frame)
         self._last_frame = frame
+        if self.state_log is not None:
+            self.state_log.append(frame.substep, frame.states)
 
         if self.snapshots_enabled and self.snapshots.due(self.substep):
             self._guard("capture_snapshot", self._capture_snapshot)
@@ -230,11 +239,18 @@ class SubstepMonitor:
                 for event in self._guard(f"finalize:{detector.name}", detector.finalize, self._last_frame, self.context) or []:
                     self._record_event(event)
         self._flush_bundles(final=True)
+        if self.recorder is not None and self.cfg.save_episode_logs:
+            self._guard("save_episode_logs", self._save_episode_logs)
         summary = self.summary()
         if self.recorder is not None:
             self._guard("recorder_end", self.recorder.end, summary)
         self._summary = summary
         return summary
+
+    def _save_episode_logs(self) -> None:
+        assert self.recorder is not None
+        initial = self.snapshots.latest_at_or_before(0) if self.snapshots_enabled else None
+        self.recorder.episode_logs(controls=self.controls, states=self.state_log, initial_snapshot=initial)
 
     def summary(self) -> dict[str, Any]:
         latest = [event.to_dict() for event in self.events.values()]
@@ -260,7 +276,14 @@ class SubstepMonitor:
             "events": latest,
             "bundles": self.bundles,
             "snapshots_held": self.snapshots.substeps(),
-            "control_log": {"oldest": self.controls.oldest_substep, "newest": self.controls.newest_substep},
+            "control_log": {
+                "records": len(self.controls),
+                "oldest": self.controls.oldest_substep,
+                "newest": self.controls.newest_substep,
+                "dtype": str(self.controls.dtype.__name__ if hasattr(self.controls.dtype, "__name__") else self.controls.dtype),
+                "in_memory_bytes": self.controls.nbytes,
+            },
+            "state_log": {"bodies": self.state_log.body_ids if self.state_log else [], "substeps": len(self.state_log) if self.state_log else 0},
             "error_count": self.error_count,
             "errors": self.errors,
             "metadata": self.metadata,
