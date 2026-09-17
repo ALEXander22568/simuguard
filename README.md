@@ -81,10 +81,10 @@ seed 100000, scripted expert `play_once()` (no policy server), SAPIEN on one GPU
 | expert run under monitoring | `plan_success` and `check_success` both true (not a transparency proof; paired on/off comparison still TODO) |
 | inventory / roles | 59 bodies: target `actor:071_can`, container `actor:110_basket`, 54 robot links, 3 scene |
 | contacts | merged per body pair (SAPIEN reports per shape pair) |
-| exact replay (`episode_start`) | rebuilt env initial state error 0.0; 1750 replayed substeps, max position error **0.0 m** |
-| in-place snapshot replay | pre-contact ≤1.1e-6 m; in contact 1.0–20 mm over 250 substeps (approximate only) |
+| exact replay (`episode_start`) | rebuilt env initial state error 0.0; 1750 replayed substeps, max position error **0.0 m** (reproduced in 2 independent runs, 2nd on commit a87baea) |
+| in-place snapshot replay | pre-contact <=1.1e-6 m; in contact 0.4-20 mm over 250 substeps; two replays from the same snapshot differ by 1.7e-4-2.1e-3 m (approximate only) |
 
-Report: `runs/simuguard_integration_20260917T131127Z/integration_report.json`
+Reports: `runs/simuguard_integration_20260917T131127Z/`, `runs/simuguard_integration_20260917T131551Z/` (`integration_report.json`)
 (workspace `/mnt/nvme0/twinguar/simuguard`).
 
 ## Tests
