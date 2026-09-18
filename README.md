@@ -1,18 +1,80 @@
 # SimuGuard
 
-Detect, verify and analyze **contact artifacts** in simulation-based evaluation
-of vision-language-action (VLA) policies.
+A **side-channel audit tool for simulated policy evaluation**: it records
+physics-substep ground truth while a benchmark runs unmodified, flags suspicious
+contact events, and can **replay any episode bit-exactly** so a failure can be
+attributed to the policy or to the simulator.
 
-Standard benchmark success rates cannot tell a policy error from a failure
-induced by the simulator (e.g. an object ejected from a container by a
-non-physical contact impulse). SimuGuard instruments the benchmark at physics
-**substep** granularity from simulator ground truth, flags suspicious contact
-events, routes them to human verification, and records in-rollout snapshots so
-events can be replayed deterministically under different simulation settings
-(collision decomposition, solver iterations, object mass).
+Standard success rates cannot separate the two.  A 10 g can that reaches
+14.5 m/s inside a basket (1.05 J, the speed of a 10.7 m free fall) while the
+robot links never exceed 0.3 m/s is not something the policy did - but it
+changes the score all the same.
 
-Status: `0.1.0.dev0` skeleton. RoboTwin 2.0 (SAPIEN 3) adapter implemented and
-exercised on an unmodified upstream checkout; see *Validation* below.
+Status `0.1.0.dev0`: core plus one validated adapter (RoboTwin 2.0 / SAPIEN 3).
+
+## What it supports
+
+### 1. Per-substep monitoring, without changing the benchmark
+Hooks the simulator's `step` and records, every substep (4 ms on RoboTwin):
+poses, velocities, mass and role of every body; and every contact *pair* with
+impulse, force estimate, penetration depth and point count (simulators usually
+report per collision *shape* pair, so pairs are merged per body).
+Verified: with monitoring on vs off, all 59 bodies follow bit-identical
+trajectories.  Cost: ~7-12 ms per substep on top of ~0.5 ms of physics.
+
+### 2. Anomaly detection
+Five detectors, all thresholds configurable, every event carrying its metrics
+and a `review: pending` marker:
+* **contact ejection** - candidate -> confirmed/rejected lifecycle, two
+  confirmation paths (ballistic free flight, or violent displacement while the
+  contact manifold persists), with an optional containment gate (is the object
+  fully inside the container?);
+* deep penetration, impulse spike, non-finite/absurd state, and speed above
+  what the robot links could have imparted.
+
+### 3. Exact replay
+Rebuild the environment from the episode's seed and replay the recorded
+per-substep actuation.  Verified at **0.0 m error** over complete episodes
+(139,613 and 53,745 substeps), across processes.
+This also rules out an approach: restoring a mid-episode snapshot (PhysX
+pack/unpack or public state) is *not* exact once bodies touch - mm to cm drift.
+
+### 4. Intervention experiments
+Replay an event with exactly one simulation setting changed (solver iterations,
+object mass; collision geometry not yet).  Example from
+`place_can_basket` seed 100000: baseline reproduces the recorded 14.51 m/s
+bit-exactly, raising solver iterations to 32/8 drops it to 4.73 m/s, and a
+10 g -> 100 g target mass drops it to 2.82 m/s.
+
+### 5. Reproducible artefacts
+Per episode: `manifest.json` (bodies, roles, detector config, task ground truth,
+commits), `states.npz` (float64 state per substep), `controls.npz` (actuation
+per substep, ~85-105 B/substep, the exact-replay input), `trace.jsonl.gz`
+(contact time series), `events.jsonl`, `bundles/*.json.gz` (self-contained
+replay bundle per confirmed event) and `summary.json`.
+
+### RoboTwin specifics
+The official `eval_policy_xpolicylab.py` runs unmodified; both the official
+expert check and the scored policy rollout are monitored.  LingBot-VA runs
+through its end-effector action path, with the server config, action conversion
+and 24 GB memory strategy applied as runtime shims (no upstream file is edited)
+and recorded in every run's provenance.  `place_can_basket` has roles and a
+containment gate configured; other tasks run with a generic fallback until a
+few lines of `TaskSpec` are added.
+
+## Not supported yet
+* collision-geometry (convex decomposition) interventions - they need the scene
+  rebuilt with different meshes;
+* batch evaluation (`eval_batch=true`);
+* a human review UI (SimuGuard produces the review queue, not the interface);
+* other benchmarks - ManiSkill / LIBERO / RoboCasa need one `SimAdapter` each;
+* calibrated detector thresholds: **current detector output is a candidate list
+  for human verification, not ground truth**.
+
+## Requirements
+Simulation and monitoring must share one process.  Exact replay assumes the same
+machine, the same simulator build and single-process CPU physics.  A new
+benchmark needs an adapter implementing `simuguard.core.adapter.SimAdapter`.
 
 ## Layout
 
@@ -89,7 +151,9 @@ segment.  Output: `segments.jsonl`, `run_summary.json`, and per segment
 states.npz, initial_snapshot.json.gz, bundles/`.  `--simuguard-disable` runs the
 identical path without monitors; `eval_batch=true` is not supported yet.
 
-## Validation (2026-09-17, 4090-hexa-node2)
+## Validation
+
+### RoboTwin adapter (2026-09-17, 4090-hexa-node2)
 
 Unmodified RoboTwin `6dde571` + XPolicyLab `fa431ec`, task `place_can_basket`,
 seed 100000, scripted expert `play_once()` (no policy server), SAPIEN on one GPU:
@@ -123,10 +187,39 @@ merging, template encoding).  Reports: `runs/wrapper_validation_20260917T153902Z
 Reports: `runs/simuguard_integration_20260917T131127Z/`, `runs/simuguard_integration_20260917T131551Z/` (`integration_report.json`)
 (workspace `/mnt/nvme0/twinguar/simuguard`).
 
+### LingBot-VA through the official evaluator (2026-09-18, 4090-hexa-node1)
+
+Clean RoboTwin `6dde571`, `place_can_basket` seed 100000, end-effector action
+path, upstream attention window, policy on one GPU and simulation on another:
+
+| check | result |
+|---|---|
+| official evaluation | ran to completion (`exit 0`), expert check passed, policy scored 0/1 |
+| monitoring | 3,279 expert + 53,745 policy substeps, 0 monitor errors |
+| detector output | 7 confirmed ejections in the *successful* expert segment, 22 in the policy segment |
+| ground truth | target can peaks at **14.51 m/s** (expert) and 13.40 m/s (policy); basket never exceeds 0.31 m/s |
+| exact replay of one event | baseline reproduces the recorded trajectory at **0.0 m** error and the detector fires again |
+| intervention, solver iterations 32/8 | peak target speed 14.51 -> **4.73 m/s** |
+| intervention, target mass 10 g -> 100 g | peak target speed 14.51 -> **2.82 m/s** |
+
+The action path matters: driving the 30-dim joint channels of
+`robotwin30_train` (whose de-normalisation statistics do not match this
+checkpoint) commands joint targets that jump up to 1.337 rad between policy
+steps with a 0.234 direction-reversal rate - visible as arm/gripper jitter.
+The end-effector path lowers this to 0.660 rad and 0.144.  Both measured from
+`controls.npz`; the expert planner commands 0.00022 rad per substep with no
+reversals.
+
+Reports: `runs/ee_upstream_20260918T105408Z/`, `runs/intervention_*/`.
+
 ## Tests
 
 ```bash
 PYTHONPATH=.:tests python -m unittest discover -s tests
+# reproduce one event, then repeat it with a single setting changed
+python scripts/robotwin/replay_intervention.py --robotwin-root /path/to/RoboTwin \
+    --bundle runs/<run>/simuguard/segments/<seg>/bundles/<event>.json.gz \
+    --report out.json --interventions baseline solver_high mass_100g
 CUDA_VISIBLE_DEVICES=<sim gpu> PYTHONPATH=. python scripts/check_robotwin_integration.py \
     --robotwin-root /path/to/RoboTwin --task place_can_basket --seed 100000 --output-dir runs/integration
 ```

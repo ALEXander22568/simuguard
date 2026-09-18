@@ -30,6 +30,7 @@ class ReplayResult:
     position_tolerance_m: float
     events: list[dict[str, Any]] = field(default_factory=list)
     trajectory: dict[int, dict[str, list[float]]] | None = None
+    max_speed_mps: dict[str, float] = field(default_factory=dict)
 
     @property
     def overall_max_error_m(self) -> float:
@@ -53,6 +54,7 @@ class ReplayResult:
             "within_tolerance": self.within_tolerance,
             "max_position_error_m": self.max_position_error_m,
             "first_substep_over_tolerance": self.first_substep_over_tolerance,
+            "max_speed_mps": self.max_speed_mps,
             "confirmed_event_count": len(self.confirmed_events),
             "events": self.events,
         }
@@ -88,6 +90,7 @@ def replay_bundle(
         detector.reset(context)
 
     max_error = {body_id: 0.0 for body_id in body_ids}
+    max_speed = {body_id: 0.0 for body_id in body_ids}
     first_over: dict[str, int | None] = {body_id: None for body_id in body_ids}
     events: dict[str, Event] = {}
     frame: SubstepFrame | None = None
@@ -100,6 +103,10 @@ def replay_bundle(
         frame = adapter.read_frame(record.substep, tracked, with_contacts=bool(detectors))
         if trajectory is not None:
             trajectory[record.substep] = {b: frame.states[b].position.tolist() for b in body_ids if b in frame.states}
+        for body_id in body_ids:
+            state = frame.states.get(body_id)
+            if state is not None:
+                max_speed[body_id] = max(max_speed[body_id], state.speed)
         ref = reference.get(record.substep)
         if ref is not None:
             for body_id in body_ids:
@@ -129,4 +136,5 @@ def replay_bundle(
         position_tolerance_m=position_tolerance_m,
         events=[event.to_dict() for event in events.values()],
         trajectory=trajectory,
+        max_speed_mps=max_speed,
     )
