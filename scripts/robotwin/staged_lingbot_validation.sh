@@ -28,6 +28,21 @@ mkdir -p "${OUT}"
 STATUS="${OUT}/STATUS"
 
 log() { echo "[$(date -u +%FT%TZ)] $*" | tee -a "${OUT}/staged.log"; }
+CHILD_PID=
+cleanup() {  # propagate termination to the launcher's process group
+    local pid=${CHILD_PID:-}
+    if [[ -n "${pid}" ]] && kill -0 "${pid}" 2>/dev/null; then
+        local pgid; pgid=$(ps -o pgid= -p "${pid}" | tr -d " ")
+        kill -TERM "${pid}" 2>/dev/null || true
+        [[ -n "${pgid}" ]] && kill -TERM -- "-${pgid}" 2>/dev/null || true
+        for _ in $(seq 1 30); do kill -0 "${pid}" 2>/dev/null || break; sleep 1; done
+        [[ -n "${pgid}" ]] && kill -KILL -- "-${pgid}" 2>/dev/null || true
+    fi
+    echo "STOPPED" >> "${STATUS}"
+}
+on_signal() { cleanup; exit 143; }   # a bare trap would clean up and then keep running
+trap cleanup EXIT
+trap on_signal INT TERM
 free_mib() { nvidia-smi --query-gpu=memory.free --format=csv,noheader,nounits -i "$1" | tr -d ' '; }
 
 # ---------------------------------------------------------------- wait for resources
@@ -56,8 +71,11 @@ run_stage() {
     local name=$1 test_num=$2 dir="${OUT}/$1"
     echo "RUNNING_${name}" > "${STATUS}"
     log "${name}: official eval test_num=${test_num}"
-    bash "${HERE}/run_lingbot_eval.sh" "${dir}" "${test_num}" "${TASK}" "${MODEL_GPU}" "${SIM_GPU}" > "${dir}.supervisor.log" 2>&1
-    local rc=$?
+    bash "${HERE}/run_lingbot_eval.sh" "${dir}" "${test_num}" "${TASK}" "${MODEL_GPU}" "${SIM_GPU}" > "${dir}.supervisor.log" 2>&1 &
+    CHILD_PID=$!
+    local rc=0
+    wait "${CHILD_PID}" || rc=$?
+    CHILD_PID=
     log "${name}: eval exit=${rc}"
     local replay_fail=0
     for seg in "${dir}"/simuguard/segments/*; do

@@ -275,6 +275,35 @@ def _git_commit(path: Path) -> str | None:
         return None
 
 
+def set_default_policy_request_timeout(robotwin_root: str | Path, timeout_s: float) -> dict[str, Any]:
+    """Default XPolicyLab ``WsModelClient(request_timeout_s=None)`` to ``timeout_s``.
+
+    Upstream's client default is 120 s and the official evaluator exposes no flag
+    for it.  LingBot-VA's first ``reset`` encodes the instruction with an 11 GB
+    text encoder offloaded to CPU, which exceeded 120 s on 4090-hexa-node2.
+    Only an unset value is replaced; an explicit caller value is kept.
+    """
+
+    xpl = str(Path(robotwin_root).resolve() / "XPolicyLab")
+    if xpl not in sys.path:
+        sys.path.insert(0, xpl)
+    from client_server.ws import model_client  # noqa: WPS433 - XPolicyLab runtime import
+
+    cls = model_client.WsModelClient
+    if getattr(cls, "_simuguard_timeout_patch", None) is not None:
+        return {"request_timeout_s_default": cls._simuguard_timeout_patch, "already_patched": True}
+    original_init = cls.__init__
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        if kwargs.get("request_timeout_s") is None:
+            kwargs["request_timeout_s"] = float(timeout_s)
+        original_init(self, *args, **kwargs)
+
+    cls.__init__ = __init__
+    cls._simuguard_timeout_patch = float(timeout_s)
+    return {"request_timeout_s_default": float(timeout_s), "upstream_default_s": 120.0}
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     if "--" in argv:
@@ -288,6 +317,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--simuguard-config", default=None, help='JSON: {"detectors": {...}, "monitor": {...}}')
     parser.add_argument("--simuguard-disable", action="store_true", help="run the identical path without monitors")
     parser.add_argument("--no-expert-monitoring", action="store_true")
+    parser.add_argument(
+        "--policy-request-timeout-s",
+        type=float,
+        default=None,
+        help="default XPolicyLab ws request timeout when the evaluator leaves it unset (upstream 120 s)",
+    )
     args = parser.parse_args(own)
 
     config = json.loads(Path(args.simuguard_config).read_text()) if args.simuguard_config else {}
@@ -301,6 +336,11 @@ def main(argv: list[str] | None = None) -> int:
         detector_config=config.get("detectors"),
     )
     module.class_decorator = instrumentation.wrap_class_decorator(module.class_decorator)
+    runtime_overrides: dict[str, Any] = {}
+    if args.policy_request_timeout_s is not None:
+        runtime_overrides["policy_client"] = set_default_policy_request_timeout(
+            args.robotwin_root, args.policy_request_timeout_s
+        )
 
     sys.argv = [str(Path(module.__file__).resolve())] + official
     started = time.time()
@@ -325,6 +365,7 @@ def main(argv: list[str] | None = None) -> int:
                 "wall_s": time.time() - started,
                 "exit_status": status,
                 "official_argv": official,
+                "runtime_overrides": runtime_overrides,
                 "robotwin": robotwin_provenance(args.robotwin_root),
             }
         )
