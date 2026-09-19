@@ -57,6 +57,27 @@ def eval_monitor_config(overrides: dict[str, Any] | None = None) -> MonitorConfi
 SIM_INTERVENTIONS = ("none", "solver_high", "solver_default", "mass_100g", "mass_50g")
 
 
+def recorded_sim_intervention(metadata: dict[str, Any]) -> str | None:
+    """Name of the closed-loop intervention a recorded segment ran under (None if default physics)."""
+
+    name = ((metadata or {}).get("sim_intervention") or {}).get("name")
+    return None if name in (None, "none") else str(name)
+
+
+def reapply_recorded_intervention(adapter: RoboTwinAdapter, metadata: dict[str, Any]) -> str | None:
+    """Re-apply a segment's recorded intervention before replaying it.
+
+    The evaluator applies it at the first ``take_action``, whose first substep
+    is substep 1 of the segment, so applying it before the replay reproduces
+    the recorded physics exactly.
+    """
+
+    name = recorded_sim_intervention(metadata)
+    if name is not None:
+        apply_sim_intervention(adapter, name)
+    return name
+
+
 def apply_sim_intervention(adapter: RoboTwinAdapter, name: str) -> dict[str, Any]:
     """Change one simulation setting for the scored rollout (closed loop).
 
@@ -67,7 +88,7 @@ def apply_sim_intervention(adapter: RoboTwinAdapter, name: str) -> dict[str, Any
 
     before = {"solver_iterations": adapter.solver_iterations()}
     targets = adapter.body_ids_with_role(BodyRole.TARGET)
-    before["target_mass_kg"] = {b: adapter.bodies()[b].mass for b in targets}
+    before["target_mass_kg"] = {b: adapter.mass(b) for b in targets}
     if name in ("none", None):
         return {"name": "none", "before": before, "after": before}
     if name == "solver_high":
@@ -82,7 +103,7 @@ def apply_sim_intervention(adapter: RoboTwinAdapter, name: str) -> dict[str, Any
         raise ValueError(f"unknown sim intervention: {name}")
     after = {
         "solver_iterations": adapter.solver_iterations(),
-        "target_mass_kg": {b: adapter.bodies()[b].mass for b in targets},
+        "target_mass_kg": {b: adapter.mass(b) for b in targets},
     }
     return {"name": name, "before": before, "after": after}
 

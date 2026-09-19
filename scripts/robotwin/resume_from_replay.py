@@ -45,7 +45,7 @@ from simuguard.adapters.robotwin import RoboTwinAdapter, make_task_env  # noqa: 
 from simuguard.adapters.robotwin.env import official_eval_module  # noqa: E402
 from simuguard.core import ControlLog, EpisodeRecorder, Snapshot, StateLog, SubstepMonitor  # noqa: E402
 from simuguard.core.types import BodyRole  # noqa: E402
-from simuguard.integrations.robotwin_eval import eval_monitor_config  # noqa: E402
+from simuguard.integrations.robotwin_eval import eval_monitor_config, reapply_recorded_intervention  # noqa: E402
 from simuguard.presets import default_detectors  # noqa: E402
 
 
@@ -173,6 +173,7 @@ def main() -> int:
     }
     try:
         adapter = RoboTwinAdapter(env)
+        report["recorded_sim_intervention"] = reapply_recorded_intervention(adapter, meta)
         gate = None
         try:
             gate = adapter.containment_gate()
@@ -202,7 +203,7 @@ def main() -> int:
             _, apply = build_intervention(args.intervention)
             if apply is not None:
                 apply(adapter)
-        report["target_mass_kg"] = {b: adapter.bodies()[b].mass for b in adapter.body_ids_with_role(BodyRole.TARGET)}
+        report["target_mass_kg"] = {b: adapter.mass(b) for b in adapter.body_ids_with_role(BodyRole.TARGET)}
         report["solver_iterations"] = adapter.solver_iterations()
 
         # hand control back to the benchmark's own action interface

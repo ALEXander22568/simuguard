@@ -273,6 +273,11 @@ class RoboTwinAdapter(SimAdapter):
         handle = self._bodies[body_id]
         handle.component.set_mass(float(mass))
 
+    def mass(self, body_id: str) -> float:
+        """Live mass (``bodies()`` holds the value cached at enumeration)."""
+
+        return float(self._bodies[body_id].component.get_mass())
+
 
 class _SceneProxy:
     """Fallback when the scene object does not accept instance attributes."""

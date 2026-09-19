@@ -60,7 +60,7 @@ def collect(roots: list[str]) -> tuple[list[dict], list[dict]]:
                 continue
             summary = json.loads(summary_path.read_text())
             meta = summary.get("metadata") or {}
-            run = segment.parents[1]
+            run = segment.parents[2]  # <config>/<rep>/simuguard/segments/<seg>
             base = {"segment": str(segment), "config": run.parent.name, "repeat": run.name,
                     "phase": meta.get("phase"), "seed": meta.get("seed")}
             events = summary.get("events", [])
@@ -113,10 +113,13 @@ def render_clip(args) -> int:
     row_of = {int(s): i for i, s in enumerate(states.substeps)}
     recorded = states.array()
 
+    from simuguard.integrations.robotwin_eval import reapply_recorded_intervention
+
     env, _ = make_task_env(args.robotwin_root, meta["task"], int(meta["seed"]))
     frames, mismatches, checked = [], 0, 0
     try:
         adapter = RoboTwinAdapter(env)
+        reapply_recorded_intervention(adapter, meta)
         ids = states.body_ids
         for record in controls.between(0, controls.newest_substep):
             if record.substep == 0:

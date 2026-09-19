@@ -116,7 +116,7 @@ def main() -> int:
                     "description": description,
                     "solver_iterations_before": before,
                     "solver_iterations_after": adapter.solver_iterations(),
-                    "target_mass_kg": {b: adapter.bodies()[b].mass for b in target},
+                    "target_mass_kg": {b: adapter.mass(b) for b in target},
                     "trajectory_matches_live": result.within_tolerance,
                     "max_position_error_m": result.overall_max_error_m,
                     "max_speed_mps": {b: v for b, v in result.max_speed_mps.items() if b in target or "basket" in b},

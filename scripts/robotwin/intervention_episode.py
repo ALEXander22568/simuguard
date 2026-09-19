@@ -41,6 +41,7 @@ from replay_intervention import build_intervention  # noqa: E402
 from simuguard.adapters.robotwin import RoboTwinAdapter, make_task_env  # noqa: E402
 from simuguard.core import ControlLog, ReplayBundle, Snapshot, StateLog, replay_bundle  # noqa: E402
 from simuguard.core.types import BodyRole  # noqa: E402
+from simuguard.integrations.robotwin_eval import reapply_recorded_intervention  # noqa: E402
 from simuguard.presets import default_detectors  # noqa: E402
 
 
@@ -109,13 +110,19 @@ def main() -> int:
             except Exception:  # noqa: BLE001
                 pass
             targets = adapter.body_ids_with_role(BodyRole.TARGET)
+
+            def before(adapter, apply=apply):
+                reapply_recorded_intervention(adapter, meta)  # physics the episode was recorded under
+                if apply is not None:
+                    apply(adapter)
+
             result = replay_bundle(
                 adapter,
                 bundle,
                 method="none",
                 body_ids=sorted(live_states.body_ids),
                 detectors=default_detectors(ejection_gate=gate),
-                before_replay=apply,
+                before_replay=before,
                 position_tolerance_m=1e-4,
                 episode_id=f"intervention:{name}",
                 keep_state_log=True,
@@ -131,7 +138,7 @@ def main() -> int:
                 "name": name,
                 "description": description,
                 "target_body": target,
-                "target_mass_kg": adapter.bodies()[target].mass,
+                "target_mass_kg": adapter.mass(target),
                 "solver_iterations": adapter.solver_iterations(),
                 "episode_peak_target_speed_mps": float(np.nanmax(speed_series(replayed, target))),
                 "confirmed_events": len(confirmed),

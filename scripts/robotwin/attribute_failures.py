@@ -90,7 +90,7 @@ def find_failures(roots: list[str], phases: list[str]) -> list[dict]:
             outcome = (summary.get("metadata") or {}).get("outcome") or {}
             if phase == "expert" and not outcome.get("plan_success"):
                 continue  # planner failure: nothing was executed that could be attributed
-            run = segment.parents[1]  # <rep>/simuguard/segments/<seg> -> <rep>
+            run = segment.parents[2]  # <config>/<rep>/simuguard/segments/<seg> -> <rep>
             found.append(
                 {
                     "segment": str(segment),
@@ -111,7 +111,7 @@ def run_condition(robotwin_root: str, segment: Path, name: str, phase: str, stop
     from simuguard.adapters.robotwin import RoboTwinAdapter, make_task_env
     from simuguard.core import ControlLog, StateLog, SubstepMonitor
     from simuguard.core.types import BodyRole
-    from simuguard.integrations.robotwin_eval import eval_monitor_config
+    from simuguard.integrations.robotwin_eval import eval_monitor_config, reapply_recorded_intervention
     from simuguard.presets import default_detectors
 
     summary = json.loads((segment / "summary.json").read_text())
@@ -125,6 +125,8 @@ def run_condition(robotwin_root: str, segment: Path, name: str, phase: str, stop
     try:
         adapter = RoboTwinAdapter(env)
         target = adapter.body_ids_with_role(BodyRole.TARGET)[0]
+        # the physics the episode was recorded under (closed-loop campaigns), then the counterfactual on top
+        result["recorded_sim_intervention"] = reapply_recorded_intervention(adapter, meta)
         clamp = None
         if name.startswith("vclamp_"):
             clamp = _install_velocity_clamp(adapter, target, float(name.split("_", 1)[1]))
@@ -174,7 +176,7 @@ def run_condition(robotwin_root: str, segment: Path, name: str, phase: str, stop
                 # policy phase: the evaluator stops at the first successful substep
                 "success": (first_success is not None) if phase == "policy" else final_success,
                 "confirmed_events": summary_after["confirmed_count"],
-                "target_mass_kg": adapter.bodies()[target].mass,
+                "target_mass_kg": adapter.mass(target),
             }
         )
         speeds = np.linalg.norm(monitor.state_log.array()[:, monitor.state_log.body_ids.index(target), 7:10], axis=1)
@@ -245,7 +247,9 @@ def attribute_segment(args) -> int:
         "conditions": [],
     }
     for name in args.conditions:
-        condition = run_condition(args.robotwin_root, segment, name, phase, stop_on_success=(name != "baseline"))
+        # the policy evaluator stops at the first successful substep; the expert check is judged at the end
+        stop = name != "baseline" and phase == "policy"
+        condition = run_condition(args.robotwin_root, segment, name, phase, stop_on_success=stop)
         report["conditions"].append(condition)
         print(json.dumps(condition, default=str)[:400], flush=True)
     report["verdict"] = verdict(report)

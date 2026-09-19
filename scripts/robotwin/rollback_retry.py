@@ -71,7 +71,7 @@ def run_attempt(args, module, meta: dict, base_controls, base_states, resume: in
     from simuguard.adapters.robotwin import RoboTwinAdapter, make_task_env
     from simuguard.core import EpisodeRecorder, SubstepMonitor
     from simuguard.core.events import EventStatus
-    from simuguard.integrations.robotwin_eval import eval_monitor_config
+    from simuguard.integrations.robotwin_eval import eval_monitor_config, reapply_recorded_intervention
     from simuguard.presets import default_detectors
 
     task, seed = meta["task"], int(meta["seed"])
@@ -79,6 +79,7 @@ def run_attempt(args, module, meta: dict, base_controls, base_states, resume: in
     record: dict = {"attempt": attempt, "resume_substep": resume}
     try:
         adapter = RoboTwinAdapter(env)
+        record["recorded_sim_intervention"] = reapply_recorded_intervention(adapter, meta)
         gate = None
         try:
             gate = adapter.containment_gate()
@@ -221,7 +222,7 @@ def find_candidates(roots: list[str]) -> list[dict]:
                 continue
             if not confirmed(summary.get("events", [])) or not (summary_path.parent / "controls.npz").is_file():
                 continue
-            run = summary_path.parents[2]
+            run = summary_path.parents[3]  # <config>/<rep>/simuguard/segments/<seg>/summary.json
             items.append({"segment": str(summary_path.parent), "key": f"{run.parent.name}_{run.name}_{summary_path.parent.name}"})
     return items
 
