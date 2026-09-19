@@ -11,6 +11,9 @@ set -Eeuo pipefail
 
 RUN_DIR=${1:?usage: run_lingbot_eval.sh RUN_DIR TEST_NUM [TASK] [MODEL_GPU] [SIM_GPU]}
 TEST_NUM=${2:?TEST_NUM required}
+# SERVERS_ONLY=1 starts the VA backend and the bridge, writes their ports to
+# ${RUN_DIR}/ports.env and keeps them alive (for resume-from-replay experiments).
+SERVERS_ONLY=${SERVERS_ONLY:-0}
 TASK=${3:-place_can_basket}
 MODEL_GPU=${4:-0}
 SIM_GPU=${5:-1}
@@ -46,6 +49,11 @@ TOOLS_BIN=${TOOLS_BIN:-/mnt/nvme0/twinguar/RoboTwin-2.0/.tools/bin}  # ffmpeg
 #        checkpoint) + bridge shim that converts them to RoboTwin ee actions
 # joint: upstream default config robotwin30_train (30-dim, joint channels)
 LINGBOT_ACTION_PATH=${LINGBOT_ACTION_PATH:-ee}
+# closed-loop simulation intervention applied to the scored rollout only:
+# none | solver_high | solver_default | mass_100g | mass_50g
+SIM_INTERVENTION=${SIM_INTERVENTION:-none}
+# optional JSON with {"monitor": {...}, "detectors": {...}} for the wrapper
+SIMUGUARD_CONFIG=${SIMUGUARD_CONFIG:-}
 if [[ "${LINGBOT_ACTION_PATH}" == "ee" ]]; then
     CONFIG_NAME=${CONFIG_NAME:-robotwin}
 else
@@ -96,6 +104,7 @@ wait_port() {
 {
     echo "started_at=$(date --iso-8601=seconds)"
     echo "task=${TASK} test_num=${TEST_NUM} simuguard=${SIMUGUARD} model_gpu=${MODEL_GPU} sim_gpu=${SIM_GPU} config=${CONFIG_NAME}"
+    echo "sim_intervention=${SIM_INTERVENTION}"
     echo "lingbot_action_path=${LINGBOT_ACTION_PATH} server_config=${CONFIG_NAME}"
     echo "lingbot_attn_window=${LINGBOT_ATTN_WINDOW:-upstream}"
     echo "lingbot_vae_device=${LINGBOT_VAE_DEVICE} lingbot_prompt_padding=${LINGBOT_PROMPT_PADDING} policy_request_timeout_s=${POLICY_REQUEST_TIMEOUT_S}"
@@ -168,6 +177,14 @@ setsid env CUDA_VISIBLE_DEVICES= MASTER_ADDR=127.0.0.1 MASTER_PORT="${BR_MASTER}
 BRIDGE_PID=$!
 wait_port "${BR_PORT}" "${BRIDGE_PID}" "LingBot bridge" 600
 
+if [[ "${SERVERS_ONLY}" == "1" ]]; then
+    printf 'VA_PORT=%s\nBRIDGE_PORT=%s\nVA_PID=%s\nBRIDGE_PID=%s\n' \
+        "${VA_PORT}" "${BR_PORT}" "${VA_PID}" "${BRIDGE_PID}" > "${RUN_DIR}/ports.env"
+    echo "[run] servers ready: VA=${VA_PORT} bridge=${BR_PORT} (ports.env written); waiting"
+    wait "${BRIDGE_PID}"
+    exit $?
+fi
+
 # ---- 3) official RoboTwin evaluator (optionally through SimuGuard) --------
 OFFICIAL_ARGS=(
     --bench_name RoboTwin --task_name "${TASK}" --env_cfg_type aloha_agilex
@@ -179,7 +196,9 @@ OFFICIAL_ARGS=(
 if [[ "${SIMUGUARD}" == "1" ]]; then
     EVAL_CMD=("${CLIENT_PY}" -m simuguard.integrations.robotwin_eval
         --robotwin-root "${REPO}" --simuguard-out "${RUN_DIR}/simuguard"
-        --policy-request-timeout-s "${POLICY_REQUEST_TIMEOUT_S}" -- "${OFFICIAL_ARGS[@]}")
+        --policy-request-timeout-s "${POLICY_REQUEST_TIMEOUT_S}"
+        --sim-intervention "${SIM_INTERVENTION}"
+        ${SIMUGUARD_CONFIG:+--simuguard-config "${SIMUGUARD_CONFIG}"} -- "${OFFICIAL_ARGS[@]}")
     EVAL_PYTHONPATH="${SIMUGUARD_REPO}:${REPO}:${REPO}/XPolicyLab"
 else
     EVAL_CMD=("${CLIENT_PY}" scripts/eval_policy_xpolicylab.py "${OFFICIAL_ARGS[@]}")

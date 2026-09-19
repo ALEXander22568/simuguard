@@ -17,6 +17,7 @@ from .adapter import SimAdapter
 from .detectors.base import Detector, DetectorContext
 from .events import Event, EventStatus
 from .snapshot import ReplayBundle
+from .statelog import StateLog
 from .types import SubstepFrame
 
 
@@ -31,6 +32,7 @@ class ReplayResult:
     events: list[dict[str, Any]] = field(default_factory=list)
     trajectory: dict[int, dict[str, list[float]]] | None = None
     max_speed_mps: dict[str, float] = field(default_factory=dict)
+    state_log: StateLog | None = None  # full-precision replayed states, for windowed metrics
 
     @property
     def overall_max_error_m(self) -> float:
@@ -71,6 +73,7 @@ def replay_bundle(
     before_replay: Callable[[SimAdapter], None] | None = None,
     episode_id: str = "replay",
     keep_trajectory: bool = False,
+    keep_state_log: bool = False,
 ) -> ReplayResult:
     restore = adapter.restore_snapshot(bundle.snapshot, method=method)
     if before_replay is not None:
@@ -96,11 +99,14 @@ def replay_bundle(
     frame: SubstepFrame | None = None
     tracked = sorted(set(body_ids) | {b for b in context.free_bodies()})
     trajectory: dict[int, dict[str, list[float]]] | None = {} if keep_trajectory else None
+    state_log = StateLog(body_ids) if keep_state_log else None
 
     for record in bundle.controls:
         adapter.apply_control(record)
         adapter.step_physics()
         frame = adapter.read_frame(record.substep, tracked, with_contacts=bool(detectors))
+        if state_log is not None:
+            state_log.append(record.substep, frame.states)
         if trajectory is not None:
             trajectory[record.substep] = {b: frame.states[b].position.tolist() for b in body_ids if b in frame.states}
         for body_id in body_ids:
@@ -137,4 +143,5 @@ def replay_bundle(
         events=[event.to_dict() for event in events.values()],
         trajectory=trajectory,
         max_speed_mps=max_speed,
+        state_log=state_log,
     )

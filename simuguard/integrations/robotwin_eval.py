@@ -36,6 +36,7 @@ from ..adapters.robotwin.adapter import RoboTwinAdapter
 from ..adapters.robotwin.env import official_eval_module, robotwin_provenance
 from ..core.monitor import MonitorConfig, SubstepMonitor
 from ..core.recorder import EpisodeRecorder
+from ..core.types import BodyRole
 from ..presets import default_detectors
 
 INDEX_SCHEMA = "simuguard-robotwin-eval-segments-v1"
@@ -51,6 +52,39 @@ def eval_monitor_config(overrides: dict[str, Any] | None = None) -> MonitorConfi
     }
     base.update(overrides or {})
     return MonitorConfig.from_dict(base)
+
+
+SIM_INTERVENTIONS = ("none", "solver_high", "solver_default", "mass_100g", "mass_50g")
+
+
+def apply_sim_intervention(adapter: RoboTwinAdapter, name: str) -> dict[str, Any]:
+    """Change one simulation setting for the scored rollout (closed loop).
+
+    Applied at the first ``take_action`` of a segment, i.e. only to the policy
+    rollout: the official expert check keeps default settings so the same seeds
+    pass the gate and the two runs stay paired.
+    """
+
+    before = {"solver_iterations": adapter.solver_iterations()}
+    targets = adapter.body_ids_with_role(BodyRole.TARGET)
+    before["target_mass_kg"] = {b: adapter.bodies()[b].mass for b in targets}
+    if name in ("none", None):
+        return {"name": "none", "before": before, "after": before}
+    if name == "solver_high":
+        adapter.set_solver_iterations(position=32, velocity=8)
+    elif name == "solver_default":
+        adapter.set_solver_iterations(position=10, velocity=1)
+    elif name.startswith("mass_"):
+        grams = float(name.split("_")[1].rstrip("g"))
+        for body_id in targets:
+            adapter.set_mass(body_id, grams / 1000.0)
+    else:
+        raise ValueError(f"unknown sim intervention: {name}")
+    after = {
+        "solver_iterations": adapter.solver_iterations(),
+        "target_mass_kg": {b: adapter.bodies()[b].mass for b in targets},
+    }
+    return {"name": name, "before": before, "after": after}
 
 
 @dataclass
@@ -79,6 +113,7 @@ class RoboTwinEvalInstrumentation:
         monitor_config: dict[str, Any] | None = None,
         detector_config: dict[str, Any] | None = None,
         task_name: str | None = None,
+        sim_intervention: str = "none",
     ) -> None:
         self.output_root = Path(output_root).resolve()
         self.output_root.mkdir(parents=True, exist_ok=True)
@@ -87,6 +122,9 @@ class RoboTwinEvalInstrumentation:
         self.monitor_config = monitor_config or {}
         self.detector_config = detector_config or {}
         self.task_name = task_name
+        if sim_intervention not in SIM_INTERVENTIONS:
+            raise ValueError(f"sim_intervention must be one of {SIM_INTERVENTIONS}")
+        self.sim_intervention = sim_intervention
         self.segments: list[dict[str, Any]] = []
         self.errors: list[dict[str, Any]] = []
         self._count = 0
@@ -106,7 +144,9 @@ class RoboTwinEvalInstrumentation:
     def instrument(self, env: Any) -> Any:
         if getattr(env, "_simuguard_instrumented", False):
             return env
-        setup_demo, play_once, close_env = env.setup_demo, env.play_once, env.close_env
+        setup_demo, play_once, close_env, take_action = (
+            env.setup_demo, env.play_once, env.close_env, env.take_action,
+        )
 
         def patched_setup_demo(*args: Any, **kwargs: Any) -> Any:
             if self._current is not None:  # previous segment never closed (e.g. exception path)
@@ -128,6 +168,23 @@ class RoboTwinEvalInstrumentation:
                 if self._current is not None:
                     self._current.play_once_wall_s = time.time() - started
 
+        def patched_take_action(*args: Any, **kwargs: Any) -> Any:
+            segment = self._current
+            if (
+                segment is not None
+                and self.sim_intervention != "none"
+                and "sim_intervention" not in segment.info
+                and self._adapter is not None
+            ):
+                try:
+                    segment.info["sim_intervention"] = apply_sim_intervention(self._adapter, self.sim_intervention)
+                    if self._monitor is not None:
+                        self._monitor.metadata["sim_intervention"] = segment.info["sim_intervention"]
+                except Exception:  # noqa: BLE001
+                    segment.info["sim_intervention_error"] = traceback.format_exc(limit=3)
+                    self.errors.append({"segment": segment.index, "where": "intervention", "traceback": traceback.format_exc()})
+            return take_action(*args, **kwargs)
+
         def patched_close_env(*args: Any, **kwargs: Any) -> Any:
             if self._current is not None:
                 self._end_segment(env, reason="close_env")
@@ -136,6 +193,7 @@ class RoboTwinEvalInstrumentation:
         env.setup_demo = patched_setup_demo
         env.play_once = patched_play_once
         env.close_env = patched_close_env
+        env.take_action = patched_take_action
         env._simuguard_instrumented = True
         return env
 
@@ -228,6 +286,7 @@ class RoboTwinEvalInstrumentation:
             "simuguard_commit": _git_commit(Path(__file__).resolve().parents[2]),
             "enabled": self.enabled,
             "monitor_expert": self.monitor_expert,
+            "sim_intervention": self.sim_intervention,
             "task": self.task_name,
             "segments": len(self.segments),
             "by_phase": _count_by(self.segments, "phase"),
@@ -318,6 +377,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--simuguard-disable", action="store_true", help="run the identical path without monitors")
     parser.add_argument("--no-expert-monitoring", action="store_true")
     parser.add_argument(
+        "--sim-intervention", default="none", choices=SIM_INTERVENTIONS,
+        help="change one simulation setting for the scored rollout only (closed-loop intervention)",
+    )
+    parser.add_argument(
         "--policy-request-timeout-s",
         type=float,
         default=None,
@@ -334,6 +397,7 @@ def main(argv: list[str] | None = None) -> int:
         monitor_expert=not args.no_expert_monitoring,
         monitor_config=config.get("monitor"),
         detector_config=config.get("detectors"),
+        sim_intervention=args.sim_intervention,
     )
     module.class_decorator = instrumentation.wrap_class_decorator(module.class_decorator)
     runtime_overrides: dict[str, Any] = {}
