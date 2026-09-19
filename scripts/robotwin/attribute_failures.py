@@ -18,10 +18,15 @@ Success is evaluated exactly as the benchmark does: RoboTwin's
 ``check_success()`` after every substep for the policy phase (the evaluator
 stops at the first success), and at the end for the expert check.
 
-Verdicts (policy and expert phases alike):
+Verdicts (policy and expert phases alike).  The *primary* counterfactual
+(``--primary``, default ``vclamp_2.0``) decides; the others only bound it,
+because changing the mass also changes grasp dynamics and was measured to turn
+failures *without* any anomaly into successes too:
 
 * ``environment_caused``     - the recording has confirmed anomaly events and
-  the same actions succeed once the anomaly is removed;
+  the same actions succeed under the primary counterfactual;
+* ``environment_possible``   - anomaly events; only a secondary counterfactual
+  succeeds (upper bound);
 * ``anomaly_unresolved``     - anomaly events, but no counterfactual succeeds
   (policy may also be wrong; needs the closed-loop retry test);
 * ``outcome_changed_without_anomaly`` - no events, yet a counterfactual
@@ -252,21 +257,24 @@ def attribute_segment(args) -> int:
         condition = run_condition(args.robotwin_root, segment, name, phase, stop_on_success=stop)
         report["conditions"].append(condition)
         print(json.dumps(condition, default=str)[:400], flush=True)
-    report["verdict"] = verdict(report)
+    report["verdict"] = verdict(report, args.primary)
     Path(args.report).write_text(json.dumps(report, indent=2, default=str))
     print("verdict:", report["verdict"])
     return 0
 
 
-def verdict(report: dict) -> str:
+def verdict(report: dict, primary: str = "vclamp_2.0") -> str:
     conditions = {c["name"]: c for c in report["conditions"]}
     baseline = conditions.get("baseline")
     if baseline is not None and not (baseline.get("bit_identical") and not baseline.get("success")):
         return "unverifiable"
-    counterfactual_success = any(c.get("success") for n, c in conditions.items() if n != "baseline")
+    primary_success = bool(conditions.get(primary, {}).get("success"))
+    any_success = any(c.get("success") for n, c in conditions.items() if n != "baseline")
     if report["recorded_confirmed_events"] > 0:
-        return "environment_caused" if counterfactual_success else "anomaly_unresolved"
-    return "outcome_changed_without_anomaly" if counterfactual_success else "policy_failure"
+        if primary_success:
+            return "environment_caused"
+        return "environment_possible" if any_success else "anomaly_unresolved"
+    return "outcome_changed_without_anomaly" if any_success else "policy_failure"
 
 
 # ---------------------------------------------------------------------------- batch
@@ -299,11 +307,11 @@ def batch(args) -> int:
 
     with ThreadPoolExecutor(max_workers=args.workers) as pool:
         list(pool.map(work, enumerate(failures)))
-    write_summary(out, failures, args.runs)
+    write_summary(out, failures, args.runs, args.primary)
     return 0
 
 
-def write_summary(out: Path, failures: list[dict], roots: list[str]) -> None:
+def write_summary(out: Path, failures: list[dict], roots: list[str], primary: str = "vclamp_2.0") -> None:
     rows = []
     for item in failures:
         path = out / f"{item['key']}.json"
@@ -315,13 +323,13 @@ def write_summary(out: Path, failures: list[dict], roots: list[str]) -> None:
         rows.append(
             {
                 **item,
-                "verdict": report["verdict"],
+                "verdict": verdict(report, primary),
                 "counterfactual_success": {n: c.get("success") for n, c in conditions.items() if n != "baseline"},
                 "baseline_bit_identical": conditions.get("baseline", {}).get("bit_identical"),
             }
         )
 
-    summary: dict = {"failures": len(rows), "by_phase": {}, "corrected_policy_success": {}, "rows": rows}
+    summary: dict = {"failures": len(rows), "primary_counterfactual": primary, "by_phase": {}, "corrected_policy_success": {}, "rows": rows}
     for phase in sorted({r["phase"] for r in rows}):
         phase_rows = [r for r in rows if r["phase"] == phase]
         by_config: dict = {}
@@ -354,15 +362,17 @@ def write_summary(out: Path, failures: list[dict], roots: list[str]) -> None:
             if not total:
                 continue
             key_prefix = f"{run.parent.name}_{run.name}_"
-            attributed = sum(
-                1 for r in rows if r["phase"] == "policy" and r["key"].startswith(key_prefix) and r["verdict"] == "environment_caused"
-            )
+            mine = [r for r in rows if r["phase"] == "policy" and r["key"].startswith(key_prefix)]
+            attributed = sum(1 for r in mine if r["verdict"] == "environment_caused")
+            possible = sum(1 for r in mine if r["verdict"] == "environment_possible")
             summary["corrected_policy_success"][f"{run.parent.name}/{run.name}"] = {
                 "episodes": total,
                 "official_success": succeeded,
                 "environment_caused_failures": attributed,
+                "environment_possible_failures": possible,
                 "official_rate": round(succeeded / total, 4),
-                "corrected_rate_upper": round((succeeded + attributed) / total, 4),
+                "corrected_rate": round((succeeded + attributed) / total, 4),
+                "corrected_rate_upper": round((succeeded + attributed + possible) / total, 4),
             }
     (out / "summary.json").write_text(json.dumps(summary, indent=2, default=str))
     print(json.dumps({k: v for k, v in summary.items() if k != "rows"}, indent=1, default=str))
@@ -379,6 +389,7 @@ def main() -> int:
     parser.add_argument("--output-dir")
     parser.add_argument("--workers", type=int, default=2)
     parser.add_argument("--gpus", nargs="*", default=None, help="render devices, assigned round-robin")
+    parser.add_argument("--primary", default="vclamp_2.0", help="counterfactual that decides environment_caused")
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--summary-only", action="store_true", help="rebuild summary.json from existing reports")
     parser.add_argument("--python", default=sys.executable)
@@ -390,7 +401,7 @@ def main() -> int:
     if not (args.runs and args.output_dir):
         parser.error("batch mode needs --runs and --output-dir")
     if args.summary_only:
-        write_summary(Path(args.output_dir).resolve(), find_failures(args.runs, args.phases), args.runs)
+        write_summary(Path(args.output_dir).resolve(), find_failures(args.runs, args.phases), args.runs, args.primary)
         return 0
     return batch(args)
 
