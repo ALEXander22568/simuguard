@@ -75,7 +75,9 @@ def hold_actions(env, steps: int) -> int:
     return done
 
 
-def policy_actions(module, env, args, instruction: str, steps: int) -> dict:
+def policy_actions(module, env, args, instruction: str, steps: int, should_stop=None) -> dict:
+    """Official observe/act loop.  ``should_stop()`` is checked after every action (e.g. abort on an event)."""
+
     usr_args = {
         "protocol": "ws", "host": args.host, "port": args.port,
         "policy_name": "LingBot_VA", "bench_name": "RoboTwin", "task_name": args.task or env.task_name,
@@ -84,7 +86,7 @@ def policy_actions(module, env, args, instruction: str, steps: int) -> dict:
         "xpolicylab_root": str(Path(args.robotwin_root).resolve() / "XPolicyLab"),
     }
     client = module.build_policy_client(usr_args)
-    stats = {"actions": 0, "chunks": 0, "success": False}
+    stats = {"actions": 0, "chunks": 0, "success": False, "stopped": False}
     try:
         module.prepare_policy_case(client, env.task_name, int(args.seed_for_policy), instruction, "joint")
         module.reset_policy(client)
@@ -107,13 +109,16 @@ def policy_actions(module, env, args, instruction: str, steps: int) -> dict:
                 if env.eval_success:
                     stats["success"] = True
                     break
+                if should_stop is not None and should_stop():
+                    stats["stopped"] = True
+                    break
                 if module.is_episode_end(env) or stats["actions"] >= steps or index + 1 == len(chunk):
                     break
                 observation = env.get_obs()
                 client.call(func_name="update_obs", obs=module.robotwin_obs_to_xpolicylab(
                     observation, instruction=instruction, env_idx=0, frequency=args.frequency, task_env=env
                 ))
-            if stats["success"]:
+            if stats["success"] or stats["stopped"]:
                 break
             observation = env.get_obs()
     finally:
