@@ -227,29 +227,32 @@ class _Clamp:
         self.max_raw = 0.0
 
 
-def _install_velocity_clamp(adapter, target: str, cap: float) -> _Clamp:
-    """Wrap the raw physics step (installed *before* the monitor, so it observes the clamped state)."""
+def _install_velocity_clamp(adapter, target, cap: float) -> _Clamp:
+    """Wrap the raw physics step (installed *before* the monitor, so it observes the clamped state).
 
-    handle = adapter._bodies[target]
-    component, entity = handle.component, handle.entity
+    ``target`` is one body id or a list of them; tasks with several target objects clamp each.
+    """
+
+    targets = [target] if isinstance(target, str) else list(target)
+    handles = [(adapter._bodies[t].component, adapter._bodies[t].entity) for t in targets]
     scene = adapter.scene
     raw_step = scene.step
     clamp = _Clamp(cap)
 
     def clamped_step(*args, **kwargs):
-        before = entity.get_pose()
+        before = [entity.get_pose() for _, entity in handles]
         out = raw_step(*args, **kwargs)
-        velocity = np.asarray(component.get_linear_velocity(), dtype=float)
-        speed = float(np.linalg.norm(velocity))
-        if speed > cap:
-            scale = cap / speed
-            after = entity.get_pose()
-            p0, p1 = np.asarray(before.p, dtype=float), np.asarray(after.p, dtype=float)
-            corrected = type(after)(p0 + (p1 - p0) * scale, after.q)
-            entity.set_pose(corrected)
-            component.set_linear_velocity(velocity * scale)
-            clamp.count += 1
-            clamp.max_raw = max(clamp.max_raw, speed)
+        for (component, entity), pose0 in zip(handles, before):
+            velocity = np.asarray(component.get_linear_velocity(), dtype=float)
+            speed = float(np.linalg.norm(velocity))
+            if speed > cap:
+                scale = cap / speed
+                after = entity.get_pose()
+                p0, p1 = np.asarray(pose0.p, dtype=float), np.asarray(after.p, dtype=float)
+                entity.set_pose(type(after)(p0 + (p1 - p0) * scale, after.q))
+                component.set_linear_velocity(velocity * scale)
+                clamp.count += 1
+                clamp.max_raw = max(clamp.max_raw, speed)
         return out
 
     scene.step = clamped_step

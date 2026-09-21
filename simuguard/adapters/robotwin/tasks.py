@@ -38,6 +38,34 @@ TASK_SPECS: dict[str, TaskSpec] = {
         containment=("can", "basket"),
         notes="Primary SimuGuard study task; cavity gate = full can OBB inside basket model bounds.",
     ),
+    # Cross-task study.  No containment gate on these: the gate needs exactly one target and
+    # an axis-aligned cavity, which neither several objects nor nested bowls satisfy, so the
+    # ejection detector runs ungated and its events need their own human check per task.
+    "put_bottles_dustbin": TaskSpec(
+        task_name="put_bottles_dustbin",
+        target_attrs=("bottles",),
+        container_attrs=("dustbin",),
+        ground_truth_attrs=("bottle_num",),
+        notes="Concave container; several targets kept in env.bottles.",
+    ),
+    "stack_bowls_two": TaskSpec(
+        task_name="stack_bowls_two",
+        target_attrs=("bowl2",),
+        container_attrs=("bowl1",),
+        notes="Concave container; bowl1 is placed first and bowl2 is nested into it.",
+    ),
+    "place_bread_basket": TaskSpec(
+        task_name="place_bread_basket",
+        target_attrs=("bread",),
+        container_attrs=("breadbasket",),
+        notes="Concave container; one or two targets kept in env.bread.",
+    ),
+    "stack_blocks_two": TaskSpec(
+        task_name="stack_blocks_two",
+        target_attrs=("block2",),
+        container_attrs=("block1",),
+        notes="Control: no concave container; block2 is stacked on the flat top of block1.",
+    ),
 }
 
 

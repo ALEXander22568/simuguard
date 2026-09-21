@@ -21,6 +21,7 @@ SIMUGUARD=${SIMUGUARD:-1}
 POLICY_REQUEST_TIMEOUT_S=${POLICY_REQUEST_TIMEOUT_S:-900}  # upstream client default 120 s is too short for first reset
 # upstream = unmodified wan_va_server.py (prompt padded to 512 tokens, ~6.4 min CPU reset on node2)
 # longest  = same server via simuguard/integrations/lingbot_va_server_shim.py (tokenizer padding override only)
+LINGBOT_ACTION_PATH=${LINGBOT_ACTION_PATH:-ee}
 LINGBOT_PROMPT_PADDING=${LINGBOT_PROMPT_PADDING:-longest}
 # upstream keeps the VAE on CPU under offload (>14 min for the first action chunk on node2)
 LINGBOT_VAE_DEVICE=${LINGBOT_VAE_DEVICE:-gpu_staged}
@@ -48,7 +49,6 @@ TOOLS_BIN=${TOOLS_BIN:-/mnt/nvme0/twinguar/RoboTwin-2.0/.tools/bin}  # ffmpeg
 # ee   : server config "robotwin" (16-dim relative EE actions, matches the posttrain
 #        checkpoint) + bridge shim that converts them to RoboTwin ee actions
 # joint: upstream default config robotwin30_train (30-dim, joint channels)
-LINGBOT_ACTION_PATH=${LINGBOT_ACTION_PATH:-ee}
 # closed-loop simulation intervention applied to the scored rollout only:
 # none | solver_high | solver_default | mass_100g | mass_50g
 SIM_INTERVENTION=${SIM_INTERVENTION:-none}

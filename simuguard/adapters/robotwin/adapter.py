@@ -63,16 +63,20 @@ class RoboTwinAdapter(SimAdapter):
         self._role_warnings = []
         for attrs, role in ((self.spec.container_attrs, BodyRole.CONTAINER), (self.spec.target_attrs, BodyRole.TARGET)):
             for attr in attrs:
-                wrapper = getattr(self.env, attr, None)
-                entity = getattr(wrapper, "actor", wrapper)
-                if entity is None:
+                value = getattr(self.env, attr, None)
+                if value is None:
                     self._role_warnings.append(f"task attribute '{attr}' not found for role {role.value}")
                     continue
-                if hasattr(entity, "get_links"):  # articulated object
-                    for link in entity.get_links():
-                        roles[io.component_key(link)] = role
-                else:
-                    roles[io.entity_key(entity)] = role
+                # some tasks keep several objects of one kind in a list (e.g. ``env.bottles``)
+                for wrapper in (value if isinstance(value, (list, tuple)) else [value]):
+                    entity = getattr(wrapper, "actor", wrapper)
+                    if entity is None:
+                        continue
+                    if hasattr(entity, "get_links"):  # articulated object
+                        for link in entity.get_links():
+                            roles[io.component_key(link)] = role
+                    else:
+                        roles[io.entity_key(entity)] = role
         return roles
 
     def _robot_articulation_keys(self) -> set[Any]:
@@ -273,10 +277,11 @@ class RoboTwinAdapter(SimAdapter):
         handle = self._bodies[body_id]
         handle.component.set_mass(float(mass))
 
-    def mass(self, body_id: str) -> float:
-        """Live mass (``bodies()`` holds the value cached at enumeration)."""
+    def mass(self, body_id: str) -> float | None:
+        """Live mass (``bodies()`` holds the value cached at enumeration); None for static bodies."""
 
-        return float(self._bodies[body_id].component.get_mass())
+        component = self._bodies[body_id].component
+        return float(component.get_mass()) if hasattr(component, "get_mass") else None
 
 
 class _SceneProxy:
