@@ -80,7 +80,14 @@ def recorded_outcome(summary: dict) -> tuple[str | None, bool | None]:
     return phase, None
 
 
-def find_failures(roots: list[str], phases: list[str]) -> list[dict]:
+def find_episodes(roots: list[str], phases: list[str], select: str = "failures") -> list[dict]:
+    """select: failures | successes-with-events | both.
+
+    A successful episode that contains an event matters as much as a failed one: if the
+    artifact is what produced the success, removing it must take the success away. An
+    audit that can only correct upwards is biased by construction.
+    """
+
     found = []
     for root in roots:
         root_path = Path(root).resolve()
@@ -90,7 +97,16 @@ def find_failures(roots: list[str], phases: list[str]) -> list[dict]:
                 continue
             summary = json.loads(summary_path.read_text())
             phase, success = recorded_outcome(summary)
-            if phase not in phases or success is not False:
+            events = int(summary.get("confirmed_count", 0))
+            if phase not in phases or success is None:
+                continue
+            if select == "failures":
+                wanted = success is False
+            elif select == "successes-with-events":
+                wanted = success is True and events > 0
+            else:
+                wanted = success is False or events > 0
+            if not wanted:
                 continue
             outcome = (summary.get("metadata") or {}).get("outcome") or {}
             if phase == "expert" and not outcome.get("plan_success"):
@@ -104,7 +120,8 @@ def find_failures(roots: list[str], phases: list[str]) -> list[dict]:
                     "repeat": run.name,
                     "phase": phase,
                     "seed": summary["metadata"].get("seed"),
-                    "recorded_confirmed_events": int(summary.get("confirmed_count", 0)),
+                    "recorded_success": bool(success),
+                    "recorded_confirmed_events": events,
                 }
             )
     return found
@@ -194,6 +211,7 @@ def run_condition(robotwin_root: str, segment: Path, name: str, phase: str, stop
             replayed = monitor.state_log.array()[:, [monitor.state_log.body_ids.index(b) for b in recorded_states.body_ids], :]
             result["bit_identical"] = bool(live.shape == replayed.shape and np.array_equal(live, replayed, equal_nan=True))
             result["reproduces_recorded_events"] = summary_after["confirmed_count"] == summary["confirmed_count"]
+            result["reproduces_recorded_outcome"] = bool(result["success"]) is bool(recorded_outcome(summary)[1])
     finally:
         try:
             env.close_env()
@@ -246,7 +264,7 @@ def attribute_segment(args) -> int:
         "segment": str(segment),
         "phase": phase,
         "seed": (summary.get("metadata") or {}).get("seed"),
-        "recorded_success": recorded_success,
+        "recorded_success": bool(recorded_success),
         "recorded_confirmed_events": int(summary.get("confirmed_count", 0)),
         "recorded_event_onsets": [e["onset_substep"] for e in summary.get("events", []) if e["status"] == "confirmed"],
         "conditions": [],
@@ -266,8 +284,14 @@ def attribute_segment(args) -> int:
 def verdict(report: dict, primary: str = "vclamp_2.0") -> str:
     conditions = {c["name"]: c for c in report["conditions"]}
     baseline = conditions.get("baseline")
-    if baseline is not None and not (baseline.get("bit_identical") and not baseline.get("success")):
+    recorded_success = bool(report.get("recorded_success"))
+    if baseline is not None and not (baseline.get("bit_identical")
+                                     and bool(baseline.get("success")) is recorded_success):
         return "unverifiable"
+    if recorded_success:
+        # the episode already succeeded: did it need the artifact to succeed?
+        return ("success_without_artifact" if conditions.get(primary, {}).get("success")
+                else "artifact_assisted_success")
     primary_success = bool(conditions.get(primary, {}).get("success"))
     any_success = any(c.get("success") for n, c in conditions.items() if n != "baseline")
     if report["recorded_confirmed_events"] > 0:
@@ -281,10 +305,10 @@ def verdict(report: dict, primary: str = "vclamp_2.0") -> str:
 def batch(args) -> int:
     out = Path(args.output_dir).resolve()
     out.mkdir(parents=True, exist_ok=True)
-    failures = find_failures(args.runs, args.phases)
+    failures = find_episodes(args.runs, args.phases, args.select)
     if args.limit:
         failures = failures[: args.limit]
-    print(f"[attribution] {len(failures)} failed segments", flush=True)
+    print(f"[attribution] {len(failures)} segments to audit ({args.select})", flush=True)
     gpus = args.gpus or [None]
 
     def work(indexed):
@@ -386,6 +410,9 @@ def main() -> int:
     parser.add_argument("--report", help="output for --segment-dir")
     parser.add_argument("--runs", nargs="+", help="batch: roots searched for **/simuguard/segments")
     parser.add_argument("--phases", nargs="+", default=["policy", "expert"])
+    parser.add_argument("--select", default="failures",
+                        choices=("failures", "successes-with-events", "both"),
+                        help="which recorded episodes to audit")
     parser.add_argument("--output-dir")
     parser.add_argument("--workers", type=int, default=2)
     parser.add_argument("--gpus", nargs="*", default=None, help="render devices, assigned round-robin")
@@ -401,7 +428,8 @@ def main() -> int:
     if not (args.runs and args.output_dir):
         parser.error("batch mode needs --runs and --output-dir")
     if args.summary_only:
-        write_summary(Path(args.output_dir).resolve(), find_failures(args.runs, args.phases), args.runs, args.primary)
+        write_summary(Path(args.output_dir).resolve(), find_episodes(args.runs, args.phases, args.select),
+                      args.runs, args.primary)
         return 0
     return batch(args)
 
