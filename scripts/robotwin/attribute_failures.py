@@ -293,7 +293,9 @@ def verdict(report: dict, primary: str = "vclamp_2.0") -> str:
         return "unverifiable"
     if recorded_success:
         # the episode already succeeded: did it need the artifact to succeed?
-        return ("success_without_artifact" if conditions.get(primary, {}).get("success")
+        if report["recorded_confirmed_events"] == 0 or primary not in conditions:
+            return "success_without_event"
+        return ("success_without_artifact" if conditions[primary].get("success")
                 else "artifact_assisted_success")
     primary_success = bool(conditions.get(primary, {}).get("success"))
     any_success = any(c.get("success") for n, c in conditions.items() if n != "baseline")
