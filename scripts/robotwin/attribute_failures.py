@@ -146,12 +146,13 @@ def run_condition(robotwin_root: str, segment: Path, name: str, phase: str, stop
     result: dict = {"name": name}
     try:
         adapter = RoboTwinAdapter(env)
-        target = adapter.body_ids_with_role(BodyRole.TARGET)[0]
+        targets = adapter.body_ids_with_role(BodyRole.TARGET)  # several on multi-object tasks
+        target = targets[0]
         # the physics the episode was recorded under (closed-loop campaigns), then the counterfactual on top
         result["recorded_sim_intervention"] = reapply_recorded_intervention(adapter, meta)
         clamp = None
         if name.startswith("vclamp_"):
-            clamp = _install_velocity_clamp(adapter, target, float(name.split("_", 1)[1]))
+            clamp = _install_velocity_clamp(adapter, targets, float(name.split("_", 1)[1]))
             result["description"] = f"target speed clamped to {clamp.cap} m/s after each substep"
         else:
             description, apply = build_intervention(name)
@@ -201,7 +202,8 @@ def run_condition(robotwin_root: str, segment: Path, name: str, phase: str, stop
                 "target_mass_kg": adapter.mass(target),
             }
         )
-        speeds = np.linalg.norm(monitor.state_log.array()[:, monitor.state_log.body_ids.index(target), 7:10], axis=1)
+        columns = [monitor.state_log.body_ids.index(t) for t in targets]
+        speeds = np.linalg.norm(monitor.state_log.array()[:, columns, 7:10], axis=2)
         result["peak_target_speed_mps"] = float(np.nanmax(speeds)) if speeds.size else None
         if clamp is not None:
             result["clamped_substeps"] = clamp.count
