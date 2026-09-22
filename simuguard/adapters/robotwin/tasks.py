@@ -54,6 +54,12 @@ TASK_SPECS: dict[str, TaskSpec] = {
         container_attrs=("bowl1",),
         notes="Concave container; bowl1 is placed first and bowl2 is nested into it.",
     ),
+    "stack_bowls_three": TaskSpec(
+        task_name="stack_bowls_three",
+        target_attrs=("bowl2", "bowl3"),
+        container_attrs=("bowl1",),
+        notes="Nested bowls; bowl2 then bowl3 are stacked into bowl1.",
+    ),
     "place_bread_basket": TaskSpec(
         task_name="place_bread_basket",
         target_attrs=("bread",),
