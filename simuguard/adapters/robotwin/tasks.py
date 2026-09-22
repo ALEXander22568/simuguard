@@ -66,6 +66,26 @@ TASK_SPECS: dict[str, TaskSpec] = {
         container_attrs=("block1",),
         notes="Control: no concave container; block2 is stacked on the flat top of block1.",
     ),
+    # Same contact structure as place_can_basket: a 10 g object inside a 0.5 kg basket that the
+    # robot lifts, success requiring the object to stay inside.  Object is a toy car or a deck of
+    # cards, so the cavity gate reads the asset bounds of whichever was sampled.
+    "place_object_basket": TaskSpec(
+        task_name="place_object_basket",
+        target_attrs=("object",),
+        container_attrs=("basket",),
+        ground_truth_attrs=("object_name", "object_id", "basket_id", "arm_tag", "start_height", "object_start_height"),
+        containment=("object", "basket"),
+        notes="Lifted container with a light object inside; cavity gate as for place_can_basket.",
+    ),
+    # Five 0.1 g spheres inside a small desk bin that the robot lifts, shakes and tips into a big
+    # bin.  The spheres are raw SAPIEN entities kept in env.sphere_lst; no gate (several targets).
+    "dump_bin_bigbin": TaskSpec(
+        task_name="dump_bin_bigbin",
+        target_attrs=("sphere_lst",),
+        container_attrs=("deskbin", "dustbin"),
+        ground_truth_attrs=("deskbin_id", "garbage_num"),
+        notes="Lifted and tipped container with very light contents; ungated.",
+    ),
 }
 
 
