@@ -86,6 +86,22 @@ TASK_SPECS: dict[str, TaskSpec] = {
         ground_truth_attrs=("deskbin_id", "garbage_num"),
         notes="Lifted and tipped container with very light contents; ungated.",
     ),
+    # Cavity that stays put: two 50 g cans into a 50 g plastic box that is never lifted.
+    "place_cans_plasticbox": TaskSpec(
+        task_name="place_cans_plasticbox",
+        target_attrs=("object1", "object2"),
+        container_attrs=("plasticbox",),
+        notes="Static thin-walled box, two targets; ungated.",
+    ),
+    # Cavity that is pushed: a 10 g object into the drawer of an articulated cabinet, which the
+    # robot then closes.  The cabinet is a URDF articulation, so every link takes the container role.
+    "put_object_cabinet": TaskSpec(
+        task_name="put_object_cabinet",
+        target_attrs=("object",),
+        container_attrs=("cabinet",),
+        ground_truth_attrs=("arm_tag", "origin_z"),
+        notes="Articulated container moved after placement; ungated.",
+    ),
 }
 
 
