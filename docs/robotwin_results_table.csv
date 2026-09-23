@@ -5,7 +5,7 @@ blocks_ranking_rgb,3,,,,,,,,,,,,
 blocks_ranking_size,3,,,,,,,,,,,,
 click_alarmclock,4,,,,,,,,,,,,
 click_bell,4,,,,,,,,,,,,
-dump_bin_bigbin,done,10,8,8/10,1,0,0,0,0,8/10,8/10,yes,失败局 100010 伪影明确但两条反事实均未翻转（unresolved）
+dump_bin_bigbin,done,10,8,8/10,1,0,0,0,0,8/10,8/10,open,失败局 100010 伪影明确但两条反事实均未翻转（unresolved）
 grab_roller,3,,,,,,,,,,,,
 handover_block,2,,,,,,,,,,,,
 handover_mic,2,,,,,,,,,,,,
@@ -21,23 +21,23 @@ pick_diverse_bottles,3,,,,,,,,,,,,
 pick_dual_bottles,2,,,,,,,,,,,,
 place_a2b_left,2,,,,,,,,,,,,
 place_a2b_right,2,,,,,,,,,,,,
-place_bread_basket,done,10,9,9/10,1,0,0,1,0,9/10,10/10,yes,
+place_bread_basket,done,10,9,9/10,1,0,0,1,0,9/10,10/10,open,
 place_bread_skillet,1,,,,,,,,,,,,
 place_burger_fries,1,,,,,,,,,,,,
-place_can_basket,done,90,67,67/90,21,16,14,7,3,78/90,85/90,yes,30 seed x 3 配置；主实验
+place_can_basket,done,90,67,67/90,21,16,14,7,3,78/90,85/90,open,30 seed x 3 配置；主实验
 place_cans_plasticbox,done,10,10,10/10,0,0,0,0,0,10/10,10/10,no,
 place_container_plate,1,,,,,,,,,,,,
 place_dual_shoes,2,,,,,,,,,,,,
 place_empty_cup,1,,,,,,,,,,,,
 place_fan,2,,,,,,,,,,,,
 place_mouse_pad,2,,,,,,,,,,,,
-place_object_basket,done,10,10,10/10,0,1,0,0,0,10/10,10/10,yes,
+place_object_basket,done,10,10,10/10,0,1,0,0,0,10/10,10/10,open,
 place_object_scale,1,,,,,,,,,,,,
 place_object_stand,1,,,,,,,,,,,,
 place_phone_stand,2,,,,,,,,,,,,
 place_shoe,2,,,,,,,,,,,,
 press_stapler,4,,,,,,,,,,,,
-put_bottles_dustbin,done,10,9,9/10,0,0,0,0,0,9/10,9/10,yes,20 个掉落事件全部被重力解释
+put_bottles_dustbin,done,10,9,9/10,0,0,0,0,0,9/10,9/10,open,20 个掉落事件全部被重力解释
 put_object_cabinet,done,10,7,7/10,0,0,0,0,0,7/10,7/10,no,50 seed 排队中；expert 跳过 73 seed
 rotate_qrcode,4,,,,,,,,,,,,
 scan_object,4,,,,,,,,,,,,

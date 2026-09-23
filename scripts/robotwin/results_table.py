@@ -8,7 +8,10 @@
 * official S / N
 * E_fail   failures with at least one physics-invalid event (after the gravity filter)
 * E_succ   successes with at least one physics-invalid event
-* F+       failures that become successes when the artifact is removed (verdict environment_caused)
+* F+       failures rescued by the take-over protocol: replay to just before the event, suppress the
+           artifact from there on, let the live policy finish closed-loop once (rollback_retry.py
+           --intervention vclamp_2.0 --max-attempts 1, verdict rescued).  When only open-loop
+           attribution exists, F+ falls back to verdict environment_caused and the row says attr: open
 * F±       failures that flip only under the mass counterfactual (environment_possible)
 * S-       successes that fail once the artifact is removed (artifact_assisted_success)
 * audited  (S - S- + F+) / N       <- the corrected score; the denominator never changes
@@ -19,7 +22,7 @@ policy would have scored without the artifact, not thrown away.
 
 Usage::
 
-    python scripts/robotwin/results_table.py --runs runs/tier1_x/* --attr runs/attr_* --out docs/results.csv
+    python scripts/robotwin/results_table.py --runs runs/tier1_x/* --takeover runs/takeover_* --attr runs/attr_* --out docs/results.csv
 
 ``--runs`` are task run directories (each with manifest.json and, after gravity_filter.py,
 events_gravity.json in the segments).  ``--attr`` are attribution output directories whose
@@ -38,7 +41,7 @@ COLUMNS = ["task", "N", "S", "official", "E_fail", "E_succ", "F_plus", "F_pm", "
            "audited", "upper", "attr", "run_dir"]
 
 
-def task_row(run: Path, verdicts: dict[str, str]) -> dict | None:
+def task_row(run: Path, verdicts: dict[str, str], rescued: dict[str, str]) -> dict | None:
     manifest_path = run / "manifest.json"
     if not manifest_path.is_file():
         return None
@@ -47,7 +50,7 @@ def task_row(run: Path, verdicts: dict[str, str]) -> dict | None:
     n = int(manifest["policy_episodes"])
     s = int(manifest["policy_success"])
     e_fail = e_succ = f_plus = f_pm = s_minus = 0
-    audited_any = False
+    attr_mode = ""
     for episode in manifest["episodes"]:
         policy = episode.get("policy")
         if not policy:
@@ -62,17 +65,22 @@ def task_row(run: Path, verdicts: dict[str, str]) -> dict | None:
         ok = bool(policy.get("eval_success"))
         e_fail += (not ok) and invalid
         e_succ += ok and invalid
-        verdict = verdicts.get(str(segment.resolve()))
-        if verdict:
-            audited_any = True
+        key = str(segment.resolve())
+        verdict = verdicts.get(key)
+        if key in rescued:
+            attr_mode = "takeover"
+            f_plus += rescued[key] == "rescued"
+        elif verdict:
+            attr_mode = attr_mode or "open"
             f_plus += verdict == "environment_caused"
+        if verdict:
             f_pm += verdict == "environment_possible"
             s_minus += verdict == "artifact_assisted_success"
     return {
         "task": task, "N": n, "S": s, "official": f"{s}/{n}",
         "E_fail": e_fail, "E_succ": e_succ, "F_plus": f_plus, "F_pm": f_pm, "S_minus": s_minus,
         "audited": f"{s - s_minus + f_plus}/{n}", "upper": f"{s - s_minus + f_plus + f_pm}/{n}",
-        "attr": "yes" if audited_any else "no", "run_dir": str(run),
+        "attr": attr_mode or "no", "run_dir": str(run),
     }
 
 
@@ -91,15 +99,30 @@ def load_verdicts(attr_dirs: list[str]) -> dict[str, str]:
     return verdicts
 
 
+def load_takeover(dirs: list[str]) -> dict[str, str]:
+    rescued: dict[str, str] = {}
+    for root in dirs:
+        for report in Path(root).rglob("report.json"):
+            try:
+                data = json.loads(report.read_text())
+            except json.JSONDecodeError:
+                continue
+            if "verdict" in data and "segment" in data:
+                rescued[str(Path(data["segment"]).resolve())] = data["verdict"]
+    return rescued
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--runs", nargs="+", required=True, help="task run directories")
-    parser.add_argument("--attr", nargs="*", default=[], help="attribution output directories")
+    parser.add_argument("--takeover", nargs="*", default=[], help="rollback_retry output directories (take-over protocol)")
+    parser.add_argument("--attr", nargs="*", default=[], help="open-loop attribution output directories")
     parser.add_argument("--out", help="CSV to write (appends rows for new tasks, replaces existing ones)")
     args = parser.parse_args()
 
     verdicts = load_verdicts(args.attr)
-    rows = [r for r in (task_row(Path(run), verdicts) for run in args.runs) if r]
+    rescued = load_takeover(args.takeover)
+    rows = [r for r in (task_row(Path(run), verdicts, rescued) for run in args.runs) if r]
     existing: dict[str, dict] = {}
     if args.out and Path(args.out).is_file():
         with open(args.out, newline="") as handle:
