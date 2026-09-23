@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run the remaining RoboTwin tasks tier by tier (50 scored episodes each), filter the events,
+# Run the remaining RoboTwin tasks tier by tier (20 scored episodes each by default, EPISODES=… to change), filter the events,
 # fill the unified results table and pack what has to be sent back.
 #
 # Usage: run_tiers.sh WS RUNTIME TIER [TIER ...]      TIER in 1 2 3 4 (or "all")
@@ -8,7 +8,7 @@
 # Optional env: EPISODES (default 50), TOOLS_BIN (ffmpeg dir), MODEL_FREE_MIB (default 18800)
 set -uo pipefail
 WS="${1:?workspace}"; RUNTIME="${2:?lingbot runtime}"; shift 2
-EPISODES="${EPISODES:-50}"
+EPISODES="${EPISODES:-20}"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PY="${RUNTIME}/.venv-client/bin/python"
 

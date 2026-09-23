@@ -8,11 +8,11 @@ cd $WS/SimuGuard
 nohup bash scripts/robotwin/run_tiers.sh $WS $RUNTIME 1 2 3 4 > $WS/runs/tiers.out 2>&1 &
 ```
 
-`$RUNTIME` 是 LingBot-VA 复现目录（含 `.venv-client`、`.venv-server`、`checkpoints/`）。40 个任务的规格已全部登记在 `tasks.py`，不用再改代码。脚本按档次跑，每档 10 个任务、每任务 50 局，跑完一档自动做重力过滤、填结果表、打包成 `runs/tier<N>_<时间>.tar.gz`（不含逐子步接触 trace，回放只需要 controls + states）。**把这四个 tar.gz 传回来即可**；每档大约 1–2 天。
+`$RUNTIME` 是 LingBot-VA 复现目录（含 `.venv-client`、`.venv-server`、`checkpoints/`）。40 个任务的规格已全部登记在 `tasks.py`，不用再改代码。脚本按档次跑，每档 10 个任务、每任务 20 局（`EPISODES=50` 可改），跑完一档自动做重力过滤、填结果表、打包成 `runs/tier<N>_<时间>.tar.gz`（不含逐子步接触 trace，回放只需要 controls + states）。**把这四个 tar.gz 传回来即可**；每档大约 1–2 天。
 
 进度：`cat $WS/runs/tier*/STATUS`；单个任务的输出见 `runs/tier*/<task>/`。环境搭建见 `docs/SETUP.md`，统计口径见 `docs/robotwin_results_table.md`。
 
-RoboTwin 2.0 共 50 个任务，已用 SimuGuard + LingBot-VA 跑过 10 个。剩下 40 个按对论文的价值分成 4 档，每档 10 个任务，**每个任务跑 50 个打分 episode**。建议按档次顺序跑，一档跑完先看结果再开下一档。
+RoboTwin 2.0 共 50 个任务，已用 SimuGuard + LingBot-VA 跑过 10 个。剩下 40 个按对论文的价值分成 4 档，每档 10 个任务，**每个任务跑 20 个打分 episode**。建议按档次顺序跑，一档跑完先看结果再开下一档。
 
 ## 分档
 
