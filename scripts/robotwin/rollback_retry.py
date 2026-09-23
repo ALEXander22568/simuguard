@@ -16,6 +16,11 @@ replaying the aborted attempt's own actuation - so progress the policy made
 before the new event is kept.  ``--mode fixed`` always restarts from the
 first resume point.
 
+Take-over protocol (``--intervention vclamp_2.0 --max-attempts 1``): replay to just before the
+event, cap the free task objects' speed from there on (the artifact is suppressed), and let the
+live policy finish the episode closed-loop in one attempt.  A failure with that protocol means the
+policy itself did not finish from that state.
+
 Per episode outcome:
 
 * ``rescued``            - an attempt reached task success;
@@ -106,7 +111,16 @@ def run_attempt(args, module, meta: dict, base_controls, base_states, resume: in
             np.array_equal(base_states.array()[mask][:n], replay_log[:n][:, cols, :], equal_nan=True)
         )
 
-        if args.intervention != "baseline":
+        clamp = None
+        if args.intervention.startswith("vclamp_"):
+            # take-over protocol: from the resume point on, the artifact is suppressed (object speed
+            # capped) and the live policy continues closed-loop; later confirmed events do not abort
+            from attribute_failures import _install_velocity_clamp
+            from simuguard.core.types import BodyRole
+            bodies = adapter.body_ids_with_role(BodyRole.TARGET) + [
+                c for c in adapter.body_ids_with_role(BodyRole.CONTAINER) if adapter.mass(c) is not None]
+            clamp = _install_velocity_clamp(adapter, bodies, float(args.intervention.split("_", 1)[1]))
+        elif args.intervention != "baseline":
             _, apply = build_intervention(args.intervention)
             if apply is not None:
                 apply(adapter)
@@ -127,7 +141,8 @@ def run_attempt(args, module, meta: dict, base_controls, base_states, resume: in
         )
         instruction = meta.get("outcome", {}).get("instruction") or env.get_instruction()
         started = time.time()
-        stats = policy_actions(module, env, policy_args, instruction, budget, should_stop=new_anomaly)
+        stats = policy_actions(module, env, policy_args, instruction, budget,
+                               should_stop=None if clamp is not None else new_anomaly)
         record["wall_s"] = round(time.time() - started, 1)
         record["policy"] = stats
         record["success"] = bool(env.eval_success)
@@ -141,9 +156,12 @@ def run_attempt(args, module, meta: dict, base_controls, base_states, resume: in
              "peak_speed_mps": (e.get("metrics") or {}).get("max_speed_mps")}
             for e in anomalies
         ]
+        if clamp is not None:
+            record["clamped_substeps"] = clamp.count
+            record["clamp_max_raw_speed_mps"] = round(clamp.max_raw, 3)
         if record["success"]:
             record["outcome"] = "success"
-        elif anomalies:
+        elif anomalies and clamp is None:
             record["outcome"] = "anomaly"
         else:
             record["outcome"] = "budget_exhausted"
