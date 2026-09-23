@@ -1,5 +1,17 @@
 # RoboTwin 剩余 40 个任务：分档与运行说明
 
+## 接手最短路径（有 RoboTwin + LingBot-VA 环境的前提下）
+
+```bash
+git clone https://github.com/ALEXander22568/simuguard.git $WS/SimuGuard   # $WS 里已有 RoboTwin/ 和 .venv-lingbot/
+cd $WS/SimuGuard
+nohup bash scripts/robotwin/run_tiers.sh $WS $RUNTIME 1 2 3 4 > $WS/runs/tiers.out 2>&1 &
+```
+
+`$RUNTIME` 是 LingBot-VA 复现目录（含 `.venv-client`、`.venv-server`、`checkpoints/`）。40 个任务的规格已全部登记在 `tasks.py`，不用再改代码。脚本按档次跑，每档 10 个任务、每任务 50 局，跑完一档自动做重力过滤、填结果表、打包成 `runs/tier<N>_<时间>.tar.gz`（不含逐子步接触 trace，回放只需要 controls + states）。**把这四个 tar.gz 传回来即可**；每档大约 1–2 天。
+
+进度：`cat $WS/runs/tier*/STATUS`；单个任务的输出见 `runs/tier*/<task>/`。环境搭建见 `docs/SETUP.md`，统计口径见 `docs/robotwin_results_table.md`。
+
 RoboTwin 2.0 共 50 个任务，已用 SimuGuard + LingBot-VA 跑过 10 个。剩下 40 个按对论文的价值分成 4 档，每档 10 个任务，**每个任务跑 50 个打分 episode**。建议按档次顺序跑，一档跑完先看结果再开下一档。
 
 ## 分档
@@ -64,9 +76,9 @@ RoboTwin 2.0 共 50 个任务，已用 SimuGuard + LingBot-VA 跑过 10 个。�
 | `shake_bottle` | `bottle` |
 | `shake_bottle_horizontally` | `bottle` |
 
-## 跑之前：登记任务规格
+## 任务规格（已登记，供核对）
 
-在 `simuguard/adapters/robotwin/tasks.py` 的 `TASK_SPECS` 里给每个任务加一条，写上目标物体和容器的属性名（上表就是从各任务 `load_actors` 里抄出来的，跑前再对一眼）。没登记的任务也能跑并记录事件，但物体没有角色，反事实钳制和峰值统计会找不到目标。
+40 个任务都已在 `simuguard/adapters/robotwin/tasks.py` 的 `TASK_SPECS` 登记（属性名从各任务 `load_actors` 抄出）。如果某个任务跑起来 `manifest.json` 里 `role_warnings` 非空，说明属性名对不上，按下面格式改一行即可。
 
 ```python
 "lift_pot": TaskSpec(
