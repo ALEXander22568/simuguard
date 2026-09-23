@@ -14,6 +14,14 @@ TEST_NUM=${2:?TEST_NUM required}
 # SERVERS_ONLY=1 starts the VA backend and the bridge, writes their ports to
 # ${RUN_DIR}/ports.env and keeps them alive (for resume-from-replay experiments).
 SERVERS_ONLY=${SERVERS_ONLY:-0}
+# Split deployment (model on one machine, simulator on another):
+#   VA_ONLY=1           start only the VA backend on VA_PORT_FIXED / VA_MASTER_FIXED and keep it alive
+#                       (used on the inference host; no bridge, no simulator)
+#   VA_REMOTE_PORT=P    do not start a VA backend; the bridge talks to 127.0.0.1:P, normally an SSH
+#                       tunnel to a VA_ONLY backend elsewhere (MODEL_GPU is then unused)
+VA_ONLY=${VA_ONLY:-0}
+VA_REMOTE_PORT=${VA_REMOTE_PORT:-}
+VA_REMOTE_DESC=${VA_REMOTE_DESC:-}
 TASK=${3:-place_can_basket}
 MODEL_GPU=${4:-0}
 SIM_GPU=${5:-1}
@@ -44,8 +52,10 @@ LINGBOT_DIR=${POLICY_DIR}/lingbot_va
 RUNTIME=${LINGBOT_RUNTIME:-/mnt/nvme0/twinguar/RoboTwin-2.0/runtime/lingbot-va-repro}
 # flash_attn import shim (ships with SimuGuard; a workspace copy takes precedence)
 COMPAT=${SIMUGUARD_COMPAT:-${BASE}/compat}; [ -d "${COMPAT}" ] || COMPAT=${SIMUGUARD_REPO}/compat
-SERVER_PY=${BASE}/.venv-lingbot/bin/python   # overlay: runtime .venv-server site-packages + h5py
-CLIENT_PY=${RUNTIME}/.venv-client/bin/python
+SERVER_PY=${SERVER_PY:-${BASE}/.venv-lingbot/bin/python}   # overlay: runtime .venv-server site-packages + h5py
+CLIENT_PY=${CLIENT_PY:-${RUNTIME}/.venv-client/bin/python}
+# small helpers (free port, port probe) only need a python; the inference host has no client env
+HELPER_PY=${CLIENT_PY}; [[ -x "${HELPER_PY}" ]] || HELPER_PY=${SERVER_PY}
 MODEL=${LINGBOT_MODEL:-/mnt/nvme0/twinguar/models/lingbot-va-posttrain-robotwin}
 TOOLS_BIN=${TOOLS_BIN:-/mnt/nvme0/twinguar/RoboTwin-2.0/.tools/bin}  # ffmpeg
 # ee   : server config "robotwin" (16-dim relative EE actions, matches the posttrain
@@ -90,12 +100,14 @@ trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
-pick_port() { "${CLIENT_PY}" -c 'import socket;s=socket.socket();s.bind(("127.0.0.1",0));print(s.getsockname()[1])'; }
+pick_port() { "${HELPER_PY}" -c 'import socket;s=socket.socket();s.bind(("127.0.0.1",0));print(s.getsockname()[1])'; }
 
 wait_port() {
     local port=$1 pid=$2 name=$3 timeout=$4 t=0
-    until "${CLIENT_PY}" -c "import socket,sys;s=socket.socket();s.settimeout(1);sys.exit(s.connect_ex(('127.0.0.1',${port})))"; do
-        kill -0 "${pid}" 2>/dev/null || { echo "[run] ${name} exited before listening"; return 1; }
+    until "${HELPER_PY}" -c "import socket,sys;s=socket.socket();s.settimeout(1);sys.exit(s.connect_ex(('127.0.0.1',${port})))"; do
+        if [[ -n "${pid}" ]]; then
+            kill -0 "${pid}" 2>/dev/null || { echo "[run] ${name} exited before listening"; return 1; }
+        fi
         sleep 3; t=$((t+3))
         (( t >= timeout )) && { echo "[run] ${name} not up after ${timeout}s"; return 1; }
     done
@@ -116,6 +128,11 @@ wait_port() {
     echo "xpolicylab_commit=$(git -C "${REPO}/XPolicyLab" rev-parse HEAD)"
     echo "xpolicylab_dirty=$(git -C "${REPO}/XPolicyLab" status --porcelain | wc -l)"
     echo "model=${MODEL}"
+    if [[ -n "${VA_REMOTE_PORT}" ]]; then
+        echo "va_backend=remote local_port=${VA_REMOTE_PORT} ${VA_REMOTE_DESC}"
+    else
+        echo "va_backend=local host=$(hostname) va_only=${VA_ONLY}"
+    fi
     echo "python_envs=server+bridge:${SERVER_PY} client:${CLIENT_PY}"
     echo "compat_shims=${COMPAT}/flash_attn (import-only; server uses attn_mode=torch)"
     nvidia-smi --query-gpu=index,memory.used,memory.free --format=csv,noheader
@@ -123,18 +140,31 @@ wait_port() {
 cat "${RUN_DIR}/provenance.txt"
 
 # ---- GPU guard -------------------------------------------------------------
-fm=$(free_mib "${MODEL_GPU}"); fs=$(free_mib "${SIM_GPU}")
+fm=$( [[ -n "${VA_REMOTE_PORT}" ]] && echo 999999 || free_mib "${MODEL_GPU}" )
+fs=$( [[ "${VA_ONLY}" == "1" ]] && echo 999999 || free_mib "${SIM_GPU}" )
 if (( fm < MIN_FREE_MODEL_MIB )) || (( fs < MIN_FREE_SIM_MIB )); then
     echo "[run] insufficient free memory: model GPU${MODEL_GPU}=${fm}MiB sim GPU${SIM_GPU}=${fs}MiB"
     exit 75
 fi
 
-VA_PORT=$(pick_port); VA_MASTER=$(pick_port); BR_PORT=$(pick_port); BR_MASTER=$(pick_port)
+if [[ "${VA_ONLY}" == "1" ]]; then
+    VA_PORT=${VA_PORT_FIXED:?VA_ONLY needs VA_PORT_FIXED}; VA_MASTER=${VA_MASTER_FIXED:?VA_ONLY needs VA_MASTER_FIXED}
+elif [[ -n "${VA_REMOTE_PORT}" ]]; then
+    VA_PORT=${VA_REMOTE_PORT}; VA_MASTER=
+else
+    VA_PORT=$(pick_port); VA_MASTER=$(pick_port)
+fi
+BR_PORT=$(pick_port); BR_MASTER=$(pick_port)
 
+# per-run merged dir when several backends share one POLICY_DIR (inference host)
+MERGED_DIR=${MERGED_DIR:-${POLICY_DIR}/.merged_ckpt}
+if [[ -n "${VA_REMOTE_PORT}" ]]; then
+    wait_port "${VA_PORT}" "" "VA backend tunnel" 60
+else
 # ---- official merged checkpoint (symlinks only) ---------------------------
 "${SERVER_PY}" "${POLICY_DIR}/prepare_merged_ckpt.py" \
     --checkpoint-path "${MODEL}" --base-model-path "${MODEL}" \
-    --merged-dir "${POLICY_DIR}/.merged_ckpt" 2>&1 | tee "${RUN_DIR}/merged_ckpt.log"
+    --merged-dir "${MERGED_DIR}" 2>&1 | tee "${RUN_DIR}/merged_ckpt.log"
 
 # ---- 1) backend VA server (official launch semantics) ---------------------
 if [[ "${LINGBOT_PROMPT_PADDING}" == "upstream" && "${LINGBOT_VAE_DEVICE}" == "upstream" ]]; then
@@ -150,13 +180,21 @@ setsid env CUDA_VISIBLE_DEVICES="${MODEL_GPU}" MASTER_ADDR=127.0.0.1 MASTER_PORT
     PYTHONPATH="${REPO}:${REPO}/XPolicyLab:${LINGBOT_DIR}:${COMPAT}" \
     SIMUGUARD_WAN_VA_SERVER="${LINGBOT_DIR}/wan_va/wan_va_server.py" SIMUGUARD_PROMPT_PADDING="${LINGBOT_PROMPT_PADDING}" \
     SIMUGUARD_VAE_DEVICE="${LINGBOT_VAE_DEVICE}" SIMUGUARD_ATTN_WINDOW="${LINGBOT_ATTN_WINDOW}" \
-    SIMUGUARD_MODEL_PATH="${POLICY_DIR}/.merged_ckpt" SIMUGUARD_ENABLE_OFFLOAD=1 \
+    SIMUGUARD_MODEL_PATH="${MERGED_DIR}" SIMUGUARD_ENABLE_OFFLOAD=1 SIMUGUARD_VA_HOST="${SIMUGUARD_VA_HOST:-}" \
     "${SERVER_PY}" -m torch.distributed.run --nproc_per_node=1 --master_port="${VA_MASTER}" \
         "${SERVER_ENTRY}" --config-name "${CONFIG_NAME}" --port "${VA_PORT}" \
         --save_root "${RUN_DIR}/va_visualization" \
     > "${RUN_DIR}/va_server.log" 2>&1 &
 VA_PID=$!
 wait_port "${VA_PORT}" "${VA_PID}" "VA backend" 1800
+fi
+
+if [[ "${VA_ONLY}" == "1" ]]; then
+    printf 'VA_PORT=%s\nVA_PID=%s\n' "${VA_PORT}" "${VA_PID}" > "${RUN_DIR}/ports.env"
+    echo "[run] VA backend ready on ${VA_PORT} (VA_ONLY); waiting"
+    wait "${VA_PID}"
+    exit $?
+fi
 
 # ---- 2) XPolicyLab forward bridge (CPU, same env as VA backend per upstream) -----------------------------------
 cd "${REPO}"

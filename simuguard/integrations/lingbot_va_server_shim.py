@@ -151,6 +151,11 @@ def apply_config_overrides(module: Any, config_name: str) -> dict[str, Any]:
         value = offload not in ("0", "false", "False", "")
         applied["enable_offload"] = {"before": getattr(config, "enable_offload", None), "after": value}
         config.enable_offload = value
+    host = os.environ.get("SIMUGUARD_VA_HOST")
+    if host and hasattr(config, "host"):
+        # bind address only (e.g. 127.0.0.1 behind an SSH tunnel on a shared host)
+        applied["host"] = {"before": config.host, "after": host}
+        config.host = host
     return applied
 
 
