@@ -42,6 +42,8 @@ SIMUGUARD_REPO=${SIMUGUARD_REPO:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && 
 POLICY_DIR=${REPO}/XPolicyLab/policy/LingBot_VA
 LINGBOT_DIR=${POLICY_DIR}/lingbot_va
 RUNTIME=${LINGBOT_RUNTIME:-/mnt/nvme0/twinguar/RoboTwin-2.0/runtime/lingbot-va-repro}
+# flash_attn import shim (ships with SimuGuard; a workspace copy takes precedence)
+COMPAT=${SIMUGUARD_COMPAT:-${BASE}/compat}; [ -d "${COMPAT}" ] || COMPAT=${SIMUGUARD_REPO}/compat
 SERVER_PY=${BASE}/.venv-lingbot/bin/python   # overlay: runtime .venv-server site-packages + h5py
 CLIENT_PY=${RUNTIME}/.venv-client/bin/python
 MODEL=${LINGBOT_MODEL:-/mnt/nvme0/twinguar/models/lingbot-va-posttrain-robotwin}
@@ -115,7 +117,7 @@ wait_port() {
     echo "xpolicylab_dirty=$(git -C "${REPO}/XPolicyLab" status --porcelain | wc -l)"
     echo "model=${MODEL}"
     echo "python_envs=server+bridge:${SERVER_PY} client:${CLIENT_PY}"
-    echo "compat_shims=${BASE}/compat/flash_attn (import-only; server uses attn_mode=torch)"
+    echo "compat_shims=${COMPAT}/flash_attn (import-only; server uses attn_mode=torch)"
     nvidia-smi --query-gpu=index,memory.used,memory.free --format=csv,noheader
 } > "${RUN_DIR}/provenance.txt"
 cat "${RUN_DIR}/provenance.txt"
@@ -145,7 +147,7 @@ cd "${LINGBOT_DIR}"
 setsid env CUDA_VISIBLE_DEVICES="${MODEL_GPU}" MASTER_ADDR=127.0.0.1 MASTER_PORT="${VA_MASTER}" \
     RANK=0 LOCAL_RANK=0 WORLD_SIZE=1 TOKENIZERS_PARALLELISM=false \
     PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
-    PYTHONPATH="${REPO}:${REPO}/XPolicyLab:${LINGBOT_DIR}:${BASE}/compat" \
+    PYTHONPATH="${REPO}:${REPO}/XPolicyLab:${LINGBOT_DIR}:${COMPAT}" \
     SIMUGUARD_WAN_VA_SERVER="${LINGBOT_DIR}/wan_va/wan_va_server.py" SIMUGUARD_PROMPT_PADDING="${LINGBOT_PROMPT_PADDING}" \
     SIMUGUARD_VAE_DEVICE="${LINGBOT_VAE_DEVICE}" SIMUGUARD_ATTN_WINDOW="${LINGBOT_ATTN_WINDOW}" \
     SIMUGUARD_MODEL_PATH="${POLICY_DIR}/.merged_ckpt" SIMUGUARD_ENABLE_OFFLOAD=1 \
@@ -164,7 +166,7 @@ else
     BRIDGE_ENTRY=("XPolicyLab/setup_policy_server.py")
 fi
 setsid env CUDA_VISIBLE_DEVICES= MASTER_ADDR=127.0.0.1 MASTER_PORT="${BR_MASTER}" \
-    RANK=0 LOCAL_RANK=0 WORLD_SIZE=1 PYTHONPATH="${SIMUGUARD_REPO}:${REPO}:${REPO}/XPolicyLab:${BASE}/compat" \
+    RANK=0 LOCAL_RANK=0 WORLD_SIZE=1 PYTHONPATH="${SIMUGUARD_REPO}:${REPO}:${REPO}/XPolicyLab:${COMPAT}" \
     SIMUGUARD_XPOLICYLAB_SERVER="${REPO}/XPolicyLab/setup_policy_server.py" \
     "${SERVER_PY}" "${BRIDGE_ENTRY[@]}" \
         --config_path XPolicyLab/policy/LingBot_VA/deploy.yml \
