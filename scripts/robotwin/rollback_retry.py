@@ -16,10 +16,14 @@ replaying the aborted attempt's own actuation - so progress the policy made
 before the new event is kept.  ``--mode fixed`` always restarts from the
 first resume point.
 
-Take-over protocol (``--intervention vclamp_2.0 --max-attempts 1``): replay to just before the
-event, cap the free task objects' speed from there on (the artifact is suppressed), and let the
-live policy finish the episode closed-loop in one attempt.  A failure with that protocol means the
-policy itself did not finish from that state.
+Take-over protocol (``--takeover``, one attempt, never aborted on a new event): replay to
+``distance`` substeps before the first physics-invalid event (gravity-filtered when
+``events_gravity.json`` exists), then let the live policy finish the episode closed-loop with the
+remaining action budget.  With ``--intervention vclamp_2.0`` the free task objects' speed is capped
+from the resume point on (the artifact is suppressed); with ``--intervention baseline`` nothing is
+changed, which is the control: the same second chance without removing the artifact.
+Take-over verdicts: failures -> ``rescued`` / ``not_rescued``; successes (``--select successes``)
+-> ``success_kept`` / ``success_lost``.
 
 Per episode outcome:
 
@@ -70,6 +74,18 @@ def confirmed(events) -> list[dict]:
     return sorted((e for e in events if e["status"] == "confirmed"), key=lambda e: e["onset_substep"])
 
 
+def artifact_events(segment: Path, summary: dict) -> tuple[list[dict], str]:
+    """Confirmed events that are physics-invalid: gravity-filtered when the filter has run."""
+
+    events = confirmed(summary.get("events", []))
+    gravity = segment / "events_gravity.json"
+    if not gravity.is_file():
+        return events, "raw"
+    invalid = {(e.get("event_id"), int(e["onset_substep"])) for e in json.loads(gravity.read_text()).get("events", [])
+               if e.get("verdict") == "physics_invalid"}
+    return [e for e in events if (e.get("event_id"), int(e["onset_substep"])) in invalid], "gravity_filtered"
+
+
 def run_attempt(args, module, meta: dict, base_controls, base_states, resume: int, attempt: int, out: Path) -> dict:
     from resume_from_replay import policy_actions, replay_to
     from replay_intervention import build_intervention
@@ -100,6 +116,18 @@ def run_attempt(args, module, meta: dict, base_controls, base_states, resume: in
             metadata={"task": task, "seed": seed, "phase": "policy", "resume_substep": resume, "attempt": attempt,
                       "source_segment": args.segment_dir, "intervention": args.intervention},
         )
+        clamp = None
+        if args.intervention.startswith("vclamp_"):
+            # installed under the monitor so the recorded states show the clamped physics; inactive
+            # during the replayed prefix, switched on at the resume point
+            from attribute_failures import _install_velocity_clamp
+            from simuguard.core.types import BodyRole
+            adapter.bodies()
+            bodies = adapter.body_ids_with_role(BodyRole.TARGET) + [
+                c for c in adapter.body_ids_with_role(BodyRole.CONTAINER) if adapter.mass(c) is not None]
+            clamp = _install_velocity_clamp(adapter, bodies, float(args.intervention.split("_", 1)[1]))
+            clamp.active = False
+            record["clamped_bodies"] = bodies
         monitor.attach()
         replayed = replay_to(adapter, base_controls.between(0, base_controls.newest_substep), resume)
 
@@ -111,15 +139,10 @@ def run_attempt(args, module, meta: dict, base_controls, base_states, resume: in
             np.array_equal(base_states.array()[mask][:n], replay_log[:n][:, cols, :], equal_nan=True)
         )
 
-        clamp = None
-        if args.intervention.startswith("vclamp_"):
-            # take-over protocol: from the resume point on, the artifact is suppressed (object speed
-            # capped) and the live policy continues closed-loop; later confirmed events do not abort
-            from attribute_failures import _install_velocity_clamp
-            from simuguard.core.types import BodyRole
-            bodies = adapter.body_ids_with_role(BodyRole.TARGET) + [
-                c for c in adapter.body_ids_with_role(BodyRole.CONTAINER) if adapter.mass(c) is not None]
-            clamp = _install_velocity_clamp(adapter, bodies, float(args.intervention.split("_", 1)[1]))
+        if clamp is not None:
+            # take-over protocol: from the resume point on the artifact is suppressed (object speed
+            # capped) and the live policy continues closed-loop
+            clamp.active = True
         elif args.intervention != "baseline":
             _, apply = build_intervention(args.intervention)
             if apply is not None:
@@ -141,8 +164,9 @@ def run_attempt(args, module, meta: dict, base_controls, base_states, resume: in
         )
         instruction = meta.get("outcome", {}).get("instruction") or env.get_instruction()
         started = time.time()
+        # the take-over protocol never aborts: the episode runs to success or to the end of its budget
         stats = policy_actions(module, env, policy_args, instruction, budget,
-                               should_stop=None if clamp is not None else new_anomaly)
+                               should_stop=None if (clamp is not None or args.takeover) else new_anomaly)
         record["wall_s"] = round(time.time() - started, 1)
         record["policy"] = stats
         record["success"] = bool(env.eval_success)
@@ -161,7 +185,7 @@ def run_attempt(args, module, meta: dict, base_controls, base_states, resume: in
             record["clamp_max_raw_speed_mps"] = round(clamp.max_raw, 3)
         if record["success"]:
             record["outcome"] = "success"
-        elif anomalies and clamp is None:
+        elif anomalies and clamp is None and not args.takeover:
             record["outcome"] = "anomaly"
         else:
             record["outcome"] = "budget_exhausted"
@@ -183,9 +207,11 @@ def retry_episode(args) -> int:
     manifest = json.loads((segment / "manifest.json").read_text())
     summary = json.loads((segment / "summary.json").read_text())
     meta = {**manifest["metadata"], **(summary.get("metadata") or {})}
-    events = confirmed(summary["events"])
+    events, event_source = artifact_events(segment, summary)
     if not events:
-        raise SystemExit(f"{segment} has no confirmed events")
+        raise SystemExit(f"{segment} has no physics-invalid events ({event_source})")
+    if args.takeover:
+        args.max_attempts = 1
 
     module = official_eval_module(args.robotwin_root)
     base_controls = ControlLog.load(segment / "controls.npz")
@@ -196,7 +222,9 @@ def retry_episode(args) -> int:
         "recorded_success": (meta.get("outcome") or {}).get("eval_success"),
         "recorded_events": [e["onset_substep"] for e in events],
         "mode": args.mode, "distance": args.distance, "max_attempts": args.max_attempts,
-        "intervention": args.intervention, "attempts": [],
+        "intervention": args.intervention, "protocol": "takeover" if args.takeover else "retry",
+        "event_source": event_source, "resume_event": {k: events[0].get(k) for k in ("event_id", "onset_substep", "bodies")},
+        "attempts": [],
     }
 
     resume = first_resume
@@ -216,7 +244,13 @@ def retry_episode(args) -> int:
             resume = first_resume
 
     outcomes = [a["outcome"] for a in report["attempts"]]
-    if "success" in outcomes:
+    if args.takeover:
+        success = "success" in outcomes
+        if report["recorded_success"]:
+            report["verdict"] = "success_kept" if success else "success_lost"
+        else:
+            report["verdict"] = "rescued" if success else "not_rescued"
+    elif "success" in outcomes:
         report["verdict"] = "rescued"
     elif outcomes and outcomes[-1] == "budget_exhausted":
         report["verdict"] = "failed_without_anomaly"
@@ -230,15 +264,18 @@ def retry_episode(args) -> int:
 
 
 # ---------------------------------------------------------------------------- batch
-def find_candidates(roots: list[str]) -> list[dict]:
+def find_candidates(roots: list[str], select: str = "failures") -> list[dict]:
     items = []
     for root in roots:
         for summary_path in sorted(Path(root).resolve().glob("**/simuguard/segments/*/summary.json")):
             summary = json.loads(summary_path.read_text())
             meta = summary.get("metadata") or {}
-            if meta.get("phase") != "policy" or (meta.get("outcome") or {}).get("eval_success"):
+            if meta.get("phase") != "policy":
                 continue
-            if not confirmed(summary.get("events", [])) or not (summary_path.parent / "controls.npz").is_file():
+            ok = bool((meta.get("outcome") or {}).get("eval_success"))
+            if (ok and select == "failures") or (not ok and select == "successes"):
+                continue
+            if not artifact_events(summary_path.parent, summary)[0] or not (summary_path.parent / "controls.npz").is_file():
                 continue
             run = summary_path.parents[3]  # <config>/<rep>/simuguard/segments/<seg>/summary.json
             items.append({"segment": str(summary_path.parent), "key": f"{run.parent.name}_{run.name}_{summary_path.parent.name}"})
@@ -248,10 +285,11 @@ def find_candidates(roots: list[str]) -> list[dict]:
 def batch(args) -> int:
     out = Path(args.output_dir).resolve()
     out.mkdir(parents=True, exist_ok=True)
-    items = find_candidates(args.runs)
+    items = find_candidates(args.runs, args.select)
     if args.limit:
         items = items[: args.limit]
-    print(f"[retry] {len(items)} failed episodes with anomalies; {len(args.ports)} bridges", flush=True)
+    gpus = dict(zip(args.ports, args.sim_gpus or [args.sim_gpu] * len(args.ports)))
+    print(f"[retry] {len(items)} episodes ({args.select}) with physics-invalid events; {len(args.ports)} bridges", flush=True)
     queue = list(items)
     lock = threading.Lock()
 
@@ -268,10 +306,10 @@ def batch(args) -> int:
             cmd = [args.python, "-B", str(HERE), "--robotwin-root", args.robotwin_root, "--segment-dir", item["segment"],
                    "--output-dir", str(target), "--port", str(port), "--host", args.host, "--mode", args.mode,
                    "--distance", str(args.distance), "--max-attempts", str(args.max_attempts),
-                   "--intervention", args.intervention]
+                   "--intervention", args.intervention] + (["--takeover"] if args.takeover else [])
             env = dict(os.environ)
-            if args.sim_gpu is not None:
-                env["CUDA_VISIBLE_DEVICES"] = str(args.sim_gpu)
+            if gpus.get(port) is not None:
+                env["CUDA_VISIBLE_DEVICES"] = str(gpus[port])
             proc = subprocess.run(cmd, capture_output=True, text=True, env=env)
             (out / f"{item['key']}.log").write_text(proc.stdout + proc.stderr)
             verdict = "error"
@@ -302,10 +340,11 @@ def write_summary(out: Path, items: list[dict]) -> None:
         })
     done = [r for r in rows if r["verdict"] not in ("missing", "error")]
     rescued = [r for r in done if r["verdict"] == "rescued"]
+    names = sorted({r["verdict"] for r in done})
     summary = {
         "episodes": len(rows),
         "completed": len(done),
-        "verdicts": {v: sum(1 for r in done if r["verdict"] == v) for v in ("rescued", "anomaly_persists", "failed_without_anomaly")},
+        "verdicts": {v: sum(1 for r in done if r["verdict"] == v) for v in names},
         "rescued_rate": round(len(rescued) / len(done), 3) if done else None,
         "rescued_at_attempt": {str(k): sum(1 for r in rescued if r["attempts_used"] == k) for k in sorted({r["attempts_used"] for r in rescued})},
         "rows": rows,
@@ -323,6 +362,9 @@ def main() -> int:
     parser.add_argument("--runs", nargs="+", help="batch: roots searched for **/simuguard/segments")
     parser.add_argument("--ports", nargs="+", help="batch: one worker per bridge port")
     parser.add_argument("--sim-gpu", default=None)
+    parser.add_argument("--sim-gpus", nargs="*", default=None, help="batch: one simulator GPU per port")
+    parser.add_argument("--takeover", action="store_true", help="take-over protocol: one attempt, never aborted")
+    parser.add_argument("--select", choices=("failures", "successes", "both"), default="failures")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--mode", choices=("progressive", "fixed"), default="progressive")
     parser.add_argument("--distance", type=int, default=250, help="substeps before the event to resume from")

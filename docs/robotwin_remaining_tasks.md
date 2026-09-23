@@ -121,7 +121,7 @@ nohup bash scripts/robotwin/cross_task_campaign.sh $OUT 50 auto auto \
 - `simuguard/segments/<seg>/`：控制与状态记录，可逐位精确回放
 - `official_result.txt`：RoboTwin 原始成功率
 
-耗时：每局 15–30 分钟（取决于任务长度），一个任务 50 局约 12–25 小时；expert 规划失败多的任务会更久（`put_object_cabinet` 凑 10 局试了 83 个 seed）。node1 的 GPU0/6/7 目前故障、整机 CUDA 不可用，先用 node2。
+耗时：每局 15–30 分钟（取决于任务长度），一个任务 50 局约 12–25 小时；expert 规划失败多的任务会更久（`put_object_cabinet` 凑 10 局试了 83 个 seed）。node1 的 GPU 故障已于 2026-09-23 恢复。
 
 ## 跑完之后
 

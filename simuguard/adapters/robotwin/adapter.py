@@ -225,6 +225,31 @@ class RoboTwinAdapter(SimAdapter):
             problems.extend(io.apply_articulation_control(handle.articulation, data, art_id))
         if problems:
             raise RuntimeError(f"control topology mismatch: {problems}")
+        self._sync_commanded_grippers()
+
+    def _sync_commanded_grippers(self) -> None:
+        """Keep RoboTwin's commanded gripper openings in step with the replayed drive targets.
+
+        ``Robot.set_gripper`` stores the commanded opening in ``left/right_gripper_val``, and two
+        things read that attribute instead of the joints: ``is_*_gripper_open()`` (part of several
+        tasks' ``check_success``) and ``take_action`` (the start value of every gripper ramp).  A
+        replay drives the joints directly, so without this the attribute would keep its post-setup
+        value: success would be misjudged in replay, and a policy resumed after a replayed prefix
+        would ramp its gripper from the wrong opening.  RoboTwin's own inverse,
+        ``get_normal_real_gripper_val()``, recovers the value from the drive targets; it matches the
+        commanded value whenever one call opens by less than ``gripper_eps`` (0.1), which holds for
+        interpolated policy actions.
+        """
+        robot = getattr(self.env, "robot", None)
+        getter = getattr(robot, "get_normal_real_gripper_val", None)
+        if getter is None:
+            return
+        try:
+            left, right = getter()
+        except Exception:  # noqa: BLE001  (embodiment without grippers)
+            return
+        robot.left_gripper_val = float(left)
+        robot.right_gripper_val = float(right)
 
     def capture_public_state(self) -> dict[str, Any]:
         return io.capture_public_state(self._bodies, self._articulations)

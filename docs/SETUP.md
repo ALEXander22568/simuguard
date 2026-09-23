@@ -29,7 +29,7 @@ $RUNTIME/                             # LINGBOT_RUNTIME，LingBot-VA 的隔离�
 | `$RUNTIME` | `/home/zhoujingjing/lingbot-va-repro` | `/mnt/nvme0/twinguar/RoboTwin-2.0/runtime/lingbot-va-repro` |
 | ffmpeg（`TOOLS_BIN`） | `$WS/.tools/bin` | `/mnt/nvme0/twinguar/RoboTwin-2.0/.tools/bin` |
 
-node1 2026-09-22 起 GPU0/6/7 处于 "requires reset"，整机 CUDA 初始化失败，修好前用 node2。
+node1 2026-09-22 曾因 GPU0/6/7 "requires reset" 整机 CUDA 不可用，2026-09-23 已恢复。
 
 ## 二、在现有节点上启动（三步）
 
@@ -85,3 +85,14 @@ cd $WS/SimuGuard && $RUNTIME/.venv-client/bin/python -m pytest tests -q
 | `MANIFEST_PYTHON` | 写 manifest 用的解释器 | `python3` |
 | `MODEL_FREE_MIB` / `SIM_FREE_MIB` | 自动选卡的显存门槛 | 19500 / 8000 |
 | `SIMUGUARD_COMPAT` | flash_attn 垫片目录 | `$WS/compat`，没有则用仓库 `compat/` |
+
+## 五、分离部署：模型在推理机、仿真在本机（并发更高）
+
+一张 24 GB 卡放一个 LingBot-VA 服务器（约 18 GB）后，仿真并发受限于模型卡。分离部署把模型放到显存大的机器（我们用 h800-2），本机只跑仿真 + 桥（每路约 6 GB 显存），一路一个 SSH 隧道：
+
+- 推理机：`$VA_HOME/`（本仓库副本在 `$VA_HOME/SimuGuard`，vendored 的 `RoboTwin/XPolicyLab/policy/LingBot_VA`，`va_host.env` 写 `SERVER_PY` 与 `LINGBOT_MODEL`，`slots.conf` 每行 `slot gpu port master`）。`scripts/robotwin/va_ctl.sh start|restart SLOT [LABEL] | stop SLOT | status`，每个 slot 就是 `run_lingbot_eval.sh` 的 `VA_ONLY=1` 模式，启动参数与单机完全相同，只绑定 127.0.0.1。
+- 仿真机：`scripts/robotwin/va_tunnels.sh start 29601 29602 …`（本地端口 = 远端端口），`scripts/robotwin/parallel_campaign.sh OUT N "SLOT:PORT …" TASK…`。每路每个任务前重启自己的远端服务器（与单机"每个任务一个新服务器"一致），自动挑空闲显存最多的仿真卡，输出目录格式与 `cross_task_campaign.sh` 相同。
+- 仿真机上的 SSH 密钥在推理机 `authorized_keys` 里限定为：forced command `va_ctl.sh` + `permitopen` 只到这些端口，不能登录 shell。
+- 单机脚本也能直接用远端服务器：`VA_REMOTE_PORT=<隧道端口> run_lingbot_eval.sh …`；`SERVERS_ONLY=1` 时只起桥（供 `rollback_retry.py` 接管实验用）。
+
+回放注意：RoboTwin 的 `check_success` 与 `take_action` 读的是 `robot.left/right_gripper_val`（下发的夹爪开度），不是关节状态。回放时 `RoboTwinAdapter.apply_control` 会按下发的驱动目标同步这两个值（2026-09-24 修复；此前回放里夹爪判定是陈旧值）。`click_alarmclock`、`click_bell`、`press_stapler` 的判定还依赖 `stage_success_tag`，回放归因前需要单独处理。

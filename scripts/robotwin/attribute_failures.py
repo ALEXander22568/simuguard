@@ -230,6 +230,7 @@ class _Clamp:
         self.cap = cap
         self.count = 0
         self.max_raw = 0.0
+        self.active = True  # callers that install early (under the monitor) switch it on later
 
 
 def _install_velocity_clamp(adapter, target, cap: float) -> _Clamp:
@@ -247,6 +248,8 @@ def _install_velocity_clamp(adapter, target, cap: float) -> _Clamp:
     def clamped_step(*args, **kwargs):
         before = [entity.get_pose() for _, entity in handles]
         out = raw_step(*args, **kwargs)
+        if not clamp.active:
+            return out
         for (component, entity), pose0 in zip(handles, before):
             velocity = np.asarray(component.get_linear_velocity(), dtype=float)
             speed = float(np.linalg.norm(velocity))
