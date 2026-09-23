@@ -146,7 +146,10 @@ def run_condition(robotwin_root: str, segment: Path, name: str, phase: str, stop
     result: dict = {"name": name}
     try:
         adapter = RoboTwinAdapter(env)
-        targets = adapter.body_ids_with_role(BodyRole.TARGET)  # several on multi-object tasks
+        # every free task object: the targets plus any container that is itself a dynamic body
+        # (a bowl at the bottom of a stack gets ejected just like the one placed into it)
+        targets = adapter.body_ids_with_role(BodyRole.TARGET) + [
+            c for c in adapter.body_ids_with_role(BodyRole.CONTAINER) if adapter.mass(c) is not None]
         target = targets[0]
         # the physics the episode was recorded under (closed-loop campaigns), then the counterfactual on top
         result["recorded_sim_intervention"] = reapply_recorded_intervention(adapter, meta)
