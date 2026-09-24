@@ -3,6 +3,8 @@
 # the model runs on the inference host, the simulator here).
 #
 # Usage: parallel_campaign.sh OUT TEST_NUM "SLOT:PORT [SLOT:PORT ...]" TASK [TASK ...]
+#   A lane written LSLOT:PORT (e.g. L21:29621) uses a backend on this machine, controlled with
+#   the local va_ctl.sh (slots.conf / va_host.env in the workspace root); no tunnel involved.
 #
 # Each lane takes the next task from a shared queue and, for every task:
 #   1. restarts its backend on the inference host (va_ctl.sh restart SLOT TASK), so every task
@@ -64,6 +66,16 @@ pick_sim_gpu() {
     done
 }
 
+# va_ctl on the inference host (remote lanes) or on this machine (lanes named L<slot>)
+va_ctl() {
+    local slot=$1; shift
+    if [[ "${slot}" == L* ]]; then
+        bash "${HERE}/va_ctl.sh" "$1" "${slot#L}" "${@:2}"
+    else
+        ssh -F "${CONFIG}" -o BatchMode=yes "${HOST}" "${VA_CTL_PATH}" "$1" "${slot}" "${@:2}"
+    fi
+}
+
 lane() {
     local slot=$1 port=$2 task run gpu started rc
     while task=$(next_task); do
@@ -71,7 +83,7 @@ lane() {
         [[ -f "${run}/manifest.json" ]] && continue
         mkdir -p "${run}"
         log "${task}: lane ${slot} restarting backend (port ${port})"
-        if ! ssh -F "${CONFIG}" -o BatchMode=yes "${HOST}" "${VA_CTL_PATH}" restart "${slot}" "${task}" >> "${run}/va_ctl.log" 2>&1; then
+        if ! va_ctl "${slot}" restart "${task}" >> "${run}/va_ctl.log" 2>&1; then
             log "${task}: lane ${slot} backend did not come up (see ${run}/va_ctl.log); requeued"
             requeue "${task}"; sleep 300; continue
         fi
@@ -79,7 +91,7 @@ lane() {
         echo "RUNNING ${task} slot=${slot} port=${port} sim_gpu=${gpu}" > "${OUT}/STATUS.lane${slot}"
         log "${task}: start (${TEST_NUM} seeds) lane ${slot}, sim GPU${gpu}"
         started=$(date +%s)
-        VA_REMOTE_PORT="${port}" VA_REMOTE_DESC="host=${HOST} slot=${slot}" \
+        VA_REMOTE_PORT="${port}" VA_REMOTE_DESC="host=$([[ ${slot} == L* ]] && hostname || echo "${HOST}") slot=${slot}" \
             bash "${HERE}/run_lingbot_eval.sh" "${run}" "${TEST_NUM}" "${task}" remote "${gpu}" \
             > "${run}/supervisor.log" 2>&1
         rc=$?
@@ -92,7 +104,7 @@ lane() {
         "${PYTHON}" "${HERE}/build_run_manifest.py" --run-dir "${run}" --task "${task}" \
             --robotwin-root "${ROBOTWIN_ROOT}" --started-epoch "${started}" >> "${OUT}/campaign.log" 2>&1
     done
-    ssh -F "${CONFIG}" -o BatchMode=yes "${HOST}" "${VA_CTL_PATH}" stop "${slot}" >> "${OUT}/campaign.log" 2>&1
+    va_ctl "${slot}" stop >> "${OUT}/campaign.log" 2>&1
     echo "IDLE" > "${OUT}/STATUS.lane${slot}"
 }
 
