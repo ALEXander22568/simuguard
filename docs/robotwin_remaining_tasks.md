@@ -1,4 +1,4 @@
-# RoboTwin 剩余 40 个任务：分档与运行说明
+# RoboTwin 剩余 36 个任务：分档与运行说明
 
 ## 接手最短路径（有 RoboTwin + LingBot-VA 环境的前提下）
 
@@ -12,22 +12,20 @@ nohup bash scripts/robotwin/run_tiers.sh $WS $RUNTIME 1 2 3 4 > $WS/runs/tiers.o
 
 进度：`cat $WS/runs/tier*/STATUS`；单个任务的输出见 `runs/tier*/<task>/`。环境搭建见 `docs/SETUP.md`，统计口径见 `docs/robotwin_results_table.md`。
 
-RoboTwin 2.0 共 50 个任务，已用 SimuGuard + LingBot-VA 跑过 10 个。剩下 40 个按对论文的价值分成 4 档，每档 10 个任务，**每个任务跑 20 个打分 episode**。建议按档次顺序跑，一档跑完先看结果再开下一档。
+RoboTwin 2.0 共 50 个任务，已用 SimuGuard + LingBot-VA 跑过 14 个。剩下 36 个按对论文的价值分成 4 档（第一档 6 个，其余每档 10 个），**每个任务跑 20 个打分 episode**。建议按档次顺序跑，一档跑完先看结果再开下一档。
 
 ## 分档
 
 ### 第一档：轻物体进腔体 / 容器被机器人移动（最可能出现接触伪影）
 
+`lift_pot`、`move_can_pot`、`place_bread_skillet`、`hanging_mug` 已由我们跑完（各 20 局），不用再跑。
+
 | 任务 | 目标 / 容器属性（`envs/<task>.py` 里的 `self.*`） |
 |---|---|
-| `lift_pot` | `pot` |
-| `move_can_pot` | `can` / `pot` |
 | `stack_blocks_three` | 见 `stack_blocks_two` 的登记（`block2`, `block3` / `block1`） |
-| `place_bread_skillet` | `bread` / `skillet` |
 | `place_burger_fries` | `hamburg`, `frenchfries` / `tray` |
 | `place_container_plate` | `container` / `plate` |
 | `place_empty_cup` | `cup` / `coaster` |
-| `hanging_mug` | `mug` / `rack` |
 | `place_object_scale` | `object` / `scale` |
 | `place_object_stand` | `object` / `displaystand` |
 

@@ -13,7 +13,8 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PY="${RUNTIME}/.venv-client/bin/python"
 
 declare -A TIER
-TIER[1]="lift_pot move_can_pot stack_blocks_three place_bread_skillet place_burger_fries place_container_plate place_empty_cup hanging_mug place_object_scale place_object_stand"
+# lift_pot, move_can_pot, place_bread_skillet and hanging_mug were run by us (2026-09-24, 20 episodes each)
+TIER[1]="stack_blocks_three place_burger_fries place_container_plate place_empty_cup place_object_scale place_object_stand"
 TIER[2]="place_phone_stand place_shoe place_dual_shoes place_mouse_pad place_fan place_a2b_left place_a2b_right handover_block handover_mic pick_dual_bottles"
 TIER[3]="pick_diverse_bottles move_pillbottle_pad move_stapler_pad move_playingcard_away blocks_ranking_rgb blocks_ranking_size adjust_bottle grab_roller open_laptop open_microwave"
 TIER[4]="turn_switch click_alarmclock click_bell press_stapler stamp_seal beat_block_hammer rotate_qrcode scan_object shake_bottle shake_bottle_horizontally"
