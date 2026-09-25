@@ -51,6 +51,8 @@ def classify(ep: dict) -> dict:
     dt = float(summary.get("timestep_s") or 0.002)
     settle = int(ep.get("settle_substeps") or 0)
     flags = Counter(e["detector"] for e in summary["events"] if e.get("status") == "flag")
+    flags_policy = Counter(e["detector"] for e in summary["events"]
+                           if e.get("status") == "flag" and int(e["onset_substep"]) > settle)
     gravity = classify_segment(seg, round(0.6 / dt), round(0.1 / dt), 1.5, 0.05) or {"events": []}
     carrier = carrier_classify(seg, 0.04, 0.1, 1.5, 0.05) if any(
         e.get("verdict") == "physics_invalid" for e in gravity["events"]) else {"events": []}
@@ -63,7 +65,7 @@ def classify(ep: dict) -> dict:
         return n_settle, len(events) - n_settle
 
     return {
-        **ep, "flags_by_detector": dict(flags),
+        **ep, "flags_by_detector": dict(flags), "policy_phase_flags_by_detector": dict(flags_policy),
         "detected": len(confirmed), "gravity_invalid": len(g_invalid), "carrier_invalid": len(c_invalid),
         "detected_split": split(confirmed), "gravity_split": split(g_invalid), "invalid_split": split(c_invalid),
         "events_detail": {"gravity": gravity["events"], "carrier": (carrier or {"events": []})["events"]},
@@ -74,9 +76,10 @@ def table(rows: list[dict], label: str) -> dict:
     """Episode counts per stage; each stage also split into settle phase (before the policy acts) / policy phase."""
     n = len(rows)
     s = sum(bool(r["success"]) for r in rows)
-    flags = Counter()
+    flags, flags_policy = Counter(), Counter()
     for r in rows:
         flags.update(r["flags_by_detector"])
+        flags_policy.update(r["policy_phase_flags_by_detector"])
     out: dict = {"episodes": n, "successes": s, "success_rate": round(s / n, 3) if n else None}
     for stage, key in (("detected", "detected_split"), ("after_gravity", "gravity_split"), ("physics_invalid", "invalid_split")):
         eps = [r for r in rows if sum(r[key])]
@@ -89,7 +92,8 @@ def table(rows: list[dict], label: str) -> dict:
     out.update({
         "episodes_with_errors": sum(bool(r.get("error")) for r in rows),
         "monitor_errors": sum(int(r.get("monitor_errors") or 0) for r in rows),
-        "flags_by_detector": dict(flags),
+        "flags_by_detector": dict(flags), "policy_phase_flags_by_detector": dict(flags_policy),
+        "policy_phase_flagged_episodes": sum(bool(r["policy_phase_flags_by_detector"]) for r in rows),
         "mean_steps": round(sum(r["steps"] for r in rows) / n, 1) if n else None,
         "mean_wall_s": round(sum(r["wall_s"] for r in rows) / n, 1) if n else None,
     })
@@ -98,6 +102,8 @@ def table(rows: list[dict], label: str) -> dict:
           f"  gravity {stage('after_gravity')}  carrier {stage('physics_invalid')}"
           f"  policy-phase invalid & failed {out['physics_invalid_policy_phase_failed']}"
           f"  errors {out['episodes_with_errors']}/{out['monitor_errors']}")
+    if flags_policy:
+        print(f"  {'':28s} policy-phase flags {dict(flags_policy)} in {out['policy_phase_flagged_episodes']} episodes")
     return out
 
 
