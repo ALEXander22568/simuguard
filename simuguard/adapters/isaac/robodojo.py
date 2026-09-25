@@ -17,7 +17,7 @@ free object as OBJECT, which the ejection detector still monitors.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Callable
 
 from ...core.types import BodyKind, BodyRole
@@ -149,7 +149,7 @@ def robodojo_specs(
                 continue
             rigid = [rb for rb in scan["rigid"] if rb["enabled"]]
             ids = []
-            for k, rb in enumerate(rigid):
+            for rb in rigid:
                 suffix = "" if len(rigid) == 1 else f"/{rb['path'].rsplit('/', 1)[-1]}"
                 body_id = f"{pre}obj:{label}{suffix}"
                 kind = BodyKind.KINEMATIC if rb["kinematic"] else BodyKind.DYNAMIC
@@ -187,7 +187,6 @@ class RoboDojoAdapter(IsaacAdapter):
 
     def _ground_truth(self) -> dict[str, Any]:
         env = self.env
-        i = self.env_idx
         payload: dict[str, Any] = {
             "labels": self.layout_info["labels"],
             "task_spec": self.layout_info["task_spec"],
@@ -202,7 +201,11 @@ class RoboDojoAdapter(IsaacAdapter):
             payload["contact_report_bodies"] = contact_report_coverage(self)
         except Exception as exc:  # noqa: BLE001
             payload["contact_report_error"] = f"{type(exc).__name__}: {exc}"
-        del i
+        try:  # authored PhysX body settings of the free objects (None = PhysX/USD default)
+            free = [b for b, info in self.bodies().items() if info.kind == BodyKind.DYNAMIC]
+            payload["physx_body_properties"] = self.physx_body_properties(free)
+        except Exception as exc:  # noqa: BLE001
+            payload["physx_body_properties_error"] = f"{type(exc).__name__}: {exc}"
         return payload
 
 

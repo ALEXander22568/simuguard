@@ -41,7 +41,7 @@ import numpy as np
 from ...core.adapter import AdapterCapabilities, HookHandle, SimAdapter, SubstepCallback
 from ...core.snapshot import ControlRecord, RestoreReport, Snapshot, compare_states
 from ...core.types import BodyInfo, BodyKind, BodyRole, BodyState, ContactPair
-from .physx_io import PathResolver, changed_entries, merge_contact_records, pose_wxyz_to_xyzw, states_from_arrays
+from .physx_io import PathResolver, changed_entries, merge_contact_records, states_from_arrays
 
 WATCHED_ROLES = (BodyRole.TARGET, BodyRole.CONTAINER, BodyRole.OBJECT)
 
@@ -698,7 +698,3 @@ def scan_rigid_bodies(root_path: str) -> dict[str, list[dict[str, Any]]]:
         if prim.HasAPI(UsdPhysics.CollisionAPI):
             result["colliders"].append({"path": path})
     return result
-
-
-def pose_wxyz_list_to_xyzw(pose: list[float]) -> list[float]:
-    return pose_wxyz_to_xyzw(np.asarray(pose)).reshape(-1).tolist()

@@ -67,4 +67,51 @@ Runner options: `--policy scripted` (built-in IK push probe, no server), `--repl
 
 ## Measured results
 
-(filled in below)
+All on RTX 4090s of 4090-node1 (node3 had no card with enough free memory while this ran), image
+`hexa/robodojo:0.2.4-f465f8ae`, 2026-09-25.  Runs: `node1:/mnt/nvme0/shared/zhoujingjing/simuguard-robodojo/runs/{v1,v2}`.
+
+### Physics configuration actually in effect
+
+* `physx_overwrite_gpu_setting = 1`: RoboDojo forces **GPU dynamics**, although the USD scene says
+  `enableGPUDynamics = false` (MBP, TGS).  So everything below is GPU PhysX with host readback.
+* Every PhysX step went through the hook: an independent `subscribe_physics_step_events` counter equals
+  the hooked count in every episode (1800/1800 probe, 4160/4160 and 3020/3020 XR-1).  No between-step
+  state writes occurred in these tasks.
+
+### Contacts
+
+* Our contact-report reading equals PhysX's own net contact force (rigid contact view,
+  `get_net_contact_forces`, a different code path) to 1.4e-6 N for all eight free bodies of the two
+  probes (four tools, four bottles; 25 samples each while resting).
+* Resting objects on `put_bottles_into_dustbin`: median support force 1.000 × weight for all four bottles
+  over the first second (`scripts/robodojo/check_contacts.py`; 3-4 points each, penetration ≤ 1 µm).
+* Dynamic contact is physically consistent: a bottle falling into the dustbin (`put_bottles_into_dustbin`
+  layout 0, substep 486) has free-fall acceleration -9.81 m/s² before impact, and the reported impact
+  impulse 1.522 N·s equals its momentum change |mΔv - mg·dt| = 1.531 N·s (0.6 %); next substeps
+  0.1170 vs 0.1191 and 0.0102 vs 0.0103 N·s.
+* Resting contact on `store_tools_in_toolbox` is not: PhysX reports a support force of 1.0-2.0 × the
+  weight (hammer 0.99, pliers 2.00, tape measure 2.04, wrench 2.01 over the first second; the tools'
+  meshes give 22-88 contact points against the table, the bottles 3-4) and resting "phantom" velocities
+  of 1-11 mm/s whose positions drift < 0.1 mm/s.  This is PhysX's own output (see the net-force match),
+  a TGS artefact of steady contact (this task runs without `enable_stabilization`, the bottles task with
+  it); force-based flags (`impulse_spike`) should be read as relative on RoboDojo.  The kinematic
+  thresholds of the ejection detector (0.35-0.5 m/s) are two orders above these velocities.
+
+### Replay fidelity
+
+| check | episodes | substeps | max position error |
+|---|---|---|---|
+| rebuild (close + reset, same process) + replay recorded actuation | probe store_tools L0; XR-1 bottles L0, L1 | 1800; 4160; 3020 | **0.0 m** (bit-exact, 26 bodies incl. 22 robot links; initial state identical) |
+| same, in a fresh process on another GPU (card 2 vs 3) | XR-1 bottles L0, L1 | 4160; 3020 | **0.0 m** |
+| in-place public-snapshot restore at substep 400, replay 500 substeps | probe store_tools L0 | 500 | 10 µm after 1 substep, 1.0 mm after 500 (restored pose error 1.2e-7 m = float32) |
+
+GPU PhysX is deterministic here as long as the scene is rebuilt the same way; what cannot be restored
+in place is PhysX's contact/solver state.  Replays therefore start from the episode start
+(`bundle_mode = episode_start`, restore method `none`).
+
+### Overhead
+
+XR-1 `put_bottles_into_dustbin` L0 (4160 substeps, first adapter version): monitor 7.3 ms per substep
+(physics step 8.5 ms), 4.0 % of the episode's wall time (762 s; rendering three cameras and shipping each
+observation to the policy dominate).  3.1 ms of the 7.3 were contact parsing (PhysX's report call itself:
+0.04 ms); the parser is now vectorised (~0.1 ms for a typical 6 shape pairs / 42 points).

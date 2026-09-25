@@ -16,7 +16,6 @@ PhysX conventions used below
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any, Callable, Iterable
 
 import numpy as np
@@ -102,16 +101,6 @@ class PathResolver:
             body_id = self.resolve_path(decode(key))
             self._cache[key] = body_id
         return body_id
-
-
-@dataclass
-class RawContactHeader:
-    """Minimal view of an omni.physx contact-report header (for tests and adapters)."""
-
-    actor0: Any
-    actor1: Any
-    offset: int
-    count: int
 
 
 def merge_contact_records(
