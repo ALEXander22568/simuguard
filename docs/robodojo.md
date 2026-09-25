@@ -68,6 +68,12 @@ Deployment used here (2026-09-25):
 | h800-2 | `/data/shared/zhoujingjing/simuguard-robodojo-policy/` | XPolicyLab + `env_cfg` copied from the image, `pylib/` (scipy, opencv-headless, h5py, websockets, msgpack-numpy, liger-kernel for `~/xr1-deploy/mibot-env`), `xr1_robodojo_server.sh`, `logs/` |
 | h800-2 | `/data/shared/zhoujingjing/checkpoints/robodojo/` | XR-1 checkpoint (`model_states.pt` converted from the DeepSpeed file, `config.py` for inference, `config.orig.py` as released), `Qwen3-VL-4B-Instruct-processor/` (backbone weights + processor) |
 
+State after the runs (2026-09-25 22:30 KST): both XR-1 servers on h800-2 (ports 16601/16602) and both
+tunnels are stopped, and no SimuGuard container or queue is running.  h800-2 `~/.ssh/authorized_keys`
+still holds the two forwarding-only keys (`permitopen="127.0.0.1:16601"` / `"127.0.0.1:16602"`, backup
+of the file before them: `authorized_keys.bak-20260925-sg-robodojo`); delete those two lines when the
+tunnels are no longer wanted.
+
 Policy setup (`scripts/robodojo/policy/`): `download_xr1_robodojo_ckpt.sh`, `download_qwen3vl4b.sh`,
 `convert_ds_checkpoint.py` (the release is a DeepSpeed `mp_rank_00_model_states.pt` with the weights under
 `module`; XPolicyLab's `helper()` expects a flat `model_states.pt`), `make_inference_config.py` (drops
@@ -109,7 +115,8 @@ RoboDojo's official `_result.json` and the three camera videos per episode).
 * `physx_overwrite_gpu_setting = 1`: RoboDojo forces **GPU dynamics**, although the USD scene says
   `enableGPUDynamics = false` (MBP, TGS).  So everything below is GPU PhysX with host readback.
 * Every PhysX step went through the hook: an independent `subscribe_physics_step_events` counter equals
-  the hooked count in every monitored episode (e.g. 1800/1800 probes, 4160/4160 and 9000/9000 XR-1).
+  the hooked count in every monitored episode (1800/1800 in the probes, 3020/3020 to 11000/11000 in the
+  ten XR-1 episodes).
   No between-step state writes occurred in any policy episode; the positive control's injected velocity
   was the only one recorded.
 
@@ -139,7 +146,7 @@ RoboDojo's official `_result.json` and the three camera videos per episode).
 | rebuild (close + reset, same process) + replay recorded actuation | probe store_tools L0; XR-1 bottles L0, L1 | 1800; 4160; 3020 | **0.0 m** (bit-exact, 26 bodies incl. 22 robot links; initial state identical) |
 | same, in a fresh process on another GPU (card 2 vs 3) | XR-1 bottles L0, L1 | 4160; 3020 | **0.0 m** |
 | same, on another machine (recorded node1 GPU 0, replayed node3 GPU 4), detectors on the replayed frames | XR-1 tubes L2 | 5000 | **0.0 m**; the same three events fire again (tube2 at substep 3901, 4.31 m/s) |
-| every episode run with `--replay` in this study (3 scripted probes incl. the positive control, 7 XR-1) | 10 episodes | 1800-9000 each | **0.0 m** in all |
+| every episode run with `--replay` in this study (3 scripted probes incl. the positive control, 10 XR-1) | 13 episodes | 1800-11000 each | **0.0 m** in all |
 | in-place public-snapshot restore at substep 400, replay 500 substeps | probes store_tools L0, bottles L0 | 500 | tools: 10 µm after 1 substep, 1.0 mm after 500; bottles: 75 µm after 1, 0.2 mm after 500 (restored pose error 1.2e-7 m = float32) |
 
 Positive control (`--kick-speed 3`, `store_tools_in_toolbox` L0, node3): the wrench, resting on the
@@ -178,14 +185,14 @@ Per substep, measured inside the hook (XR-1 episodes; physics step = PhysX `simu
 | bottles L0 / L1 | 42 / 39 | 7.3 / 6.9 ms | 3.1 / 2.9 ms | 8.5 / 8.2 ms | 4.0 / 3.0 % |
 | tubes L0 / L1 / L2 | 380 / 596 / 163 | 13.4 / 16.8 / 11.6 ms | 7.6 / 9.8 / 4.4 ms | 9.8 / 9.4 / 10.5 ms | 5.4 / 6.3 / 4.5 % |
 | tools L0 / L1 | 613 / 400 | 18.4 / 15.6 ms | 10.1 / 7.6 ms | 8.9 / 9.2 ms | 6.7 / 6.2 % |
-| pens L0 / L1 | 219 / 272 | 13.8 / 13.2 ms | 6.8 / 7.0 ms | 10.6 / 11.1 ms | 6.8 / 6.2 % |
+| pens L0 / L1 / L2 | 219 / 272 / 265 | 13.8 / 13.2 / 13.5 ms | 6.8 / 7.0 / 6.8 ms | 10.6 / 11.1 / 10.8 ms | 6.8 / 6.2 / 6.4 % |
 
 The wall time of an XR-1 episode is dominated by rendering three cameras per action and shipping each
 observation to the policy (1.8-2.8 s per action through the gateway), so SimuGuard adds 3-7 %.  Without
 a policy in the loop the cost is visible end to end: the scripted probe above takes 29.9 s with the
 monitor off, 30.4 s (+2 %) with the monitor but no contact reading, and 42.0 s (+40 %) with everything
-(226 contact points per substep).  Per
-substep it costs 0.8-2.1 physics steps, and the contact report dominates: PhysX's call itself takes
+(226 contact points per substep).  Per substep the monitor costs 0.8-2.1 physics steps, and the contact
+report dominates: PhysX's call itself takes
 0.02-0.04 ms, the rest is reading ~15-20 µs per contact point through the Python bindings (tubes and tools
 rest on the rack/table with hundreds of mesh contact points).  PhysX's rigid contact view returns the same
 data as tensors (`get_contact_data`, it needs every partner listed as a filter); switching to it is the
@@ -195,10 +202,29 @@ obvious speed-up, not done here to keep the reader that was validated against `g
 
 XR-1 = XPolicyLab `Xiaomi_Robotics_1`, official RoboDojo checkpoint `RoboDojo-sim-arx_x5-ee-0`, `ee`
 actions, one env per process, eval seed 0, layouts in order.  Stage 1: confirmed contact-ejection events;
-stage 2: gravity filter; stage 3: carrier filter (`scripts/robodojo/campaign_summary.py`).  Every episode
-was replayed after a rebuild of its layout.
+stage 2: gravity filter; stage 3: carrier filter (`scripts/robodojo/campaign_summary.py`).
 
-EVAL_TABLE_PLACEHOLDER
+10 episodes on 4 tasks, 4 successes.  Stage 1 confirmed 10 contact-ejection events in 6 episodes; the
+gravity filter explained 5 of them as falls; the carrier filter found no carrier for the other 5, so
+**5 physics-invalid events remain, in 2 episodes (tubes L2, tools L1), both failed**.  Every episode was
+replayed bit-exactly after its rebuild.
+
+| task | layout | host | success | actions | substeps | stage 1 | stage 2 | stage 3 | flags | replay | wall |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| fill_pen_holder | 0 | n1 | yes | 641 | 6410 | 1 | 0 | 0 | 0 | bit-exact | 1307 s |
+| fill_pen_holder | 1 | n1 | no | 1100 | 11000 | 0 | 0 | 0 | 2 | bit-exact | 2355 s |
+| fill_pen_holder | 2 | n1 | no | 1100 | 11000 | 1 | 0 | 0 | 1 | bit-exact | 2296 s |
+| insert_tubes | 0 | n1 | yes | 305 | 3050 | 0 | 0 | 0 | 0 | bit-exact | 751 s |
+| insert_tubes | 1 | n1 | no | 500 | 5000 | 0 | 0 | 0 | 0 | bit-exact | 1345 s |
+| insert_tubes | 2 | n1 | no | 500 | 5000 | 3 | 2 | 2 | 5 | bit-exact | 1294 s |
+| put_bottles_into_dustbin | 0 | n1 | yes | 416 | 4160 | 1 | 0 | 0 | 3 | bit-exact | 762 s |
+| put_bottles_into_dustbin | 1 | n1 | yes | 302 | 3020 | 0 | 0 | 0 | 0 | bit-exact | 684 s |
+| store_tools_in_toolbox | 0 | n3 | no | 900 | 9000 | 1 | 0 | 0 | 14 | bit-exact | 2483 s |
+| store_tools_in_toolbox | 1 | n3 | no | 900 | 9000 | 3 | 3 | 3 | 23 | bit-exact | 2266 s |
+
+(stage k = events still classified physics-invalid after stage k; flags = unconfirmed detector flags:
+31 `impulse_spike` (30 on the tools task), 10 `actuation_bound`, 7 `deep_penetration`; wall = episode
+wall time incl. policy calls.)
 
 Confirmed events and their fate through the stages (frames checked for every one; video frame k is the
 observation after control step k):
@@ -208,12 +234,20 @@ observation after control step k):
 | bottles L0 (success) | 49 | bottle3 (dustbin) | 0.67 → 0.70 m/s, Δv 3.0 m/s in one step | 0.21 | - | bottle released over the floor dustbin, lands in it | gravity-explained |
 | tools L0 (fail) | 701 | pliers (table) | 0.68 → 0.74 m/s, 16 ms free flight | 0.87 | - | pliers released just above the toolbox rim | gravity-explained |
 | pens L0 (success) | 471 | pen `target1` (gripper fingers) | 0.68 → 0.98 m/s, 44 ms free flight | 1.00 | - | pen slips out of the left gripper and falls to the table | gravity-explained |
+| pens L2 (fail) | 588 | pen `target0` (pen `target2`) | 0.93 → 1.01 m/s after a 15 cm drop | 0.59 | - | pen let go 15 cm up beside the holder, falls onto a pen leaning against the holder (states: free fall from substep 5840 at -9.81 m/s²) | gravity-explained |
 | tubes L2 (fail) | 391 | **tube2** (tube rack, 11 mm penetration) | 0 → **4.31 m/s in one 4 ms step**, 194 N; robot links ≤ 1.24 m/s | 86 | no carrier | tube shoots out of the rack over the far table edge | **physics-invalid**; tube ends on the floor 1.7 m away |
 | tubes L2 | 391 | tube0 (hit by tube2) | 0.99 → 1.00 m/s | 20 | no carrier | knocked out of the rack | **physics-invalid** (secondary) |
 | tubes L2 | 404 | tube2 (ground) | 2.0 m/s | 0.49 | - | the ejected tube falling to the floor | gravity-explained |
 | tools L1 (fail) | 139 | **hammer** (toolbox only) | 0.73 → 2.95 m/s; links ≤ 0.39 m/s | 2.04 | no carrier | hammer, held upright over the box, tilts against the rim (141-143), leaves the gripper and lies at the back of the table by frame 180 | **physics-invalid** (closest to the 1.5 cut); ends 0.6 m away |
 | tools L1 | 790 | **wrench** (gripper fingers, pliers, toolbox; 4 mm penetration) | **6.15 → 6.38 m/s in one step**, 813 N; links ≤ 0.40 m/s | 4.25 | no carrier | wrench shoots out of the toolbox to the upper left | **physics-invalid** |
 | tools L1 | 793 | pliers (wrench, tape, toolbox) | 0.50 → 1.57 m/s | 31 | no carrier | knocked by the wrench | **physics-invalid** (secondary) |
+
+Unconfirmed flags were checked the same way where they are not force flags: pens L1 has an
+`actuation_bound` flag (pen at 1.14 m/s while the arms move ≤ 0.21 m/s) and a `deep_penetration` flag
+(6 mm into the table) - the states show a pen released 17 cm above the table in free fall, landing at
+1.57 m/s, i.e. one 4 ms step of travel.  Pens L2's `deep_penetration` flag (6.5 mm) is a pen that fell
+tumbling and then rocks on the table at ≤ 0.1 m/s; PhysX lifts it back by 5 mm within 16 ms, without
+any speed-up.  Neither is an ejection, which is why only confirmed events are counted.
 
 The objects carry no authored `maxDepenetrationVelocity` or solver-iteration override (PhysX defaults;
 recorded per episode in `task_ground_truth.physx_body_properties`).  All three physics-invalid incidents
@@ -253,7 +287,14 @@ episode would have succeeded with the cap, since the policy does not react to th
 * **Resting contact forces** on some tasks are 2× the weight in PhysX's own report (TGS; see above), so
   force-threshold flags are not calibrated for RoboDojo.
 * **Public-snapshot restore** is approximate (contact caches); exact replay needs the rebuild path.
-* Overhead is dominated by per-point contact parsing on contact-heavy tasks (see Overhead).
+* Overhead is dominated by per-point contact parsing on contact-heavy tasks (see Overhead): 3-7 % of an
+  XR-1 episode, but +40 % on a policy-free probe.
+* **Small sample**: 10 XR-1 episodes on 4 of the 42 tasks (layouts 0-2), one seed; pi0.5 was not set
+  up.  The rates above are not benchmark-level numbers.
+* **Counterfactual replays are open loop**: they show what sets the ejection speed, not whether the
+  episode would have succeeded (the recorded policy actions do not react to the changed scene).
+* Friction impulses are not in the contact report reading (normal impulses only); the carrier stage and
+  the ejection detector do not need them, but a friction-based check would.
 * The collaborator's RoboDojo integration (Feishu wiki "Simuguard", 霍逸逍: pi0.5 8/425 and XR-1 30/425
   confirmed events on 10 tasks) was not found on node1/2/3 or h800-1/2; this adapter was written from
-  scratch.
+  scratch, so those numbers could not be compared episode by episode.
