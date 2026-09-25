@@ -300,6 +300,7 @@ def install_contact_reporting(
     *,
     contact_report: bool = True,
     max_depenetration_velocity: float | None = None,
+    physx_rigid_body_api: bool = False,
 ) -> list[str]:
     """Make RoboDojo create every scene object with ``PhysxContactReportAPI`` already applied.
 
@@ -312,6 +313,9 @@ def install_contact_reporting(
 
     ``max_depenetration_velocity`` is an *intervention* (replays only): it caps PhysX's
     penetration-recovery speed on every object body, set at creation for the same reason.
+    ``physx_rigid_body_api`` only applies ``PhysxRigidBodyAPI`` (no value authored, so the
+    physics is unchanged) so that such properties can be changed later on the live bodies
+    (a property change, not a re-creation); see ``IsaacAdapter.set_max_depenetration_velocity``.
     Idempotent (the first call's settings stay in force).
     """
 
@@ -321,7 +325,8 @@ def install_contact_reporting(
     import importlib
 
     patched: list[str] = []
-    options = {"threshold": threshold, "contact_report": contact_report, "max_depenetration_velocity": max_depenetration_velocity}
+    options = {"threshold": threshold, "contact_report": contact_report, "max_depenetration_velocity": max_depenetration_velocity,
+               "physx_rigid_body_api": physx_rigid_body_api}
 
     def wrap_reference(module: Any, root_is_body: bool) -> None:
         original: Callable[..., Any] = module.add_reference_to_stage
@@ -380,6 +385,7 @@ def _on_object_prim(
     threshold: float,
     contact_report: bool,
     max_depenetration_velocity: float | None,
+    physx_rigid_body_api: bool = False,
 ) -> None:
     import omni.usd
     from pxr import PhysxSchema, Usd, UsdPhysics
@@ -397,5 +403,7 @@ def _on_object_prim(
         if max_depenetration_velocity is not None:
             rb = PhysxSchema.PhysxRigidBodyAPI.Apply(body)
             rb.CreateMaxDepenetrationVelocityAttr().Set(float(max_depenetration_velocity))
+        elif physx_rigid_body_api and not body.HasAPI(PhysxSchema.PhysxRigidBodyAPI):
+            PhysxSchema.PhysxRigidBodyAPI.Apply(body)  # schema only: defaults, physics unchanged
     if contact_report:
         enable_contact_reporting([path], threshold)

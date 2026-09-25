@@ -584,6 +584,28 @@ class IsaacAdapter(SimAdapter):
             self._hook.remove()
         self._step_subscription = None
 
+    # ------------------------------------------------------------------ interventions
+    def set_max_depenetration_velocity(self, value: float, body_ids: Iterable[str] | None = None) -> list[str]:
+        """Set ``physxRigidBody:maxDepenetrationVelocity`` on live free bodies (USD property change).
+
+        The bodies must already carry ``PhysxRigidBodyAPI`` (applying the schema to a simulated prim
+        would re-create its actor): RoboDojo objects get it at creation with
+        ``install_contact_reporting(physx_rigid_body_api=True)``.  Returns the bodies changed.
+        """
+
+        import omni.usd
+        from pxr import PhysxSchema
+
+        stage = omni.usd.get_context().get_stage()
+        ids = [b for b, s in self._specs.items() if s.kind == BodyKind.DYNAMIC] if body_ids is None else list(body_ids)
+        changed = []
+        for body_id in ids:
+            prim = stage.GetPrimAtPath(self._specs[body_id].path)
+            if prim and prim.IsValid() and prim.HasAPI(PhysxSchema.PhysxRigidBodyAPI):
+                PhysxSchema.PhysxRigidBodyAPI(prim).GetMaxDepenetrationVelocityAttr().Set(float(value))
+                changed.append(body_id)
+        return changed
+
     # ------------------------------------------------------------------ diagnostics
     def set_body_velocity(self, body_id: str, linear: Iterable[float], angular: Iterable[float] = (0.0, 0.0, 0.0)) -> None:
         """Overwrite one free body's velocity between steps (positive controls and tests only)."""

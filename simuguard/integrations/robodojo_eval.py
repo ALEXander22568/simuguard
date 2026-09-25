@@ -330,6 +330,7 @@ def replay_recorded(
     *,
     limit: int | None = None,
     detectors: list[Any] | None = None,
+    before_step: Any = None,
 ) -> dict[str, Any]:
     """Replay ``controls.npz`` on the (already rebuilt) scene; compare with ``states.npz``.
 
@@ -368,7 +369,12 @@ def replay_recorded(
         tracked = sorted(b for b, i in adapter.bodies().items() if i.role.value in ("target", "container", "object", "robot"))
     started = time.time()
     frame = None
+    current = {"control_step": 0}
+    adapter._control_step_fn = lambda: current["control_step"]  # replayed frames carry the recorded step
     for record in controls.between(0, last):
+        current["control_step"] = record.control_step
+        if before_step is not None:
+            before_step(record.substep)
         adapter.apply_control(record)
         adapter.step_physics()
         k = record.substep
@@ -498,14 +504,14 @@ def run(args: argparse.Namespace) -> int:
 
     out = Path(args.out) / args.task
     (out / "segments").mkdir(parents=True, exist_ok=True)
-    depen = None
-    if args.intervention.startswith("depen_"):
-        depen = float(args.intervention.split("_", 1)[1])
-    elif args.intervention != "none":
-        raise ValueError(f"unknown intervention {args.intervention}")
+    depen, depen_from = parse_intervention(args.intervention)
     patched = []
     if args.contact_report == "on" or depen is not None:
-        patched = install_contact_reporting(contact_report=args.contact_report == "on", max_depenetration_velocity=depen)
+        patched = install_contact_reporting(
+            contact_report=args.contact_report == "on",
+            max_depenetration_velocity=depen if depen_from is None else None,  # from creation
+            physx_rigid_body_api=depen_from is not None,  # switched on at substep depen_from during the replay
+        )
     if args.no_cameras:
         install_no_cameras()
     env, eval_num = build_env(args, app)
@@ -621,6 +627,17 @@ def run(args: argparse.Namespace) -> int:
     return 0
 
 
+def parse_intervention(text: str) -> tuple[float | None, int | None]:
+    """'none' | 'depen_<m/s>' (from creation) | 'depen_<m/s>@<substep>' (switched on during replay)."""
+
+    if text == "none":
+        return None, None
+    if not text.startswith("depen_"):
+        raise ValueError(f"unknown intervention {text}")
+    value, _, start = text[len("depen_"):].partition("@")
+    return float(value), (int(start) if start else None)
+
+
 def replay_only(args: argparse.Namespace, env: Any, out: Path) -> None:
     """Fresh-process replay: rebuild each recorded segment's layout and replay its actuation."""
 
@@ -648,7 +665,13 @@ def replay_only(args: argparse.Namespace, env: Any, out: Path) -> None:
 
                 detectors = default_detectors(detector_config(args.detector_config))
             record["intervention"] = args.intervention
-            record["replay"] = replay_recorded(env, adapter, seg, detectors=detectors)
+            depen, depen_from = parse_intervention(args.intervention)
+            before_step = None
+            if depen is not None and depen_from is not None:
+                def before_step(substep: int, _a: Any = adapter, _v: float = depen, _s: int = depen_from) -> None:
+                    if substep == _s:
+                        record["intervention_bodies"] = _a.set_max_depenetration_velocity(_v)
+            record["replay"] = replay_recorded(env, adapter, seg, detectors=detectors, before_step=before_step)
             adapter.close()
         except Exception as exc:  # noqa: BLE001
             record["error"] = f"{type(exc).__name__}: {exc}"
