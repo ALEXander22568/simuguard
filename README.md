@@ -67,7 +67,8 @@ few lines of `TaskSpec` are added.
   rebuilt with different meshes;
 * batch evaluation (`eval_batch=true`);
 * a human review UI (SimuGuard produces the review queue, not the interface);
-* other benchmarks - ManiSkill / LIBERO / RoboCasa need one `SimAdapter` each;
+* other benchmarks - ManiSkill needs its own `SimAdapter`; MuJoCo scenes (RoboCasa, LIBERO: see
+  `docs/libero.md`) go through `simuguard/adapters/mujoco`;
 * calibrated detector thresholds: **current detector output is a candidate list
   for human verification, not ground truth**.
 
