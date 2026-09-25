@@ -18,7 +18,9 @@ SETTINGS = [  # key, label, colour, line style
     (("MuJoCo", "timeconst_8ms"), "MuJoCo, τ = 8 ms", "#8fb3d9", "--"),
     (("MuJoCo", "default_4ms"), "MuJoCo, default (τ = 20 ms)", "#4f7cac", "-"),
 ]
-BAR_EXTRA = [(("PhysX", "depen_cap_0.1"), "PhysX, depenetration ≤ 0.1 m/s", "#f2d0cb")]
+BAR_EXTRA = [(("PhysX", "depen_cap_0.1"), "PhysX, depenetration ≤ 0.1 m/s", "#f2d0cb"),
+             (("PhysX", "mass_100g"), "PhysX, can 100 g (RoboTwin: 10 g)", "#b08080"),
+             (("PhysX", "solver_32_8"), "PhysX, 32/8 solver iterations (10/1)", "#8c5a5a")]
 
 
 def load(path: Path, engine: str) -> dict:
@@ -49,7 +51,7 @@ def main() -> int:
     plt.rcParams.update({"font.size": 8, "axes.spines.top": False, "axes.spines.right": False,
                          "axes.edgecolor": "#555555", "axes.labelcolor": "#222222", "xtick.color": "#444444",
                          "ytick.color": "#444444", "pdf.fonttype": 42})
-    fig, (ax, bx) = plt.subplots(1, 2, figsize=(6.8, 2.5), gridspec_kw={"width_ratios": [1.45, 1]})
+    fig, (ax, bx) = plt.subplots(1, 2, figsize=(6.8, 2.9), gridspec_kw={"width_ratios": [1.45, 1]})
     edges = np.arange(5, 40, 5) / 1000
     centres = (edges[:-1] + edges[1:]) / 2 * 1000
     for key, label, colour, style in SETTINGS:
@@ -77,7 +79,7 @@ def main() -> int:
     ax.text(-0.14, 1.02, "(a)", transform=ax.transAxes, fontsize=9, fontweight="bold")
 
     bars = [(k, l, c) for k, l, c, _ in SETTINGS] + BAR_EXTRA
-    order = [0, 1, 4, 2, 3]
+    order = [0, 5, 6, 1, 4, 2, 3]
     bars = [bars[i] for i in order]
     shares, labels, colours = [], [], []
     for key, label, colour in bars:

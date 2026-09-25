@@ -28,6 +28,8 @@ def main() -> int:
         rows = []
         for f in sorted(d.glob("*.json")):
             r = json.loads(f.read_text())
+            if "conditions" not in r:  # attribute_failures.py's own summary.json
+                continue
             conds = {c["name"]: c for c in r["conditions"]}
             base = conds.get("baseline", {})
             has_event = bool(invalid.get(f.stem)) if invalid is not None else r["recorded_confirmed_events"] > 0

@@ -125,6 +125,8 @@ def run_variant(spec: dict, variant: str, cfg: dict, geometry: dict | None) -> d
         rigid(can).set_linear_velocity(spec["can"].get("v", [0, 0, 0]))
         rigid(can).set_angular_velocity(spec["can"].get("w", [0, 0, 0]))
         moving, other = can, basket
+    if cfg.get("can_mass") is not None and spec["kind"] != "canonical":
+        rigid(moving).set_mass(float(cfg["can_mass"]))  # RoboTwin's set_mass: mass only, inertia unchanged
     cap = cfg.get("max_depenetration_velocity")
     if cap is not None:
         for ent in scene.entities:
@@ -136,6 +138,11 @@ def run_variant(spec: dict, variant: str, cfg: dict, geometry: dict | None) -> d
             comp = ent.find_component_by_type(RIGID)
             if comp is not None:
                 comp.set_solver_position_iterations(int(cfg["solver_position_iterations"]))
+    if cfg.get("solver_velocity_iterations"):
+        for ent in scene.entities:
+            comp = ent.find_component_by_type(RIGID)
+            if comp is not None:
+                comp.set_solver_velocity_iterations(int(cfg["solver_velocity_iterations"]))
     scene.update_render = lambda: None  # no rendering needed
     speeds, pens, pos = [], [], []
     comp = rigid(moving)
