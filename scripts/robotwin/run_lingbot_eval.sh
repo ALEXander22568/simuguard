@@ -62,7 +62,7 @@ TOOLS_BIN=${TOOLS_BIN:-/mnt/nvme0/twinguar/RoboTwin-2.0/.tools/bin}  # ffmpeg
 #        checkpoint) + bridge shim that converts them to RoboTwin ee actions
 # joint: upstream default config robotwin30_train (30-dim, joint channels)
 # closed-loop simulation intervention applied to the scored rollout only:
-# none | solver_high | solver_default | mass_100g | mass_50g
+# none | solver_high | solver_default | mass_100g | mass_50g | depen_1.0 | depen_0.1
 SIM_INTERVENTION=${SIM_INTERVENTION:-none}
 # optional JSON with {"monitor": {...}, "detectors": {...}} for the wrapper
 SIMUGUARD_CONFIG=${SIMUGUARD_CONFIG:-}

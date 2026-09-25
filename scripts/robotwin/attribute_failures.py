@@ -66,6 +66,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 HERE = Path(__file__).resolve()
 DEFAULT_CONDITIONS = ["baseline", "vclamp_2.0", "mass_100g"]
+EVENT_LEAD_S = 0.1  # <condition>@event starts this long before the first physics-invalid onset
 
 
 # ---------------------------------------------------------------------------- selection
@@ -80,8 +81,23 @@ def recorded_outcome(summary: dict) -> tuple[str | None, bool | None]:
     return phase, None
 
 
+def first_invalid_onset(segment: Path) -> int | None:
+    """Onset substep of the first physics-invalid event: the carrier stage's verdicts if it ran,
+    else the gravity stage's.  None if the episode has none."""
+
+    for name in ("events_carrier.json", "events_gravity.json"):
+        path = segment / name
+        if path.is_file():
+            events = [e for e in json.loads(path.read_text()).get("events", []) if e.get("verdict") == "physics_invalid"]
+            return min(int(e["onset_substep"]) for e in events) if events else None
+    return None
+
+
 def find_episodes(roots: list[str], phases: list[str], select: str = "failures") -> list[dict]:
-    """select: failures | successes-with-events | both.
+    """select: failures | successes-with-events | both | invalid.
+
+    ``invalid``: every episode, successful or not, that holds a physics-invalid event (the
+    gravity stage, and the carrier stage if it ran); these are the episodes a fix can change.
 
     A successful episode that contains an event matters as much as a failed one: if the
     artifact is what produced the success, removing it must take the success away. An
@@ -102,6 +118,8 @@ def find_episodes(roots: list[str], phases: list[str], select: str = "failures")
                 continue
             if select == "failures":
                 wanted = success is False
+            elif select == "invalid":
+                wanted = first_invalid_onset(segment) is not None
             elif select == "successes-with-events":
                 wanted = success is True and events > 0
             else:
@@ -154,14 +172,28 @@ def run_condition(robotwin_root: str, segment: Path, name: str, phase: str, stop
         # the physics the episode was recorded under (closed-loop campaigns), then the counterfactual on top
         result["recorded_sim_intervention"] = reapply_recorded_intervention(adapter, meta)
         clamp = None
-        if name.startswith("vclamp_"):
-            clamp = _install_velocity_clamp(adapter, targets, float(name.split("_", 1)[1]))
+        apply = None
+        base, _, when = name.partition("@")
+        trigger = None  # substep from which a deferred intervention applies
+        if when:
+            if when != "event":
+                raise SystemExit(f"unknown trigger in {name}: only <condition>@event")
+            onset = first_invalid_onset(segment)
+            lead = max(1, round(EVENT_LEAD_S / adapter.timestep()))
+            trigger = max(1, onset - lead) if onset is not None else None
+            result["first_invalid_onset"] = onset
+        if base.startswith("vclamp_"):
+            clamp = _install_velocity_clamp(adapter, targets, float(base.split("_", 1)[1]))
             result["description"] = f"target speed clamped to {clamp.cap} m/s after each substep"
+            if when:
+                clamp.active = False
         else:
-            description, apply = build_intervention(name)
+            description, apply = build_intervention(base)
             result["description"] = description
-            if apply is not None:
+            if apply is not None and not when:
                 apply(adapter)
+        if when:
+            result["description"] += f", from {EVENT_LEAD_S} s before the first physics-invalid event"
         gate = None
         try:
             gate = adapter.containment_gate()
@@ -183,6 +215,12 @@ def run_condition(robotwin_root: str, segment: Path, name: str, phase: str, stop
         for record in controls.between(0, controls.newest_substep):
             if record.substep == 0:
                 continue
+            if trigger is not None and record.substep == trigger:
+                if clamp is not None:
+                    clamp.active = True
+                elif apply is not None:
+                    apply(adapter)
+                result["applied_at_substep"] = record.substep
             adapter.apply_control(record)
             adapter.scene.step()
             applied += 1
@@ -211,6 +249,12 @@ def run_condition(robotwin_root: str, segment: Path, name: str, phase: str, stop
         if clamp is not None:
             result["clamped_substeps"] = clamp.count
             result["clamp_max_raw_speed_mps"] = round(clamp.max_raw, 3)
+        if trigger is not None:  # the replay must match the recording until the intervention starts
+            live = recorded_states.array()
+            replayed = monitor.state_log.array()[:, [monitor.state_log.body_ids.index(b) for b in recorded_states.body_ids], :]
+            n = min(trigger - 1, len(live), len(replayed))
+            result["prefix_substeps"] = n
+            result["prefix_bit_identical"] = bool(np.array_equal(live[:n], replayed[:n], equal_nan=True))
         if name == "baseline":
             live = recorded_states.array()
             replayed = monitor.state_log.array()[:, [monitor.state_log.body_ids.index(b) for b in recorded_states.body_ids], :]
@@ -424,7 +468,7 @@ def main() -> int:
     parser.add_argument("--runs", nargs="+", help="batch: roots searched for **/simuguard/segments")
     parser.add_argument("--phases", nargs="+", default=["policy", "expert"])
     parser.add_argument("--select", default="failures",
-                        choices=("failures", "successes-with-events", "both"),
+                        choices=("failures", "successes-with-events", "both", "invalid"),
                         help="which recorded episodes to audit")
     parser.add_argument("--output-dir")
     parser.add_argument("--workers", type=int, default=2)
