@@ -28,7 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 
 def main() -> int:
-    from attribute_failures import _install_velocity_clamp
+    from attribute_failures import EVENT_LEAD_S, _install_velocity_clamp, first_invalid_onset
     from replay_intervention import build_intervention
     from simuguard.adapters.robotwin import RoboTwinAdapter, make_task_env
     from simuguard.core import ControlLog
@@ -39,7 +39,9 @@ def main() -> int:
     parser.add_argument("--robotwin-root", required=True)
     parser.add_argument("--segment-dir", required=True)
     parser.add_argument("--out-dir", required=True)
-    parser.add_argument("--condition", default="baseline", help="baseline | vclamp_<v> | mass_<g>g | solver_high")
+    parser.add_argument("--condition", default="baseline",
+                        help="baseline | vclamp_<v> | mass_<g>g | solver_high | depen_<v>; append @event to switch it on "
+                             "EVENT_LEAD_S before the first physics-invalid onset, as attribute_failures does")
     parser.add_argument("--substeps", type=int, nargs="+", required=True)
     parser.add_argument("--stop-at-success", action="store_true",
                         help="also render the first substep where the benchmark reports success, then stop")
@@ -69,11 +71,21 @@ def main() -> int:
         info["recorded_sim_intervention"] = reapply_recorded_intervention(adapter, meta)
         target = adapter.body_ids_with_role(BodyRole.TARGET)[0]
         robot_ids = adapter.body_ids_with_role(BodyRole.ROBOT)
-        if args.condition.startswith("vclamp_"):
-            _install_velocity_clamp(adapter, target, float(args.condition.split("_", 1)[1]))
-        elif args.condition != "baseline":
-            _, apply = build_intervention(args.condition)
-            if apply is not None:
+        base, _, when = args.condition.partition("@")
+        trigger, apply = None, None
+        if when:
+            if when != "event":
+                raise SystemExit(f"unknown trigger in {args.condition}: only <condition>@event")
+            onset = first_invalid_onset(segment)
+            if onset is None:
+                raise SystemExit(f"{segment} holds no physics-invalid event to trigger on")
+            trigger = max(1, onset - max(1, round(EVENT_LEAD_S / adapter.timestep())))
+            info["first_invalid_onset"] = onset
+        if base.startswith("vclamp_"):
+            _install_velocity_clamp(adapter, target, float(base.split("_", 1)[1]))
+        elif base != "baseline":
+            _, apply = build_intervention(base)
+            if apply is not None and trigger is None:
                 apply(adapter)
 
         camera = _figure_camera(env, args) if args.camera == "figure" else None
@@ -81,6 +93,9 @@ def main() -> int:
         for record in controls.between(0, controls.newest_substep):
             if record.substep == 0:
                 continue
+            if trigger is not None and record.substep == trigger and apply is not None:
+                apply(adapter)
+                info["applied_at_substep"] = record.substep
             adapter.apply_control(record)
             adapter.scene.step()
             states = adapter.read_states([target, *robot_ids])
@@ -92,9 +107,9 @@ def main() -> int:
                 info["frames"][str(record.substep)] = f"s{record.substep:06d}.png"
             if success_substep is None and env.check_success():
                 success_substep = record.substep
+                _save(env, out / f"success_s{record.substep:06d}.png", args.camera, camera)
+                info["frames"]["success"] = f"success_s{record.substep:06d}.png"
                 if args.stop_at_success:
-                    _save(env, out / f"success_s{record.substep:06d}.png", args.camera, camera)
-                    info["frames"]["success"] = f"success_s{record.substep:06d}.png"
                     break
             if record.substep >= max(wanted) and not args.stop_at_success:
                 break
