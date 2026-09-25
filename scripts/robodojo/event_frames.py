@@ -31,6 +31,7 @@ def main() -> int:
     ap.add_argument("--camera", default="cam_head")
     ap.add_argument("--episode-index", type=int, default=None, help="RoboDojo video index (default: from the layout order)")
     ap.add_argument("--all-statuses", action="store_true", help="also candidates/rejected events and flags")
+    ap.add_argument("--out", default=None, help="output folder (default: SEGMENT_DIR/event_frames)")
     args = ap.parse_args()
     seg = Path(args.segment)
     summary = json.loads((seg / "summary.json").read_text())
@@ -44,8 +45,8 @@ def main() -> int:
         print("no video found")
         return 1
     video = videos[0]
-    out = seg / "event_frames"
-    out.mkdir(exist_ok=True)
+    out = Path(args.out) if args.out else seg / "event_frames"
+    out.mkdir(parents=True, exist_ok=True)
     for event in events:
         step = int(event.get("control_step", 0))
         frames = [max(0, step + o) for o in OFFSETS]

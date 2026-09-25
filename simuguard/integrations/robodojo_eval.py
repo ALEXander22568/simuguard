@@ -59,6 +59,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ap.add_argument("--public-restore", type=int, default=0,
                     help="also restore the public snapshot at this substep in place and replay 500 substeps (0: off)")
     ap.add_argument("--max-actions", type=int, default=0, help="scripted policy: stop after this many actions")
+    ap.add_argument("--kick-speed", type=float, default=0.0,
+                    help="scripted policy positive control: upward velocity (m/s) written to one resting object")
     ap.add_argument("--detector-config", default=None)
     ap.add_argument("--no-cameras", action="store_true",
                     help="physics-only probe: no RTX rendering, RoboDojo camera managers stubbed out "
@@ -191,11 +193,13 @@ class use_null_client:
 
 
 # ---------------------------------------------------------------------------- scripted probe policy
-def scripted_episode(env: Any, adapter: Any, *, max_actions: int = 0) -> dict[str, Any]:
+def scripted_episode(env: Any, adapter: Any, *, max_actions: int = 0, kick_speed: float = 0.0) -> dict[str, Any]:
     """Hold, then sweep one gripper through the first target object with IK joint actions, then hold.
 
     Deterministic given the scene: every decision uses the observation (joint/EE state) and
     the target's pose.  Joint actions are used so that exactly the IK solution is applied.
+    ``kick_speed > 0`` adds a positive control after the hold: the last target gets an upward
+    velocity written between two steps (a synthetic ejection; test runs only).
     """
 
     from simuguard.core.types import BodyRole
@@ -254,6 +258,14 @@ def scripted_episode(env: Any, adapter: Any, *, max_actions: int = 0) -> dict[st
     if not targets:
         log["phases"].append({"skip": "no dynamic target"})
         return log
+    if kick_speed > 0.0 and len(targets) > 1:
+        # positive control (test only): throw a resting object that nothing touches except the table,
+        # by overwriting its velocity between two steps; the monitor must record the write, the
+        # detector must confirm the flight, the gravity and carrier stages must keep it
+        kicked = targets[-1]
+        velocity = [0.3, 0.0, float(kick_speed)]
+        adapter.set_body_velocity(kicked, velocity)
+        log["phases"].append({"kick": kicked, "velocity_mps": velocity, "control_step": adapter.control_step()})
     target = targets[0]
     p = adapter.read_states([target])[target].position - origin
     side = "left" if p[0] < 0.0 else "right"
@@ -484,7 +496,8 @@ def run(args: argparse.Namespace) -> int:
                 record["scripted"] = None
 
                 def scripted(_env: Any = env, _adapter: Any = probe_adapter) -> None:
-                    record["scripted"] = scripted_episode(_env, _adapter, max_actions=args.max_actions)
+                    record["scripted"] = scripted_episode(_env, _adapter, max_actions=args.max_actions,
+                                                          kick_speed=args.kick_speed)
 
                 env.eval_one_episode = scripted  # instance attribute: replaces the XPolicyLab module call
             env.run_eval()

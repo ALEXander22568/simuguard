@@ -585,6 +585,16 @@ class IsaacAdapter(SimAdapter):
         self._step_subscription = None
 
     # ------------------------------------------------------------------ diagnostics
+    def set_body_velocity(self, body_id: str, linear: Iterable[float], angular: Iterable[float] = (0.0, 0.0, 0.0)) -> None:
+        """Overwrite one free body's velocity between steps (positive controls and tests only)."""
+
+        row = self._rb_row[body_id]
+        vels = self._read_rb(fresh=True)[1]
+        vels[row, :3] = np.asarray(list(linear), dtype=np.float64)
+        vels[row, 3:] = np.asarray(list(angular), dtype=np.float64)
+        self._invalidate()
+        self._rb_view.set_velocities(self._tensor(vels), self._index_tensor([row]))
+
     def net_contact_force_reader(self, body_ids: Iterable[str]) -> Callable[[], dict[str, np.ndarray]]:
         """PhysX's own net contact force per body (rigid contact view), to cross-check read_contacts.
 

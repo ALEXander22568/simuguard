@@ -59,6 +59,33 @@ shared assets is modified.
 5. Summary: `scripts/robodojo/campaign_summary.py RUN_ROOT` (detector → gravity → carrier stages),
    `scripts/robodojo/check_contacts.py SEGMENT` (resting contact force vs weight).
 
+Deployment used here (2026-09-25):
+
+| host | path | what |
+|---|---|---|
+| 4090-node1 | `/mnt/nvme0/shared/zhoujingjing/simuguard-robodojo/` | `simuguard/` (rsync of this repo), `assets_overlay/` (base `/mnt/nvme0/shared/geshijia/urai-robodojo/assets`), `run_queue.sh`, `runs/v1`, `runs/v2`, `sg_policy_tunnel.sh` (127.0.0.1:16602) |
+| 4090-node3 | `/data/shared/zhoujingjing/simuguard-robodojo/` | same layout (base `/data/shared/geshijia/urai-robodojo/assets`), tunnel 127.0.0.1:16601 |
+| h800-2 | `/data/shared/zhoujingjing/simuguard-robodojo-policy/` | XPolicyLab + `env_cfg` copied from the image, `pylib/` (scipy, opencv-headless, h5py, websockets, msgpack-numpy, liger-kernel for `~/xr1-deploy/mibot-env`), `xr1_robodojo_server.sh`, `logs/` |
+| h800-2 | `/data/shared/zhoujingjing/checkpoints/robodojo/` | XR-1 checkpoint (`model_states.pt` converted from the DeepSpeed file, `config.py` for inference, `config.orig.py` as released), `Qwen3-VL-4B-Instruct-processor/` (backbone weights + processor) |
+
+Policy setup (`scripts/robodojo/policy/`): `download_xr1_robodojo_ckpt.sh`, `download_qwen3vl4b.sh`,
+`convert_ds_checkpoint.py` (the release is a DeepSpeed `mp_rank_00_model_states.pt` with the weights under
+`module`; XPolicyLab's `helper()` expects a flat `model_states.pt`), `make_inference_config.py` (drops
+the training-only `stop_gradient_to_vlm` / `training_repeat` that the vendored `XR1.__init__` rejects),
+`xr1_robodojo_server.sh` (`GPU=7 PORT=16601`), `sg_policy_tunnel.sh` (node side; the key is restricted on
+h800-2 to forwarding that one port).
+
+Example (node1):
+
+```bash
+cd /mnt/nvme0/shared/zhoujingjing/simuguard-robodojo
+export SG_ROOT=$PWD SG_ASSETS_BASE=/mnt/nvme0/shared/geshijia/urai-robodojo/assets
+python3 simuguard/scripts/robodojo/build_asset_overlay.py --tasks insert_tubes
+printf 'tubes --task insert_tubes --layouts 0 1 --policy Xiaomi_Robotics_1 --policy-url ws://127.0.0.1:16602 --replay all\n' > jobs.txt
+nohup setsid bash simuguard/scripts/robodojo/sg_queue.sh jobs.txt runs/mine > runs/mine.queue.log 2>&1 &
+python3 simuguard/scripts/robodojo/campaign_summary.py runs/mine          # needs numpy
+```
+
 Runner options: `--policy scripted` (built-in IK push probe, no server), `--replay first|all`
 (close, rebuild the layout, replay the recorded actuation, compare every logged body),
 `--public-restore K` (restore the public snapshot at substep K in place and replay 500 substeps),
