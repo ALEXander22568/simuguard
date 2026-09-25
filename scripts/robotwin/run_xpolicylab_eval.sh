@@ -39,6 +39,7 @@ POLICY_REMOTE_PORT=${POLICY_REMOTE_PORT:-}
 SERVERS_ONLY=${SERVERS_ONLY:-0}
 SIMUGUARD=${SIMUGUARD:-1}
 SIM_INTERVENTION=${SIM_INTERVENTION:-none}
+SEED_START=${SEED_START:-}  # optional: first seed tried (splits one task across parallel runs)
 POLICY_REQUEST_TIMEOUT_S=${POLICY_REQUEST_TIMEOUT_S:-900}
 MIN_FREE_POLICY_MIB=${MIN_FREE_POLICY_MIB:-14000}
 MIN_FREE_SIM_MIB=${MIN_FREE_SIM_MIB:-7000}
@@ -157,7 +158,7 @@ if [[ "${SIMUGUARD}" == "1" ]]; then
     EVAL_CMD=("${CLIENT_PY}" -m simuguard.integrations.robotwin_eval
         --robotwin-root "${REPO}" --simuguard-out "${RUN_DIR}/simuguard"
         --policy-request-timeout-s "${POLICY_REQUEST_TIMEOUT_S}"
-        --sim-intervention "${SIM_INTERVENTION}"
+        --sim-intervention "${SIM_INTERVENTION}" ${SEED_START:+--seed-start "${SEED_START}"}
         ${SIMUGUARD_CONFIG:+--simuguard-config "${SIMUGUARD_CONFIG}"} -- "${OFFICIAL_ARGS[@]}")
     EVAL_PYTHONPATH="${SIMUGUARD_REPO}:${REPO}:${REPO}/XPolicyLab"
 else

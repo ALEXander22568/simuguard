@@ -389,6 +389,22 @@ def set_default_policy_request_timeout(robotwin_root: str | Path, timeout_s: flo
     return {"request_timeout_s_default": float(timeout_s), "upstream_default_s": 120.0}
 
 
+def shift_seed_start(module: Any, seed_start: int) -> int:
+    """Start the official evaluator at ``seed_start`` instead of ``100000 * (1 + seed)``.
+
+    The official ``main`` passes ``st_seed`` to ``eval_remote_policy``; replacing that function on the
+    module leaves the official script itself unmodified.
+    """
+    original = module.eval_remote_policy
+
+    def eval_remote_policy(task_name, task_env, args, model_client, st_seed, **kwargs):
+        print(f"[simuguard] seed start {seed_start} (official {st_seed})", flush=True)
+        return original(task_name, task_env, args, model_client, seed_start, **kwargs)
+
+    module.eval_remote_policy = eval_remote_policy
+    return seed_start
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     if "--" in argv:
@@ -405,6 +421,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--sim-intervention", default="none", choices=SIM_INTERVENTIONS,
         help="change one simulation setting for the scored rollout only (closed-loop intervention)",
+    )
+    parser.add_argument(
+        "--seed-start",
+        type=int,
+        default=None,
+        help="first seed the official evaluator tries instead of 100000 * (1 + seed); splits one task's seeds "
+        "across parallel runs (expert check, skipping and test_num unchanged)",
     )
     parser.add_argument(
         "--policy-request-timeout-s",
@@ -431,6 +454,8 @@ def main(argv: list[str] | None = None) -> int:
         runtime_overrides["policy_client"] = set_default_policy_request_timeout(
             args.robotwin_root, args.policy_request_timeout_s
         )
+    if args.seed_start is not None:
+        runtime_overrides["seed_start"] = shift_seed_start(module, args.seed_start)
 
     sys.argv = [str(Path(module.__file__).resolve())] + official
     started = time.time()
