@@ -18,7 +18,7 @@ from pathlib import Path
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("dirs", nargs="+", help="attribute_failures.py output directories (one per task)")
-    ap.add_argument("--invalid", help="JSON {segment_name: true} of segments with a physics-invalid event; "
+    ap.add_argument("--invalid", help="JSON {report file stem: true} of segments with a physics-invalid event; "
                                       "default: recorded_confirmed_events > 0")
     ap.add_argument("--out")
     args = ap.parse_args()
@@ -30,7 +30,7 @@ def main() -> int:
             r = json.loads(f.read_text())
             conds = {c["name"]: c for c in r["conditions"]}
             base = conds.get("baseline", {})
-            has_event = bool(invalid.get(r["segment"])) if invalid is not None else r["recorded_confirmed_events"] > 0
+            has_event = bool(invalid.get(f.stem)) if invalid is not None else r["recorded_confirmed_events"] > 0
             rows.append({"segment": r["segment"], "event": has_event,
                          "exact": bool(base.get("bit_identical")) and bool(base.get("reproduces_recorded_outcome")),
                          **{n: {"success": bool(c.get("success")), "events": c.get("confirmed_events"),

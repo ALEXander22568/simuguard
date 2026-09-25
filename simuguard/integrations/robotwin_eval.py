@@ -54,7 +54,8 @@ def eval_monitor_config(overrides: dict[str, Any] | None = None) -> MonitorConfi
     return MonitorConfig.from_dict(base)
 
 
-SIM_INTERVENTIONS = ("none", "solver_high", "solver_default", "mass_100g", "mass_50g")
+SIM_INTERVENTIONS = ("none", "solver_high", "solver_default", "mass_100g", "mass_50g", "depen_1.0", "depen_0.1")
+# depen_<v>: PhysX max depenetration velocity <v> m/s on every dynamic body and link (RoboTwin: unbounded)
 
 
 def recorded_sim_intervention(metadata: dict[str, Any]) -> str | None:
@@ -86,6 +87,10 @@ def apply_sim_intervention(adapter: RoboTwinAdapter, name: str) -> dict[str, Any
     pass the gate and the two runs stay paired.
     """
 
+    if name.startswith("depen_"):
+        cap = float(name.split("_", 1)[1])
+        count = adapter.set_max_depenetration_velocity(cap)
+        return {"name": name, "max_depenetration_velocity_mps": cap, "bodies": count}
     before = {"solver_iterations": adapter.solver_iterations()}
     targets = adapter.body_ids_with_role(BodyRole.TARGET)
     before["target_mass_kg"] = {b: adapter.mass(b) for b in targets}
