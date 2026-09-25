@@ -292,6 +292,23 @@ class RoboTwinAdapter(SimAdapter):
         return report
 
     # ------------------------------------------------------------------ interventions
+    def set_max_depenetration_velocity(self, cap: float) -> int:
+        """Cap PhysX's penetration-recovery speed on every dynamic body and articulation link.
+
+        SAPIEN leaves it at 1e32 (unlimited), so a body found deep inside another is pushed out at
+        whatever speed the position solver produces within one substep.  Returns the number of
+        components changed.
+        """
+        import sapien  # local import: the adapter module must stay importable without SAPIEN
+
+        changed = 0
+        for entity in self.scene.entities:
+            for component in entity.components:
+                if isinstance(component, sapien.physx.PhysxRigidBodyComponent):
+                    component.set_max_depenetration_velocity(float(cap))
+                    changed += 1
+        return changed
+
     def solver_iterations(self) -> dict[str, list[int]]:
         return io.solver_iterations(self._bodies, self._articulations)
 

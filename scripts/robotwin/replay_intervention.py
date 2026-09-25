@@ -58,6 +58,13 @@ def build_intervention(name: str):
                 adapter.set_mass(body_id, grams / 1000.0)
 
         return f"target mass = {grams} g", apply
+    if name.startswith("depen_"):
+        cap = float(name.split("_", 1)[1])
+
+        def apply(adapter: RoboTwinAdapter, cap=cap) -> None:
+            adapter.set_max_depenetration_velocity(cap)
+
+        return f"PhysX max depenetration velocity = {cap} m/s on every dynamic body and link (default: unlimited)", apply
     raise SystemExit(f"unknown intervention: {name}")
 
 
@@ -68,7 +75,7 @@ def main() -> int:
     parser.add_argument("--report", required=True)
     parser.add_argument(
         "--interventions", nargs="+", default=["baseline", "solver_high", "mass_100g"],
-        help="baseline | solver_high | solver_<pos>_<vel> | mass_<grams>g",
+        help="baseline | solver_high | solver_<pos>_<vel> | mass_<grams>g | depen_<m/s>",
     )
     parser.add_argument("--position-tolerance-m", type=float, default=1e-4)
     args = parser.parse_args()
