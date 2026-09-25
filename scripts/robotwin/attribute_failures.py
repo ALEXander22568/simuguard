@@ -120,6 +120,8 @@ def find_episodes(roots: list[str], phases: list[str], select: str = "failures")
                 wanted = success is False
             elif select == "invalid":
                 wanted = first_invalid_onset(segment) is not None
+            elif select == "invalid-failures":
+                wanted = success is False and first_invalid_onset(segment) is not None
             elif select == "successes-with-events":
                 wanted = success is True and events > 0
             else:
@@ -468,7 +470,7 @@ def main() -> int:
     parser.add_argument("--runs", nargs="+", help="batch: roots searched for **/simuguard/segments")
     parser.add_argument("--phases", nargs="+", default=["policy", "expert"])
     parser.add_argument("--select", default="failures",
-                        choices=("failures", "successes-with-events", "both", "invalid"),
+                        choices=("failures", "successes-with-events", "both", "invalid", "invalid-failures"),
                         help="which recorded episodes to audit")
     parser.add_argument("--output-dir")
     parser.add_argument("--workers", type=int, default=2)
