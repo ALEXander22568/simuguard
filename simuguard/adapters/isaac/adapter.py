@@ -627,6 +627,12 @@ class IsaacAdapter(SimAdapter):
         ids = [b for b in body_ids if b in self._specs and self._specs[b].kind != BodyKind.STATIC]
         view = self.sim_view.create_rigid_contact_view([self._specs[b].path for b in ids], filter_patterns=[],
                                                        max_contact_data_count=0)
+        try:
+            count = view.sensor_count
+        except AttributeError:  # the view has no backend when the bodies lack PhysxContactReportAPI
+            count = None
+        if not count:
+            raise RuntimeError("rigid contact view unavailable (the bodies need PhysxContactReportAPI)")
         order = list(view.sensor_paths) if hasattr(view, "sensor_paths") else [self._specs[b].path for b in ids]
         by_path = {self._specs[b].path: b for b in ids}
         dt = self.timestep()

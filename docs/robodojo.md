@@ -86,11 +86,15 @@ nohup setsid bash simuguard/scripts/robodojo/sg_queue.sh jobs.txt runs/mine > ru
 python3 simuguard/scripts/robodojo/campaign_summary.py runs/mine          # needs numpy
 ```
 
-Runner options: `--policy scripted` (built-in IK push probe, no server), `--replay first|all`
-(close, rebuild the layout, replay the recorded actuation, compare every logged body),
-`--public-restore K` (restore the public snapshot at substep K in place and replay 500 substeps),
-`--replay-from SEG...` (fresh-process replay of recorded segments), `--contact-report off`,
-`--monitor off`.
+Runner options: `--policy scripted` (built-in IK push probe, no server; its RoboDojo "success" is not
+meaningful), `--kick-speed V` (probe only: positive control, writes a velocity onto an object between two
+steps), `--replay first|all` (close, rebuild the layout, replay the recorded actuation, compare every
+logged body), `--public-restore K` (restore the public snapshot at substep K in place and replay 500
+substeps), `--replay-from SEG...` (fresh-process replay of recorded segments; `--replay-detect` runs
+the detectors on the replayed frames), `--intervention depen_V@S` (counterfactual replay: cap
+`maxDepenetrationVelocity` of every free object at V m/s from substep S on), `--contact-report off`,
+`--monitor off`.  Every episode record carries `final_states` (exact end pose and velocity of every
+rigid body), so runs with and without the monitor can be compared bit for bit.
 
 ## Measured results
 
@@ -149,6 +153,22 @@ GPU PhysX is deterministic here as long as the scene is rebuilt the same way; wh
 in place is PhysX's contact/solver state.  Replays therefore start from the episode start
 (`bundle_mode = episode_start`, restore method `none`).
 
+### Monitoring does not change the simulation
+
+The same scripted probe (`store_tools_in_toolbox` L0, 180 actions = 1800 substeps, deterministic IK
+pushes) was run three times on node1 GPU 0, one after another, plus once on node3 earlier:
+
+| run | `PhysxContactReportAPI` on objects | SimuGuard hook | episode wall | dynamics vs. `probe_on` |
+|---|---|---|---|---|
+| `probe_off` (`--monitor off`) | yes | none | 29.9 s | end state of all 26 rigid bodies bit-identical |
+| `probe_nocontact` (`--contact-report off`) | no | states, actuation, detectors | 30.4 s | all 28 bodies × 13 values bit-identical at every one of the 1800 substeps |
+| `probe_on` (default) | yes | everything incl. contacts | 42.0 s | - |
+| `probe_on` again, on node3 GPU 4 | yes | everything | 43.2 s | bit-identical at every substep (the whole closed-loop episode, on another machine) |
+
+So neither the contact-report schema, the extra contact views nor the hook alter a single bit of the
+trajectory, and RoboDojo's own outcome is untouched.  Every episode record now carries `final_states`,
+so the same check can be made on any task.
+
 ### Overhead
 
 Per substep, measured inside the hook (XR-1 episodes; physics step = PhysX `simulate` + fetch):
@@ -158,9 +178,13 @@ Per substep, measured inside the hook (XR-1 episodes; physics step = PhysX `simu
 | bottles L0 / L1 | 42 / 39 | 7.3 / 6.9 ms | 3.1 / 2.9 ms | 8.5 / 8.2 ms | 4.0 / 3.0 % |
 | tubes L0 / L1 / L2 | 380 / 596 / 163 | 13.4 / 16.8 / 11.6 ms | 7.6 / 9.8 / 4.4 ms | 9.8 / 9.4 / 10.5 ms | 5.4 / 6.3 / 4.5 % |
 | tools L0 / L1 | 613 / 400 | 18.4 / 15.6 ms | 10.1 / 7.6 ms | 8.9 / 9.2 ms | 6.7 / 6.2 % |
+| pens L0 / L1 | 219 / 272 | 13.8 / 13.2 ms | 6.8 / 7.0 ms | 10.6 / 11.1 ms | 6.8 / 6.2 % |
 
 The wall time of an XR-1 episode is dominated by rendering three cameras per action and shipping each
-observation to the policy (1.8-2.8 s per action through the gateway), so SimuGuard adds 3-7 %.  Per
+observation to the policy (1.8-2.8 s per action through the gateway), so SimuGuard adds 3-7 %.  Without
+a policy in the loop the cost is visible end to end: the scripted probe above takes 29.9 s with the
+monitor off, 30.4 s (+2 %) with the monitor but no contact reading, and 42.0 s (+40 %) with everything
+(226 contact points per substep).  Per
 substep it costs 0.8-2.1 physics steps, and the contact report dominates: PhysX's call itself takes
 0.02-0.04 ms, the rest is reading ~15-20 µs per contact point through the Python bindings (tubes and tools
 rest on the rack/table with hundreds of mesh contact points).  PhysX's rigid contact view returns the same
@@ -183,6 +207,7 @@ observation after control step k):
 |---|---|---|---|---|---|---|---|
 | bottles L0 (success) | 49 | bottle3 (dustbin) | 0.67 → 0.70 m/s, Δv 3.0 m/s in one step | 0.21 | - | bottle released over the floor dustbin, lands in it | gravity-explained |
 | tools L0 (fail) | 701 | pliers (table) | 0.68 → 0.74 m/s, 16 ms free flight | 0.87 | - | pliers released just above the toolbox rim | gravity-explained |
+| pens L0 (success) | 471 | pen `target1` (gripper fingers) | 0.68 → 0.98 m/s, 44 ms free flight | 1.00 | - | pen slips out of the left gripper and falls to the table | gravity-explained |
 | tubes L2 (fail) | 391 | **tube2** (tube rack, 11 mm penetration) | 0 → **4.31 m/s in one 4 ms step**, 194 N; robot links ≤ 1.24 m/s | 86 | no carrier | tube shoots out of the rack over the far table edge | **physics-invalid**; tube ends on the floor 1.7 m away |
 | tubes L2 | 391 | tube0 (hit by tube2) | 0.99 → 1.00 m/s | 20 | no carrier | knocked out of the rack | **physics-invalid** (secondary) |
 | tubes L2 | 404 | tube2 (ground) | 2.0 m/s | 0.49 | - | the ejected tube falling to the floor | gravity-explained |
@@ -194,6 +219,26 @@ The objects carry no authored `maxDepenetrationVelocity` or solver-iteration ove
 recorded per episode in `task_ground_truth.physx_body_properties`).  All three physics-invalid incidents
 happen while the policy places an object into a static receptacle (tube rack, toolbox), the RoboDojo
 analogue of RoboTwin's concave-container ejections.
+
+### Counterfactual: the tube ejection is set by a solver limit
+
+The tubes L2 episode was replayed in fresh processes on node1 with the detectors on the replayed
+frames, capping `physxRigidBody:maxDepenetrationVelocity` of the three tubes from substep 3800 on (100
+substeps before the event).  The tubes get `PhysxRigidBodyAPI` at creation without any value authored;
+the value is written on the live prim at substep 3800 (`--intervention depen_V@3800`).
+
+| replay | first difference from the recording | tube2 at the ejection (substep 3901) | other confirmed events |
+|---|---|---|---|
+| control: schema at creation, no value ever written | none, **bit-exact** over 5000 substeps | 4.31 m/s (same event) | tube0 knocked out (1.00 m/s), tube2 lands on the floor (2.04 m/s) |
+| cap 1.0 m/s from 3800 | substep 3901, tube2 10.7 mm | **1.88 m/s** | none |
+| cap 0.3 m/s from 3800 | substep 3877, tube2 8 µm | **0.62 m/s** | none |
+
+The actuation is the same recorded one in all three replays and they are identical until the tube is
+pushed into the rack; the speed at which it then leaves the rack follows the cap (4.31 → 1.88 →
+0.62 m/s).  So it is set by how fast PhysX may resolve the 11 mm penetration: the confirmed event is a
+solver artefact, as stages 2 and 3 classified it.  (Capping from creation instead diverges at substep
+789, long before the event, so it cannot isolate the cause.)  An open-loop replay cannot say whether the
+episode would have succeeded with the cap, since the policy does not react to the changed scene.
 
 ## What does not work / open issues
 

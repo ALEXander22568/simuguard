@@ -425,6 +425,16 @@ def replay_recorded(
     return result
 
 
+def final_state_digest(adapter: Any) -> dict[str, list[float]]:
+    """End-of-episode pose (xyz, wxyz) and velocity of every rigid body the adapter views, read fresh."""
+
+    adapter._invalidate()
+    return {
+        b: [float(v) for v in (*s.position, *s.quaternion, *s.linear_velocity, *s.angular_velocity)]
+        for b, s in adapter.read_states().items()
+    }
+
+
 def public_restore_check(adapter: Any, monitor: Any, episode_dir: Path, substep: int, horizon: int = 500) -> dict[str, Any]:
     """Restore the public snapshot at ``substep`` in place (end-of-episode scene) and replay."""
 
@@ -564,6 +574,11 @@ def run(args: argparse.Namespace) -> int:
                 env.eval_one_episode = scripted  # instance attribute: replaces the XPolicyLab module call
             env.run_eval()
             record["episode_wall_s"] = time.time() - t1
+            reader = adapter
+            if reader is None and args.policy == "scripted":
+                reader = probe_adapter
+            if reader is not None:  # lets runs with and without the monitor be compared bit for bit
+                record["final_states"] = final_state_digest(reader)
             details = env.eval_result.get("details", {})
             last = details[max(details)] if details else {}
             record["success"] = bool(last.get("success", False))

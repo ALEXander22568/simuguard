@@ -120,6 +120,24 @@ class IsaacPureTests(unittest.TestCase):
         self.assertEqual(first["__writes__"]["free_pose"]["idx"], [2, 9])
         self.assertEqual(back.get(2).payload.keys(), {"robot0"})
 
+    def test_runner_helpers_without_isaac(self):
+        from simuguard.core.types import BodyState
+        from simuguard.integrations import robodojo_eval as runner
+
+        self.assertEqual(runner.parse_intervention("none"), (None, None))
+        self.assertEqual(runner.parse_intervention("depen_1.0"), (1.0, None))
+        self.assertEqual(runner.parse_intervention("depen_0.3@3800"), (0.3, 3800))
+        with self.assertRaises(ValueError):
+            runner.parse_intervention("kick_3")
+        speed = np.float32(0.1).astype(np.float64)
+        state = BodyState("obj:a", np.array([1.0, 2.0, 3.0]), np.array([1.0, 0, 0, 0]), np.zeros(3), np.array([0, 0, speed]))
+        reader = SimpleNamespace(_invalidate=lambda: None, read_states=lambda: {"obj:a": state})
+        digest = runner.final_state_digest(reader)
+        self.assertEqual(digest["obj:a"][:4], [1.0, 2.0, 3.0, 1.0])
+        self.assertEqual(digest["obj:a"][-1], float(speed))  # exact, so runs can be compared bit for bit
+        for name in ("omni", "pxr", "isaacsim", "isaaclab"):
+            self.assertNotIn(name, sys.modules)
+
 
 if __name__ == "__main__":
     unittest.main()
