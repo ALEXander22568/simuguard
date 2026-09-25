@@ -1,10 +1,14 @@
 """SimuGuard adapter for MuJoCo (raw ``mujoco.MjModel`` / ``mujoco.MjData``).
 
-Works on any MuJoCo scene; :func:`attach_robosuite` wires it into a robosuite / RoboCasa environment.
+Works on any MuJoCo scene; :func:`attach_robosuite` wires it into a robosuite environment (RoboCasa,
+LIBERO: see ``libero.py``).
 
 Ground truth
     Body poses from ``data.xpos`` / ``data.xquat`` (wxyz), velocities from ``mj_objectVelocity``
-    shifted to the body's centre of mass.  Contacts come from ``data.contact`` only: equality
+    in the body's inertial frame (linear velocity of the centre of mass, angular velocity, both in
+    world coordinates).  Like every quantity MuJoCo derives from the state, they describe the state
+    the last step started from (``mj_step`` computes them before integrating).
+    Contacts come from ``data.contact`` only: equality
     constraints such as welds are not contacts and are never reported (their constraint forces
     are what a naive read of ``efc_force`` mistakes for contact forces).  Each active contact
     contributes one point with its penetration (``dist < 0``), normal, and the impulse of its
@@ -19,7 +23,11 @@ Replay
     whatever applied forces, mocap poses or equality switches are in use, plus every ``qpos`` /
     ``qvel`` / ``act`` entry that code outside the physics step wrote since the previous step
     (benchmarks do this: RoboCasa's toaster-oven fixture sets its door joint between control
-    steps).  Replay writes those entries back before stepping.
+    steps), plus the solver warm start ``qacc_warmstart`` whenever it changed since the previous
+    step: ``mj_forward`` rewrites it, and robosuite without ``lite_physics`` (robosuite 1.4, which
+    LIBERO pins) calls ``sim.forward()`` once in the env loop and once in the OSC controller before
+    every ``mj_step``, so the step starts from a warm start a plain ``mj_step`` replay would not
+    have.  Replay writes those entries back before stepping.
 """
 
 from __future__ import annotations
@@ -95,7 +103,7 @@ class MujocoAdapter(SimAdapter):
         self._ground_truth_fn = ground_truth_fn
         self._hook: HookHandle | None = None
         self._internal_step = 0
-        self._post_step: tuple[np.ndarray, np.ndarray, np.ndarray] | None = None
+        self._post_step: tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray] | None = None
         self._bodies: dict[str, BodyInfo] = {}
         self._index: dict[str, int] = {}
         self._id_by_index: dict[int, str] = {}
@@ -167,9 +175,10 @@ class MujocoAdapter(SimAdapter):
             b = self._index.get(body_id)
             if b is None:
                 continue
+            # mjOBJ_BODY is the body's inertial frame: the linear part is already the centre-of-mass velocity
             mujoco.mj_objectVelocity(m, d, mujoco.mjtObj.mjOBJ_BODY, b, self._vel, 0)
             ang = self._vel[:3].copy()
-            lin = self._vel[3:].copy() + np.cross(ang, d.xipos[b] - d.xpos[b])  # body origin -> centre of mass
+            lin = self._vel[3:].copy()
             out[body_id] = BodyState(
                 body_id=body_id, position=d.xpos[b].copy(), quaternion=d.xquat[b].copy(),
                 linear_velocity=lin, angular_velocity=ang,
@@ -268,7 +277,7 @@ class MujocoAdapter(SimAdapter):
     def mark_post_step(self) -> None:
         """Remember the state a physics step left, to catch writes made between steps."""
         d = self.data
-        self._post_step = (d.qpos.copy(), d.qvel.copy(), d.act.copy())
+        self._post_step = (d.qpos.copy(), d.qvel.copy(), d.act.copy(), d.qacc_warmstart.copy())
 
     # ------------------------------------------------------------------ actuation & snapshots
     def capture_control(self) -> ControlRecord:
@@ -286,11 +295,13 @@ class MujocoAdapter(SimAdapter):
         if self.model.neq:
             payload["eq_active"] = d.eq_active.astype(np.int64).copy()
         if self._post_step is not None:  # state written outside the physics step since the last one
-            for key, now, then in zip(("qpos", "qvel", "act"), (d.qpos, d.qvel, d.act), self._post_step):
+            for key, now, then in zip(("qpos", "qvel", "act"), (d.qpos, d.qvel, d.act), self._post_step[:3]):
                 changed = np.flatnonzero(now != then)
                 if changed.size:
                     payload[f"{key}_idx"] = changed.astype(np.int64)
                     payload[f"{key}_val"] = now[changed].copy()
+            if not np.array_equal(d.qacc_warmstart, self._post_step[3]):  # an mj_forward ran since the step
+                payload["qacc_warmstart"] = d.qacc_warmstart.copy()
         return ControlRecord(substep=-1, control_step=self.control_step(), payload=payload)
 
     def apply_control(self, control: ControlRecord) -> None:
@@ -309,6 +320,8 @@ class MujocoAdapter(SimAdapter):
         for key, target in (("qpos", d.qpos), ("qvel", d.qvel), ("act", d.act)):
             if f"{key}_idx" in p:
                 target[np.asarray(p[f"{key}_idx"], dtype=np.int64)] = np.asarray(p[f"{key}_val"], dtype=np.float64)
+        if "qacc_warmstart" in p:
+            d.qacc_warmstart[:] = np.asarray(p["qacc_warmstart"], dtype=np.float64)
 
     def native_state(self) -> np.ndarray:
         size = mujoco.mj_stateSize(self.model, INTEGRATION)
@@ -362,10 +375,13 @@ def attach_robosuite(env: Any, *, roles: TaskRoles | None = None, task_name: str
     """Adapter bound to a robosuite / RoboCasa env whose physics step becomes the hooked step.
 
     robosuite runs, per physics substep, ``sim.step1(); _pre_action(); sim.step2()`` when
-    ``lite_physics`` is on (RoboCasa's default) and ``sim.forward(); _pre_action(); sim.step()``
-    otherwise.  The hook wraps ``step2`` or ``step`` on the ``sim`` instance, so its ``before``
-    callback sees the actuation the controller just wrote for that substep.  Replay steps with
-    ``mj_step``, which equals ``step1`` + ``step2`` because the actuation only enters ``step2``.
+    ``lite_physics`` is on (robosuite >= 1.5 default, RoboCasa) and ``sim.forward(); _pre_action();
+    sim.step()`` otherwise (robosuite 1.4, which LIBERO pins; its OSC controller calls
+    ``sim.forward()`` once more inside ``_pre_action``).  The hook wraps ``step2`` or ``step`` on the
+    ``sim`` instance, so its ``before`` callback sees the actuation the controller just wrote for
+    that substep and the warm start the forward calls left.  Replay steps with ``mj_step``, which
+    equals ``step1`` + ``step2`` because the actuation only enters ``step2``, and equals
+    ``forward`` + ``step`` once the recorded warm start is written back.
     Attach again after every reset: a hard reset builds a new ``sim``.
     """
     sim = env.sim

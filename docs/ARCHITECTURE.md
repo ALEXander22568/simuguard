@@ -38,8 +38,8 @@ VLA evaluation:
  └────────────────────────────────────────────────────────────────────────────┘
 ```
 
-The core never imports a simulator.  Supporting another benchmark
-(ManiSkill, LIBERO/MuJoCo, RoboCasa) means writing one `SimAdapter`.
+The core never imports a simulator.  Supporting another benchmark means writing one `SimAdapter`
+(ManiSkill); MuJoCo benchmarks (RoboCasa, LIBERO: `docs/libero.md`) share `adapters/mujoco`.
 
 ## Per-substep data flow
 
