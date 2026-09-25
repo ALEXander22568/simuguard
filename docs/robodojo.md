@@ -105,8 +105,9 @@ RoboDojo's official `_result.json` and the three camera videos per episode).
 * `physx_overwrite_gpu_setting = 1`: RoboDojo forces **GPU dynamics**, although the USD scene says
   `enableGPUDynamics = false` (MBP, TGS).  So everything below is GPU PhysX with host readback.
 * Every PhysX step went through the hook: an independent `subscribe_physics_step_events` counter equals
-  the hooked count in every episode (1800/1800 probe, 4160/4160 and 3020/3020 XR-1).  No between-step
-  state writes occurred in these tasks.
+  the hooked count in every monitored episode (e.g. 1800/1800 probes, 4160/4160 and 9000/9000 XR-1).
+  No between-step state writes occurred in any policy episode; the positive control's injected velocity
+  was the only one recorded.
 
 ### Contacts
 
@@ -133,7 +134,9 @@ RoboDojo's official `_result.json` and the three camera videos per episode).
 |---|---|---|---|
 | rebuild (close + reset, same process) + replay recorded actuation | probe store_tools L0; XR-1 bottles L0, L1 | 1800; 4160; 3020 | **0.0 m** (bit-exact, 26 bodies incl. 22 robot links; initial state identical) |
 | same, in a fresh process on another GPU (card 2 vs 3) | XR-1 bottles L0, L1 | 4160; 3020 | **0.0 m** |
-| in-place public-snapshot restore at substep 400, replay 500 substeps | probe store_tools L0 | 500 | 10 µm after 1 substep, 1.0 mm after 500 (restored pose error 1.2e-7 m = float32) |
+| same, on another machine (recorded node1 GPU 0, replayed node3 GPU 4), detectors on the replayed frames | XR-1 tubes L2 | 5000 | **0.0 m**; the same three events fire again (tube2 at substep 3901, 4.31 m/s) |
+| every episode run with `--replay` in this study (3 scripted probes incl. the positive control, 7 XR-1) | 10 episodes | 1800-9000 each | **0.0 m** in all |
+| in-place public-snapshot restore at substep 400, replay 500 substeps | probes store_tools L0, bottles L0 | 500 | tools: 10 µm after 1 substep, 1.0 mm after 500; bottles: 75 µm after 1, 0.2 mm after 500 (restored pose error 1.2e-7 m = float32) |
 
 Positive control (`--kick-speed 3`, `store_tools_in_toolbox` L0, node3): the wrench, resting on the
 table, gets v = (0.3, 0, 3.0) m/s written between two steps at control step 25.  The adapter records it
@@ -154,7 +157,7 @@ Per substep, measured inside the hook (XR-1 episodes; physics step = PhysX `simu
 |---|---|---|---|---|---|
 | bottles L0 / L1 | 42 / 39 | 7.3 / 6.9 ms | 3.1 / 2.9 ms | 8.5 / 8.2 ms | 4.0 / 3.0 % |
 | tubes L0 / L1 / L2 | 380 / 596 / 163 | 13.4 / 16.8 / 11.6 ms | 7.6 / 9.8 / 4.4 ms | 9.8 / 9.4 / 10.5 ms | 5.4 / 6.3 / 4.5 % |
-| tools L0 | 613 | 18.4 ms | 10.1 ms | 8.9 ms | 6.7 % |
+| tools L0 / L1 | 613 / 400 | 18.4 / 15.6 ms | 10.1 / 7.6 ms | 8.9 / 9.2 ms | 6.7 / 6.2 % |
 
 The wall time of an XR-1 episode is dominated by rendering three cameras per action and shipping each
 observation to the policy (1.8-2.8 s per action through the gateway), so SimuGuard adds 3-7 %.  Per
