@@ -48,6 +48,9 @@ class EjectionConfig:
     violent_speed_mps: float = 1.00
     monitored_roles: tuple[str, ...] = ("target", "container", "object")
     risky_pair_roles: tuple[str, str] = ("target", "container")
+    # The two per-substep |dv| thresholds hold for this timestep; on another timestep they are
+    # scaled by dt / reference, i.e. applied as accelerations.  None: use them as given.
+    delta_v_reference_timestep_s: float | None = None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any] | None) -> "EjectionConfig":
@@ -107,6 +110,8 @@ class ContactEjectionDetector(Detector):
         self._contact_window = 1
         self._post_window = 1
         self._min_free_flight = 1
+        self._min_delta_v = self.cfg.min_delta_v_mps
+        self._violent_delta_v = self.cfg.violent_delta_v_mps
         self._prev_velocity: dict[str, np.ndarray] = {}
         self._history: dict[str, deque[_Evidence]] = defaultdict(deque)
         self._pending: dict[str, _Candidate] = {}
@@ -118,6 +123,9 @@ class ContactEjectionDetector(Detector):
         self._contact_window = max(1, math.ceil(self.cfg.contact_window_ms / (1000.0 * dt)))
         self._post_window = max(1, math.ceil(self.cfg.post_window_ms / (1000.0 * dt)))
         self._min_free_flight = max(1, math.ceil(self.cfg.min_free_flight_ms / (1000.0 * dt)))
+        scale = dt / self.cfg.delta_v_reference_timestep_s if self.cfg.delta_v_reference_timestep_s else 1.0
+        self._min_delta_v = self.cfg.min_delta_v_mps * scale
+        self._violent_delta_v = self.cfg.violent_delta_v_mps * scale
 
     # ------------------------------------------------------------------
     def _is_risky(self, pair: ContactPair, context: DetectorContext) -> bool:
@@ -168,7 +176,7 @@ class ContactEjectionDetector(Detector):
                 continue
             if frame.substep < self._cooldown_until.get(body_id, -1):
                 continue
-            if not history or speed < self.cfg.min_speed_mps or delta_v < self.cfg.min_delta_v_mps:
+            if not history or speed < self.cfg.min_speed_mps or delta_v < self._min_delta_v:
                 continue
 
             recent = max(history, key=lambda item: item.max_force_n)
@@ -219,7 +227,7 @@ class ContactEjectionDetector(Detector):
                 reasons.append("ballistic_free_flight")
             if (
                 candidate.evidence.risky
-                and candidate.max_delta_v >= self.cfg.violent_delta_v_mps
+                and candidate.max_delta_v >= self._violent_delta_v
                 and candidate.max_speed >= self.cfg.violent_speed_mps
             ):
                 reasons.append("violent_risky_contact_displacement")

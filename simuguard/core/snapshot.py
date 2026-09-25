@@ -300,11 +300,20 @@ def deepcopy_state(state: dict[str, Any]) -> dict[str, Any]:
     return copy.deepcopy(state)
 
 
+def _json_default(value: Any) -> Any:
+    # numpy payloads (e.g. MuJoCo actuation records) are written as plain lists
+    if isinstance(value, np.ndarray):
+        return value.tolist()
+    if isinstance(value, np.generic):
+        return value.item()
+    raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
+
+
 def _write_json_gz(path: Path, payload: dict[str, Any]) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(path.name + ".tmp")
     with gzip.open(temporary, "wt", encoding="utf-8", compresslevel=4) as handle:
-        json.dump(payload, handle, separators=(",", ":"), allow_nan=False)
+        json.dump(payload, handle, separators=(",", ":"), allow_nan=False, default=_json_default)
     temporary.replace(path)
     return path
 

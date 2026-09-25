@@ -44,6 +44,7 @@ class MonitorConfig:
     bundle_post_substeps: int = 250
     # artefacts
     save_episode_logs: bool = True  # controls.npz + states.npz + initial_snapshot.json.gz (exact replay inputs)
+    save_snapshots: bool = False  # also every native snapshot still held (snapshots.npz): replay from any of them
     state_log_roles: tuple[str, ...] = ("target", "container", "object")
     trace_decimation: int = 1
     max_recorded_errors: int = 50
@@ -251,6 +252,9 @@ class SubstepMonitor:
         assert self.recorder is not None
         initial = self.snapshots.latest_at_or_before(0) if self.snapshots_enabled else None
         self.recorder.episode_logs(controls=self.controls, states=self.state_log, initial_snapshot=initial)
+        if self.cfg.save_snapshots and self.snapshots_enabled:
+            held = [self.snapshots.latest_at_or_before(k) for k in self.snapshots.substeps()]
+            self.recorder.snapshot_archive([s for s in held if s is not None and s.native_state is not None])
 
     def summary(self) -> dict[str, Any]:
         latest = [event.to_dict() for event in self.events.values()]

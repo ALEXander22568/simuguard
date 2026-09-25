@@ -10,6 +10,7 @@ Layout (one directory per monitored episode)::
       controls.npz          compact per-substep actuation (exact replay input)
       states.npz            float64 per-substep state of non-robot tracked bodies (replay reference)
       initial_snapshot.json.gz state at attach (verifies a rebuilt env)
+      snapshots.npz         optional: every native snapshot held at the end (MonitorConfig.save_snapshots)
       summary.json          final counts and the latest status of each event
 """
 
@@ -76,6 +77,26 @@ class EpisodeRecorder:
             states.save(self.output_dir / "states.npz")
         if initial_snapshot is not None:
             initial_snapshot.save(self.output_dir / "initial_snapshot.json.gz")
+
+    def snapshot_archive(self, snapshots: list[Snapshot]) -> None:
+        """All native snapshots of the episode in one file: substeps, control steps, raw state bytes."""
+        if not snapshots:
+            return
+        import numpy as np
+
+        blobs = [np.frombuffer(s.native_state, dtype=np.uint8) for s in snapshots]
+        size = max(len(b) for b in blobs)
+        states = np.zeros((len(blobs), size), dtype=np.uint8)
+        for i, b in enumerate(blobs):
+            states[i, : len(b)] = b
+        np.savez_compressed(
+            self.output_dir / "snapshots.npz",
+            substeps=np.array([s.substep for s in snapshots], dtype=np.int64),
+            control_steps=np.array([s.control_step for s in snapshots], dtype=np.int64),
+            lengths=np.array([len(b) for b in blobs], dtype=np.int64),
+            states=states,
+            native_format=np.array(snapshots[0].native_format or ""),
+        )
 
     def end(self, summary: dict[str, Any]) -> None:
         for handle in (self._trace, self._events):
