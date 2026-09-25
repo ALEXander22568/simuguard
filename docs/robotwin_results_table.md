@@ -1,72 +1,89 @@
 # RoboTwin 50 任务统一结果表
 
-统计口径（所有任务、所有人相同）：
+LingBot-VA（RoboTwin 后训练权重，末端位姿动作）在 RoboTwin 2.0 全部 50 个任务上的结果，口径与论文公式 (1) 一致。表由 `scripts/robotwin/results_table.py` 从各运行目录的 manifest.json、`gravity_filter.py` 的 events_gravity.json 和接管 / 归因报告直接生成，不手填数字。
 
 | 列 | 含义 |
 |---|---|
-| N | benchmark 打分的局数（被 expert 检查跳过的 seed 不在内） |
-| S | 官方成功数；**official = S/N** 就是 benchmark 自己报的成功率 |
-| E_fail / E_succ | 失败局 / 成功局中含物理无效事件的局数（`gravity_filter.py` 过滤之后，掉落、倒出不算） |
-| F+ | 失败局中，**去掉伪影后由 VLA 重新接管、闭环继续执行一次就成功**的局数（接管协议：精确回放到事件前 1 s，从此处起压住物体速度，在线策略用剩余步数继续；`rollback_retry.py --intervention vclamp_2.0 --max-attempts 1`，verdict `rescued`） |
-| F± | 失败局中，只有质量反事实才翻转的局数，判定 `environment_possible`，只给上界 |
-| S- | 成功局中，去掉伪影后变失败的局数，判定 `artifact_assisted_success` |
-| **audited** | **(S - S- + F+) / N**，SimuGuard 修正后的成功率。分母不变：被环境弄坏的局按策略本来会得的结果计，不剔除 |
-| upper | (S - S- + F+ + F±) / N，把所有 environment_possible 也算成环境导致的上界 |
-| attr | `takeover` = 闭环接管协议；`open` = 只有开环回放归因（F+ 取 `environment_caused`，作为下界）；`no` = 未归因，audited = official |
+| N / S | benchmark 打分的局数 / 官方成功数；官方 = S/N |
+| 跳过 | 评测器在凑满 N 局之前丢弃的种子数，按打分种子范围推算，包含规划前就被判为不稳定、没有 SimuGuard 录制的种子 |
+| E_fail / E_succ | 失败局 / 成功局中含物理无效事件的局数（检测器确认 + 重力过滤：峰值速度超过同高度自由落体速度 1.5 倍） |
+| R1 / R0 | E_fail 中，事件前 1 s 让策略重新接管后成功的局数：R1 去掉注入的能量（2 m/s 限速），R0 物理不变（对照组） |
+| 审计 | (S + R1 − R0)/N；E_fail = 0 时等于官方；接管未覆盖全部 E_fail 时为 - |
+| 上界 | (S + E_fail)/N，把每个含事件的失败都算成成功 |
+| 开环 | E_fail 中，用原动作回放并限速 2 m/s 后成功的局数（`attribute_failures.py`，诊断用，不计分） |
 
-注意：不是「成功数 / (总数 - 仿真问题数)」。剔除会让分母随伪影数变化、把无事件失败局的权重抬高（罐子任务剔除法会得到 98.5%，修正法是 86.7%）。
+| task | N | S | 官方 % | 跳过 | 失败 | E_fail | E_succ | R1 | R0 | 审计 % | 上界 % | 开环 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `adjust_bottle` | 20 | 20 | 100.0 | 11 | 0 | 0 | 0 | - | - | 100.0 | 100.0 | - |
+| `beat_block_hammer` | 20 | 19 | 95.0 | 11 | 1 | 0 | 0 | - | - | 95.0 | 95.0 | - |
+| `blocks_ranking_rgb` | 20 | 19 | 95.0 | 0 | 1 | 0 | 0 | - | - | 95.0 | 95.0 | - |
+| `blocks_ranking_size` | 20 | 17 | 85.0 | 2 | 3 | 0 | 0 | - | - | 85.0 | 85.0 | - |
+| `click_alarmclock` | 20 | 20 | 100.0 | 4 | 0 | 0 | 0 | - | - | 100.0 | 100.0 | - |
+| `click_bell` | 20 | 20 | 100.0 | 0 | 0 | 0 | 0 | - | - | 100.0 | 100.0 | - |
+| `dump_bin_bigbin` | 20 | 20 | 100.0 | 28 | 0 | 0 | 0 | - | - | 100.0 | 100.0 | - |
+| `grab_roller` | 20 | 20 | 100.0 | 1 | 0 | 0 | 0 | - | - | 100.0 | 100.0 | - |
+| `handover_block` | 20 | 20 | 100.0 | 6 | 0 | 0 | 0 | - | - | 100.0 | 100.0 | - |
+| `handover_mic` | 20 | 19 | 95.0 | 3 | 1 | 0 | 0 | - | - | 95.0 | 95.0 | - |
+| `hanging_mug` | 20 | 3 | 15.0 | 2 | 17 | 1 | 0 | - | - | - | 20.0 | - |
+| `lift_pot` | 20 | 20 | 100.0 | 28 | 0 | 0 | 0 | - | - | 100.0 | 100.0 | - |
+| `move_can_pot` | 20 | 18 | 90.0 | 3 | 2 | 0 | 0 | - | - | 90.0 | 90.0 | - |
+| `move_pillbottle_pad` | 20 | 20 | 100.0 | 11 | 0 | 0 | 0 | - | - | 100.0 | 100.0 | - |
+| `move_playingcard_away` | 20 | 20 | 100.0 | 0 | 0 | 0 | 0 | - | - | 100.0 | 100.0 | - |
+| `move_stapler_pad` | 20 | 14 | 70.0 | 0 | 6 | 1 | 0 | - | - | - | 75.0 | 0 |
+| `open_laptop` | 20 | 20 | 100.0 | 0 | 0 | 0 | 0 | - | - | 100.0 | 100.0 | - |
+| `open_microwave` | 20 | 15 | 75.0 | 15 | 5 | 0 | 0 | - | - | 75.0 | 75.0 | - |
+| `pick_diverse_bottles` | 20 | 18 | 90.0 | 39 | 2 | 0 | 0 | - | - | 90.0 | 90.0 | - |
+| `pick_dual_bottles` | 20 | 20 | 100.0 | 1 | 0 | 0 | 0 | - | - | 100.0 | 100.0 | - |
+| `place_a2b_left` | 20 | 20 | 100.0 | 5 | 0 | 0 | 0 | - | - | 100.0 | 100.0 | - |
+| `place_a2b_right` | 20 | 20 | 100.0 | 6 | 0 | 0 | 0 | - | - | 100.0 | 100.0 | - |
+| `place_bread_basket` | 20 | 19 | 95.0 | 4 | 1 | 1 | 0 | - | - | - | 100.0 | - |
+| `place_bread_skillet` | 20 | 19 | 95.0 | 23 | 1 | 0 | 0 | - | - | 95.0 | 95.0 | - |
+| `place_burger_fries` | 20 | 20 | 100.0 | 0 | 0 | 0 | 2 | - | - | 100.0 | 100.0 | - |
+| `place_can_basket` | 90 | 67 | 74.4 | 22 | 23 | 21 | 16 | 15 | 10 | 80.0 | 97.8 | 14 |
+| `place_cans_plasticbox` | 10 | 10 | 100.0 | 0 | 0 | 0 | 0 | - | - | 100.0 | 100.0 | - |
+| `place_container_plate` | 20 | 20 | 100.0 | 4 | 0 | 0 | 0 | - | - | 100.0 | 100.0 | - |
+| `place_dual_shoes` | 20 | 20 | 100.0 | 12 | 0 | 0 | 1 | - | - | 100.0 | 100.0 | - |
+| `place_empty_cup` | 20 | 20 | 100.0 | 2 | 0 | 0 | 0 | - | - | 100.0 | 100.0 | - |
+| `place_fan` | 20 | 17 | 85.0 | 4 | 3 | 1 | 0 | - | - | - | 90.0 | 0 |
+| `place_mouse_pad` | 20 | 20 | 100.0 | 0 | 0 | 0 | 0 | - | - | 100.0 | 100.0 | - |
+| `place_object_basket` | 20 | 18 | 90.0 | 8 | 2 | 1 | 1 | - | - | - | 95.0 | - |
+| `place_object_scale` | 20 | 19 | 95.0 | 7 | 1 | 0 | 0 | - | - | 95.0 | 95.0 | - |
+| `place_object_stand` | 20 | 20 | 100.0 | 0 | 0 | 0 | 0 | - | - | 100.0 | 100.0 | - |
+| `place_phone_stand` | 20 | 19 | 95.0 | 10 | 1 | 0 | 0 | - | - | 95.0 | 95.0 | - |
+| `place_shoe` | 20 | 20 | 100.0 | 3 | 0 | 0 | 0 | - | - | 100.0 | 100.0 | - |
+| `press_stapler` | 20 | 18 | 90.0 | 2 | 2 | 0 | 0 | - | - | 90.0 | 90.0 | - |
+| `put_bottles_dustbin` | 10 | 9 | 90.0 | 4 | 1 | 0 | 0 | - | - | 90.0 | 90.0 | - |
+| `put_object_cabinet` | 10 | 7 | 70.0 | 73 | 3 | 0 | 0 | - | - | 70.0 | 70.0 | - |
+| `rotate_qrcode` | 20 | 19 | 95.0 | 2 | 1 | 0 | 0 | - | - | 95.0 | 95.0 | - |
+| `scan_object` | 20 | 20 | 100.0 | 44 | 0 | 0 | 0 | - | - | 100.0 | 100.0 | - |
+| `shake_bottle` | 20 | 20 | 100.0 | 16 | 0 | 0 | 0 | - | - | 100.0 | 100.0 | - |
+| `shake_bottle_horizontally` | 20 | 20 | 100.0 | 16 | 0 | 0 | 0 | - | - | 100.0 | 100.0 | - |
+| `stack_blocks_three` | 20 | 19 | 95.0 | 2 | 1 | 0 | 0 | - | - | 95.0 | 95.0 | - |
+| `stack_blocks_two` | 10 | 10 | 100.0 | 0 | 0 | 0 | 0 | - | - | 100.0 | 100.0 | - |
+| `stack_bowls_three` | 50 | 38 | 76.0 | 43 | 12 | 12 | 0 | - | - | - | 100.0 | 0 |
+| `stack_bowls_two` | 20 | 19 | 95.0 | 7 | 1 | 1 | 0 | - | - | - | 100.0 | - |
+| `stamp_seal` | 20 | 19 | 95.0 | 9 | 1 | 1 | 0 | - | - | - | 100.0 | 1 |
+| `turn_switch` | 20 | 9 | 45.0 | 3 | 11 | 0 | 0 | - | - | 45.0 | 45.0 | - |
+| **合计** | 1060 | 957 | 90.3 | 496 | 103 | 40 | 20 |  |  |  | 94.1 |  |
 
-一行怎么产生：跑完 campaign，然后 `gravity_filter.py --runs <task_dir>`，再对失败局跑接管协议 `rollback_retry.py --runs <task_dir> --ports <bridge ports> --intervention vclamp_2.0 --max-attempts 1 --output-dir runs/takeover_<task>`（需要 LingBot 服务器和桥在线，用 `SERVERS_ONLY=1 run_lingbot_eval.sh` 起），最后 `results_table.py --runs <task_dir> --takeover runs/takeover_<task> --out docs/robotwin_results_table.csv`。脚本会打印 markdown 行并更新 CSV；把 CSV 和这个 md 一起提交。
+## 运行目录
 
-| task | 档 | N | S | official | E_fail | E_succ | F+ | 失败局中，**去掉伪影后由 VLA 重新接管、闭环继续执行一次就成功**的局数（接管协议：精确回放到事件前 1 s，从此处起压住物体速度，在线策略用剩余步数继续；`rollback_retry.py --intervention vclamp_2.0 --max-attempts 1`，verdict `rescued`） |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| adjust_bottle | 3 |  |  |  |  |  |  |  |  |  |  |  |  |
-| beat_block_hammer | 4 |  |  |  |  |  |  |  |  |  |  |  |  |
-| blocks_ranking_rgb | 3 |  |  |  |  |  |  |  |  |  |  |  |  |
-| blocks_ranking_size | 3 |  |  |  |  |  |  |  |  |  |  |  |  |
-| click_alarmclock | 4 |  |  |  |  |  |  |  |  |  |  |  |  |
-| click_bell | 4 |  |  |  |  |  |  |  |  |  |  |  |  |
-| dump_bin_bigbin | done | 10 | 8 | 8/10 | 1 | 0 | 0 | 0 | 0 | 8/10 | 8/10 | open | 失败局 100010 伪影明确但两条反事实均未翻转（unresolved） |
-| grab_roller | 3 |  |  |  |  |  |  |  |  |  |  |  |  |
-| handover_block | 2 |  |  |  |  |  |  |  |  |  |  |  |  |
-| handover_mic | 2 |  |  |  |  |  |  |  |  |  |  |  |  |
-| hanging_mug | 1 |  |  |  |  |  |  |  |  |  |  |  |  |
-| lift_pot | 1 |  |  |  |  |  |  |  |  |  |  |  |  |
-| move_can_pot | 1 |  |  |  |  |  |  |  |  |  |  |  |  |
-| move_pillbottle_pad | 3 |  |  |  |  |  |  |  |  |  |  |  |  |
-| move_playingcard_away | 3 |  |  |  |  |  |  |  |  |  |  |  |  |
-| move_stapler_pad | 3 |  |  |  |  |  |  |  |  |  |  |  |  |
-| open_laptop | 3 |  |  |  |  |  |  |  |  |  |  |  |  |
-| open_microwave | 3 |  |  |  |  |  |  |  |  |  |  |  |  |
-| pick_diverse_bottles | 3 |  |  |  |  |  |  |  |  |  |  |  |  |
-| pick_dual_bottles | 2 |  |  |  |  |  |  |  |  |  |  |  |  |
-| place_a2b_left | 2 |  |  |  |  |  |  |  |  |  |  |  |  |
-| place_a2b_right | 2 |  |  |  |  |  |  |  |  |  |  |  |  |
-| place_bread_basket | done | 10 | 9 | 9/10 | 1 | 0 | 0 | 1 | 0 | 9/10 | 10/10 | open |  |
-| place_bread_skillet | 1 |  |  |  |  |  |  |  |  |  |  |  |  |
-| place_burger_fries | 1 |  |  |  |  |  |  |  |  |  |  |  |  |
-| place_can_basket | done | 90 | 67 | 67/90 | 21 | 16 | 14 | 7 | 3 | 78/90 | 85/90 | open | 30 seed x 3 配置；主实验 |
-| place_cans_plasticbox | done | 10 | 10 | 10/10 | 0 | 0 | 0 | 0 | 0 | 10/10 | 10/10 | no |  |
-| place_container_plate | 1 |  |  |  |  |  |  |  |  |  |  |  |  |
-| place_dual_shoes | 2 |  |  |  |  |  |  |  |  |  |  |  |  |
-| place_empty_cup | 1 |  |  |  |  |  |  |  |  |  |  |  |  |
-| place_fan | 2 |  |  |  |  |  |  |  |  |  |  |  |  |
-| place_mouse_pad | 2 |  |  |  |  |  |  |  |  |  |  |  |  |
-| place_object_basket | done | 10 | 10 | 10/10 | 0 | 1 | 0 | 0 | 0 | 10/10 | 10/10 | open |  |
-| place_object_scale | 1 |  |  |  |  |  |  |  |  |  |  |  |  |
-| place_object_stand | 1 |  |  |  |  |  |  |  |  |  |  |  |  |
-| place_phone_stand | 2 |  |  |  |  |  |  |  |  |  |  |  |  |
-| place_shoe | 2 |  |  |  |  |  |  |  |  |  |  |  |  |
-| press_stapler | 4 |  |  |  |  |  |  |  |  |  |  |  |  |
-| put_bottles_dustbin | done | 10 | 9 | 9/10 | 0 | 0 | 0 | 0 | 0 | 9/10 | 9/10 | open | 20 个掉落事件全部被重力解释 |
-| put_object_cabinet | done | 10 | 7 | 7/10 | 0 | 0 | 0 | 0 | 0 | 7/10 | 7/10 | no | 50 seed 排队中；expert 跳过 73 seed |
-| rotate_qrcode | 4 |  |  |  |  |  |  |  |  |  |  |  |  |
-| scan_object | 4 |  |  |  |  |  |  |  |  |  |  |  |  |
-| shake_bottle_horizontally | 4 |  |  |  |  |  |  |  |  |  |  |  |  |
-| shake_bottle | 4 |  |  |  |  |  |  |  |  |  |  |  |  |
-| stack_blocks_three | 1 |  |  |  |  |  |  |  |  |  |  |  |  |
-| stack_blocks_two | done | 10 | 10 | 10/10 | 0 | 0 | 0 | 0 | 0 | 10/10 | 10/10 | no | 对照 |
-| stack_bowls_three | running |  |  |  |  |  |  |  |  |  |  |  | 50 seed 在跑（node2） |
-| stack_bowls_two | done | 10 | 10 | 10/10 | 0 | 0 | 0 | 0 | 0 | 10/10 | 10/10 | no |  |
-| stamp_seal | 4 |  |  |  |  |  |  |  |  |  |  |  |  |
-| turn_switch | 4 |  |  |  |  |  |  |  |  |  |  |  |  |
+- `4090-node1:/mnt/nvme0/shared/zhoujingjing/simuguard/runs/campaign_20260918T220055Z/default/`：rep1, rep2, rep3
+- `4090-node1:/mnt/nvme0/shared/zhoujingjing/simuguard/runs/crosstask_20260921T160736Z/`：put_bottles_dustbin, stack_blocks_two
+- `4090-node2:/mnt/nvme0/twinguar/simuguard/runs/crosstask3_20260922T112052Z/`：place_cans_plasticbox, put_object_cabinet
+- `4090-node2:/mnt/nvme0/twinguar/simuguard/runs/crosstask4_50seeds/`：stack_bowls_three
+- `4090-node2:/mnt/nvme0/twinguar/simuguard/runs/crosstask5_20ep/`：place_object_basket
+- `4090-node2:/mnt/nvme0/twinguar/simuguard/runs/crosstask6_remote20/`：dump_bin_bigbin, hanging_mug, lift_pot, move_can_pot, place_bread_basket, place_bread_skillet, stack_bowls_two
+- `4090-node2:/mnt/nvme0/twinguar/simuguard/runs/crosstask7_all36/`：blocks_ranking_size, click_alarmclock, grab_roller, handover_block, handover_mic, move_pillbottle_pad, pick_diverse_bottles, pick_dual_bottles, place_a2b_left, place_a2b_right, place_burger_fries, place_container_plate, place_dual_shoes, place_empty_cup, place_fan, place_mouse_pad, place_object_scale, place_object_stand, place_phone_stand, place_shoe, stack_blocks_three
+- `4090-node3:/home/zhoujingjing/simuguard/runs/crosstask7_all36/`：adjust_bottle, beat_block_hammer, blocks_ranking_rgb, click_bell, move_playingcard_away, move_stapler_pad, open_laptop, open_microwave, press_stapler, rotate_qrcode, scan_object, shake_bottle, shake_bottle_horizontally, stamp_seal, turn_switch
+
+## 重新生成
+
+```bash
+python scripts/robotwin/gravity_filter.py --runs <task_dir> ...
+python scripts/robotwin/results_table.py --runs <task_dir> ... \
+    --takeover <rollback_retry 输出, vclamp_2.0> --control <rollback_retry 输出, baseline> \
+    --attr <attribute_failures 输出> --out docs/robotwin_results_table.csv
+```
+
+只需要 manifest.json、eval_command.txt、events_gravity.json 和报告 JSON，可以先把这些小文件从各主机拷到一处再生成。

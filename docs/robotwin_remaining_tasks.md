@@ -1,5 +1,7 @@
 # RoboTwin 剩余 36 个任务：分档与运行说明
 
+> **2026-09-25：36 个任务已全部跑完**（每个任务 20 局，node2/node3 仿真 + h800-2 推理），结果与运行目录见 [robotwin_results_table.md](robotwin_results_table.md)。下面的说明保留作复现参考，不需要再跑。
+
 ## 接手最短路径（有 RoboTwin + LingBot-VA 环境的前提下）
 
 ```bash
