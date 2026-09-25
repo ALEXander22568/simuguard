@@ -13,6 +13,9 @@
             with the injected energy removed (rollback_retry.py --takeover --intervention vclamp_2.0)
 * R0        the same failures resumed with the physics unchanged: the matched control arm
 * audited   (S + R1 - R0) / N; equal to official when E_fail = 0; "-" until both arms cover every E_fail
+* excluded  E_fail + E_succ: episodes that contain a physics-invalid event, successes and failures alike
+* simuguard (S - E_succ) / (N - excluded): the success rate over physically valid episodes, i.e. with every
+            episode that contains an event removed from the count; written with its fraction
 * bound     (S + E_fail) / N: every failure that contains an event counted as a success
 * open      E_fail failures that identical-action replay with the speed clamp turns into successes
             (attribute_failures.py, success of the vclamp_2.0 condition); a diagnostic, not a score
@@ -36,8 +39,8 @@ import json
 import re
 from pathlib import Path
 
-COLUMNS = ["task", "N", "S", "official", "skipped", "failures", "E_fail", "E_succ", "R1", "R0",
-           "audited", "bound", "open", "runs"]
+COLUMNS = ["task", "N", "S", "official", "excluded", "simuguard", "skipped", "failures", "E_fail", "E_succ",
+           "R1", "R0", "audited", "bound", "open", "runs"]
 
 
 def segment_key(path: str | Path) -> tuple[str, str, str]:
@@ -169,7 +172,9 @@ def task_rows(runs: list[str], treated: dict, control: dict, opened: dict) -> li
             audited = "-"
         covered = r["treated"] == e_fail and r["controlled"] == e_fail and e_fail > 0
         rows.append({
-            "task": task, "N": n, "S": s, "official": pct(s, n), "skipped": r["skipped"], "failures": n - s,
+            "task": task, "N": n, "S": s, "official": pct(s, n), "excluded": e_fail + r["E_succ"],
+            "simuguard": f'{pct(s - r["E_succ"], n - e_fail - r["E_succ"])} ({s - r["E_succ"]}/{n - e_fail - r["E_succ"]})',
+            "skipped": r["skipped"], "failures": n - s,
             "E_fail": e_fail, "E_succ": r["E_succ"],
             "R1": r["R1"] if covered else "-", "R0": r["R0"] if covered else "-",
             "audited": audited, "bound": pct(s + e_fail, n),
