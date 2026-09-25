@@ -295,14 +295,24 @@ def physics_settings(env: Any) -> dict[str, Any]:
 _PATCHED = False
 
 
-def install_contact_reporting(threshold: float = 0.0) -> list[str]:
+def install_contact_reporting(
+    threshold: float = 0.0,
+    *,
+    contact_report: bool = True,
+    max_depenetration_velocity: float | None = None,
+) -> list[str]:
     """Make RoboDojo create every scene object with ``PhysxContactReportAPI`` already applied.
 
     Patches the module-level ``add_reference_to_stage`` used by RoboDojo's rigid, dynamic
     and articulation object wrappers, and ``SceneManager.create_primitive_shape``, so the
     API is on the prim before PhysX parses it (applying it to a simulated body would make
-    omni.physx re-create the actor).  Contact reporting does not change the dynamics;
-    :func:`physics_settings` records the carb switch that it turns on.  Idempotent.
+    omni.physx re-create the actor).  Contact reporting does not change the dynamics
+    (measured: identical trajectories with and without it); :func:`physics_settings`
+    records the carb switch that it turns on.
+
+    ``max_depenetration_velocity`` is an *intervention* (replays only): it caps PhysX's
+    penetration-recovery speed on every object body, set at creation for the same reason.
+    Idempotent (the first call's settings stay in force).
     """
 
     global _PATCHED
@@ -311,6 +321,7 @@ def install_contact_reporting(threshold: float = 0.0) -> list[str]:
     import importlib
 
     patched: list[str] = []
+    options = {"threshold": threshold, "contact_report": contact_report, "max_depenetration_velocity": max_depenetration_velocity}
 
     def wrap_reference(module: Any, root_is_body: bool) -> None:
         original: Callable[..., Any] = module.add_reference_to_stage
@@ -318,7 +329,7 @@ def install_contact_reporting(threshold: float = 0.0) -> list[str]:
         def add_reference_to_stage(*args: Any, **kwargs: Any) -> Any:
             prim = original(*args, **kwargs)
             try:
-                _apply_report_api(str(prim.GetPath()), threshold, root_is_body=root_is_body)
+                _on_object_prim(str(prim.GetPath()), root_is_body=root_is_body, **options)
             except Exception:  # noqa: BLE001 - never break scene loading
                 pass
             return prim
@@ -345,7 +356,7 @@ def install_contact_reporting(threshold: float = 0.0) -> list[str]:
         def create_primitive_shape(self: Any, primitive_name: str, prim_path: str, *args: Any, **kwargs: Any) -> Any:
             result = original_primitive(self, primitive_name, prim_path, *args, **kwargs)
             try:
-                _apply_report_api(prim_path, threshold, root_is_body=True)
+                _on_object_prim(prim_path, root_is_body=True, **options)
             except Exception:  # noqa: BLE001
                 pass
             return result
@@ -356,20 +367,35 @@ def install_contact_reporting(threshold: float = 0.0) -> list[str]:
         pass
     import carb
 
-    carb.settings.get_settings().set_bool("/physics/disableContactProcessing", False)
+    if contact_report:
+        carb.settings.get_settings().set_bool("/physics/disableContactProcessing", False)
     _PATCHED = True
     return patched
 
 
-def _apply_report_api(path: str, threshold: float, *, root_is_body: bool) -> None:
+def _on_object_prim(
+    path: str,
+    *,
+    root_is_body: bool,
+    threshold: float,
+    contact_report: bool,
+    max_depenetration_velocity: float | None,
+) -> None:
     import omni.usd
-    from pxr import PhysxSchema
+    from pxr import PhysxSchema, Usd, UsdPhysics
 
     stage = omni.usd.get_context().get_stage()
     prim = stage.GetPrimAtPath(path)
     if not prim or not prim.IsValid():
         return
-    if root_is_body:  # RigidBodyAPI may be applied to the root only after this call
-        api = PhysxSchema.PhysxContactReportAPI.Apply(prim)
-        api.CreateThresholdAttr().Set(float(threshold))
-    enable_contact_reporting([path], threshold)
+    bodies = [prim] if root_is_body else []  # RigidBodyAPI may be applied to the root only after this call
+    bodies += [p for p in Usd.PrimRange(prim) if p.HasAPI(UsdPhysics.RigidBodyAPI) and p != prim]
+    for body in bodies:
+        if contact_report:
+            api = PhysxSchema.PhysxContactReportAPI.Apply(body)
+            api.CreateThresholdAttr().Set(float(threshold))
+        if max_depenetration_velocity is not None:
+            rb = PhysxSchema.PhysxRigidBodyAPI.Apply(body)
+            rb.CreateMaxDepenetrationVelocityAttr().Set(float(max_depenetration_velocity))
+    if contact_report:
+        enable_contact_reporting([path], threshold)

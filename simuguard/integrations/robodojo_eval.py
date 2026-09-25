@@ -61,6 +61,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ap.add_argument("--max-actions", type=int, default=0, help="scripted policy: stop after this many actions")
     ap.add_argument("--kick-speed", type=float, default=0.0,
                     help="scripted policy positive control: upward velocity (m/s) written to one resting object")
+    ap.add_argument("--intervention", default="none",
+                    help="'none' or 'depen_<m/s>': cap PhysX max depenetration velocity on every object body "
+                         "(set at object creation; meant for --replay-from counterfactual replays)")
+    ap.add_argument("--replay-detect", action="store_true",
+                    help="run the detectors on replayed frames (reports recurring events and peak speeds)")
     ap.add_argument("--detector-config", default=None)
     ap.add_argument("--no-cameras", action="store_true",
                     help="physics-only probe: no RTX rendering, RoboDojo camera managers stubbed out "
@@ -318,8 +323,19 @@ def _comparable_ids(adapter: Any, logged: list[str]) -> list[str]:
     return [b for b in logged if b in bodies and bodies[b].kind.value != "static"]
 
 
-def replay_recorded(env: Any, adapter: Any, episode_dir: Path, *, limit: int | None = None) -> dict[str, Any]:
-    """Replay ``controls.npz`` on the (already rebuilt) scene; compare with ``states.npz``."""
+def replay_recorded(
+    env: Any,
+    adapter: Any,
+    episode_dir: Path,
+    *,
+    limit: int | None = None,
+    detectors: list[Any] | None = None,
+) -> dict[str, Any]:
+    """Replay ``controls.npz`` on the (already rebuilt) scene; compare with ``states.npz``.
+
+    With ``detectors`` the replayed frames (states + contacts) also go through them, so an
+    intervention replay reports whether the recorded events recur and how fast the free bodies get.
+    """
 
     from simuguard.core.controls import ControlLog
     from simuguard.core.snapshot import Snapshot
@@ -340,11 +356,32 @@ def replay_recorded(env: Any, adapter: Any, episode_dir: Path, *, limit: int | N
     worst_free = 0.0
     first: dict[str, Any] | None = None
     curve: list[list[float]] = []
+    context = None
+    events: dict[str, Any] = {}
+    peak_speed = {b: [0.0, 0] for b in free}
+    if detectors:
+        from simuguard.core.detectors.base import DetectorContext
+
+        context = DetectorContext(episode_id=f"replay:{episode_dir.name}", timestep=adapter.timestep(), bodies=adapter.bodies())
+        for detector in detectors:
+            detector.reset(context)
+        tracked = sorted(b for b, i in adapter.bodies().items() if i.role.value in ("target", "container", "object", "robot"))
     started = time.time()
+    frame = None
     for record in controls.between(0, last):
         adapter.apply_control(record)
         adapter.step_physics()
         k = record.substep
+        if context is not None:
+            frame = adapter.read_frame(k, tracked, with_contacts=True)
+            for detector in detectors:
+                for event in detector.observe(frame, context):
+                    events[event.event_id] = event
+            context.previous = frame
+            for b in free:
+                s = frame.states.get(b)
+                if s is not None and s.speed > peak_speed[b][0]:
+                    peak_speed[b] = [s.speed, k]
         if k not in row:
             continue
         now = adapter.read_states(ids)
@@ -356,7 +393,7 @@ def replay_recorded(env: Any, adapter: Any, episode_dir: Path, *, limit: int | N
             first = {"substep": k, "control_step": record.control_step, "body": b_max, "error_m": errs[b_max]}
         if k % 100 == 0 or k == last:
             curve.append([k, errs[b_max], max((errs[b] for b in free), default=0.0)])
-    return {
+    result = {
         "initial_public_state_error": report.public_state_error,
         "substeps": last,
         "bodies_compared": len(ids),
@@ -368,6 +405,18 @@ def replay_recorded(env: Any, adapter: Any, episode_dir: Path, *, limit: int | N
         "curve_every_100": curve,
         "wall_s": time.time() - started,
     }
+    if context is not None:
+        for detector in detectors:
+            for event in detector.finalize(frame, context):
+                events[event.event_id] = event
+        result["events"] = [e.to_dict() for e in events.values()]
+        result["confirmed"] = [
+            {k: e.to_dict()[k] for k in ("detector", "onset_substep", "control_step", "bodies", "reasons")}
+            | {"max_speed_mps": e.metrics.get("max_speed_mps")}
+            for e in events.values() if e.status.value == "confirmed"
+        ]
+        result["peak_speed_mps"] = {b: {"speed": v[0], "substep": v[1]} for b, v in peak_speed.items()}
+    return result
 
 
 def public_restore_check(adapter: Any, monitor: Any, episode_dir: Path, substep: int, horizon: int = 500) -> dict[str, Any]:
@@ -449,7 +498,14 @@ def run(args: argparse.Namespace) -> int:
 
     out = Path(args.out) / args.task
     (out / "segments").mkdir(parents=True, exist_ok=True)
-    patched = install_contact_reporting() if args.contact_report == "on" else []
+    depen = None
+    if args.intervention.startswith("depen_"):
+        depen = float(args.intervention.split("_", 1)[1])
+    elif args.intervention != "none":
+        raise ValueError(f"unknown intervention {args.intervention}")
+    patched = []
+    if args.contact_report == "on" or depen is not None:
+        patched = install_contact_reporting(contact_report=args.contact_report == "on", max_depenetration_velocity=depen)
     if args.no_cameras:
         install_no_cameras()
     env, eval_num = build_env(args, app)
@@ -458,7 +514,7 @@ def run(args: argparse.Namespace) -> int:
     run_info = {
         "task": args.task, "policy": args.policy, "layouts": args.layouts, "monitor": args.monitor,
         "contact_report": args.contact_report, "contact_patch": patched, "replay": args.replay,
-        "no_cameras": bool(args.no_cameras),
+        "no_cameras": bool(args.no_cameras), "intervention": args.intervention,
         "simuguard": __version__, "eval_num_official": eval_num, "started_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "robodojo_run_id": os.environ.get("ROBODOJO_RUN_ID"),
     }
@@ -586,7 +642,13 @@ def replay_only(args: argparse.Namespace, env: Any, out: Path) -> None:
                 env.reset(seed=[layout])
             record["reset_wall_s"] = time.time() - t0
             adapter = RoboDojoAdapter(env, task_name=args.task, physics_step_counter=False)
-            record["replay"] = replay_recorded(env, adapter, seg)
+            detectors = None
+            if args.replay_detect:
+                from simuguard.presets import default_detectors
+
+                detectors = default_detectors(detector_config(args.detector_config))
+            record["intervention"] = args.intervention
+            record["replay"] = replay_recorded(env, adapter, seg, detectors=detectors)
             adapter.close()
         except Exception as exc:  # noqa: BLE001
             record["error"] = f"{type(exc).__name__}: {exc}"
@@ -599,9 +661,11 @@ def replay_only(args: argparse.Namespace, env: Any, out: Path) -> None:
             except Exception:  # noqa: BLE001
                 pass
         r = record.get("replay") or {}
-        print(f"[simuguard] fresh-process replay {seg.name}: bit_exact={r.get('bit_exact')} "
+        print(f"[simuguard] fresh-process replay {seg.name} ({args.intervention}): bit_exact={r.get('bit_exact')} "
               f"max err {r.get('max_position_error_m')} first={r.get('first_divergence')} error={record.get('error')}",
               flush=True)
+        if "confirmed" in r:
+            print(f"[simuguard]   replayed confirmed events: {r['confirmed']}", flush=True)
 
 
 def main(argv: list[str] | None = None) -> int:
