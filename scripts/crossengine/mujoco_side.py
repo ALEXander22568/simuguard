@@ -96,9 +96,9 @@ def set_velocity(model, data, body: str, state: dict) -> None:
 
 
 def com_speed(model, data, b: int, buf: np.ndarray) -> float:
+    # mjOBJ_BODY is the body's inertial frame: the linear part is already the centre-of-mass velocity
     mujoco.mj_objectVelocity(model, data, mujoco.mjtObj.mjOBJ_BODY, b, buf, 0)
-    lin = buf[3:] + np.cross(buf[:3], data.xipos[b] - data.xpos[b])
-    return float(np.linalg.norm(lin))
+    return float(np.linalg.norm(buf[3:]))
 
 
 def pair_penetration(model, data, b_moving: int, b_other: int) -> float:
