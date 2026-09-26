@@ -67,6 +67,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ap.add_argument("--replay-detect", action="store_true",
                     help="run the detectors on replayed frames (reports recurring events and peak speeds)")
     ap.add_argument("--detector-config", default=None)
+    ap.add_argument("--replay-frames", type=int, nargs="+", default=[],
+                    help="--replay-from: save a camera image (PNG) after each of these control steps of the replay")
+    ap.add_argument("--replay-camera", default="cam_head", help="camera for --replay-frames")
+    ap.add_argument("--replay-speeds", action="store_true",
+                    help="--replay-from: save the speed of every free body at every replayed substep (npz)")
     ap.add_argument("--no-cameras", action="store_true",
                     help="physics-only probe: no RTX rendering, RoboDojo camera managers stubbed out "
                          "(runs on GPUs without RT cores; NOT an official evaluation, scripted policy only)")
@@ -331,8 +336,14 @@ def replay_recorded(
     limit: int | None = None,
     detectors: list[Any] | None = None,
     before_step: Any = None,
+    frames: tuple[set[int], Path, str] | None = None,
+    speeds_out: Path | None = None,
 ) -> dict[str, Any]:
     """Replay ``controls.npz`` on the (already rebuilt) scene; compare with ``states.npz``.
+
+    ``frames`` = (control steps, folder, camera): render and save that camera after each listed control
+    step (rendering does not step physics). ``speeds_out``: npz with the speed of every free body at
+    every replayed substep.
 
     With ``detectors`` the replayed frames (states + contacts) also go through them, so an
     intervention replay reports whether the recorded events recur and how fast the free bodies get.
@@ -371,7 +382,13 @@ def replay_recorded(
     frame = None
     current = {"control_step": 0}
     adapter._control_step_fn = lambda: current["control_step"]  # replayed frames carry the recorded step
+    speed_rows: list[list[float]] = []
+    speed_steps: list[int] = []
+    prev_cs = None
     for record in controls.between(0, last):
+        if frames is not None and prev_cs is not None and record.control_step != prev_cs and prev_cs in frames[0]:
+            _save_camera(env, frames[2], frames[1] / f"cs{prev_cs:05d}.png")
+        prev_cs = record.control_step
         current["control_step"] = record.control_step
         if before_step is not None:
             before_step(record.substep)
@@ -388,6 +405,10 @@ def replay_recorded(
                 s = frame.states.get(b)
                 if s is not None and s.speed > peak_speed[b][0]:
                     peak_speed[b] = [s.speed, k]
+        if speeds_out is not None:
+            st = adapter.read_states(free)
+            speed_rows.append([float(np.linalg.norm(st[b].linear_velocity)) for b in free])
+            speed_steps.append(k)
         if k not in row:
             continue
         now = adapter.read_states(ids)
@@ -399,6 +420,11 @@ def replay_recorded(
             first = {"substep": k, "control_step": record.control_step, "body": b_max, "error_m": errs[b_max]}
         if k % 100 == 0 or k == last:
             curve.append([k, errs[b_max], max((errs[b] for b in free), default=0.0)])
+    if frames is not None and prev_cs is not None and prev_cs in frames[0]:
+        _save_camera(env, frames[2], frames[1] / f"cs{prev_cs:05d}.png")
+    if speeds_out is not None:
+        np.savez_compressed(speeds_out, substeps=np.asarray(speed_steps), bodies=np.asarray(free),
+                            speed_mps=np.asarray(speed_rows, dtype=np.float64))
     result = {
         "initial_public_state_error": report.public_state_error,
         "substeps": last,
@@ -423,6 +449,20 @@ def replay_recorded(
         ]
         result["peak_speed_mps"] = {b: {"speed": v[0], "substep": v[1]} for b, v in peak_speed.items()}
     return result
+
+
+def _save_camera(env: Any, camera: str, path: Path, renders: int = 3) -> None:
+    """Render (no physics step) and save one camera's RGB image of env 0 as PNG."""
+
+    for _ in range(renders):
+        env.render()
+    vision = env.obs_manager.get_obs(env_idx_list=[0])[0]["vision"]
+    name = next((n for n in vision if camera in n), next(iter(vision)))
+    rgb = np.asarray(vision[name]["color"])[:, :, :3].astype(np.uint8)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    from PIL import Image
+
+    Image.fromarray(rgb).save(path)
 
 
 def final_state_digest(adapter: Any) -> dict[str, list[float]]:
@@ -686,7 +726,10 @@ def replay_only(args: argparse.Namespace, env: Any, out: Path) -> None:
                 def before_step(substep: int, _a: Any = adapter, _v: float = depen, _s: int = depen_from) -> None:
                     if substep == _s:
                         record["intervention_bodies"] = _a.set_max_depenetration_velocity(_v)
-            record["replay"] = replay_recorded(env, adapter, seg, detectors=detectors, before_step=before_step)
+            frames = (set(args.replay_frames), out / f"frames_{seg.name}", args.replay_camera) if args.replay_frames else None
+            speeds_out = out / f"speeds_{seg.name}.npz" if args.replay_speeds else None
+            record["replay"] = replay_recorded(env, adapter, seg, detectors=detectors, before_step=before_step,
+                                               frames=frames, speeds_out=speeds_out)
             adapter.close()
         except Exception as exc:  # noqa: BLE001
             record["error"] = f"{type(exc).__name__}: {exc}"
