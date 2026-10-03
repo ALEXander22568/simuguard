@@ -162,8 +162,25 @@ def run_condition(robotwin_root: str, segment: Path, name: str, phase: str, stop
     controls = ControlLog.load(segment / "controls.npz")
     recorded_states = StateLog.load(segment / "states.npz")
 
+    if name.split("@")[0] == "pcm_off":  # scene flag: PhysX persistent contact manifolds off (SAT narrowphase)
+        import sapien.core as _core
+        if not getattr(_core.Engine, "_pcm_off_patched", False):
+            _orig_create_scene = _core.Engine.create_scene
+
+            def _create_scene_pcm_off(self, config=None, *args, **kwargs):
+                if config is None:
+                    config = _core.SceneConfig()
+                config.enable_pcm = False
+                return _orig_create_scene(self, config, *args, **kwargs)
+
+            _core.Engine.create_scene = _create_scene_pcm_off
+            _core.Engine._pcm_off_patched = True
     env, _ = make_task_env(robotwin_root, meta["task"], int(meta["seed"]))
     result: dict = {"name": name}
+    try:
+        result["enable_pcm"] = bool(env.scene.physx_system.config.enable_pcm)
+    except Exception:  # noqa: BLE001
+        result["enable_pcm"] = None
     try:
         adapter = RoboTwinAdapter(env)
         # every free task object: the targets plus any container that is itself a dynamic body
@@ -189,6 +206,9 @@ def run_condition(robotwin_root: str, segment: Path, name: str, phase: str, stop
             result["description"] = f"target speed clamped to {clamp.cap} m/s after each substep"
             if when:
                 clamp.active = False
+        elif base == "pcm_off":
+            description, apply = "PhysX persistent contact manifold (PCM) disabled for the whole scene", None
+            result["description"] = description
         else:
             description, apply = build_intervention(base)
             result["description"] = description

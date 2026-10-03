@@ -22,6 +22,7 @@ Usage::
 from __future__ import annotations
 
 import argparse
+import os
 import json
 import subprocess
 import sys
@@ -54,7 +55,52 @@ def eval_monitor_config(overrides: dict[str, Any] | None = None) -> MonitorConfi
     return MonitorConfig.from_dict(base)
 
 
-SIM_INTERVENTIONS = ("none", "solver_high", "solver_default", "mass_100g", "mass_50g", "depen_1.0", "depen_0.1")
+SIM_INTERVENTIONS = ("none", "solver_high", "solver_default", "mass_100g", "mass_50g", "depen_1.0", "depen_0.1",
+                     "pcm_off", "basket_coacd_0.1", "basket_coacd_0.05")
+# Scene level interventions: fixed when the scene is built, so they apply to the expert check as well as to the
+# policy rollout (unlike the per rollout settings above).
+SCENE_INTERVENTIONS = ("pcm_off", "basket_coacd_0.1", "basket_coacd_0.05")
+
+
+def install_scene_intervention(name: str) -> dict:
+    """Hook SAPIEN before any scene or actor is built."""
+    import sapien.core as _core
+    from sapien.wrapper.actor_builder import ActorBuilder
+
+    info = {"name": name}
+    if name == "pcm_off":
+        if not getattr(_core.Engine, "_sg_pcm_off", False):
+            _orig = _core.Engine.create_scene
+
+            def _create_scene(self, config=None, *args, **kwargs):
+                if config is None:
+                    config = _core.SceneConfig()
+                config.enable_pcm = False
+                return _orig(self, config, *args, **kwargs)
+
+            _core.Engine.create_scene = _create_scene
+            _core.Engine._sg_pcm_off = True
+        info["enable_pcm"] = False
+    elif name.startswith("basket_coacd_"):
+        threshold = float(name.split("_")[-1])
+        if not getattr(ActorBuilder, "_sg_coacd", False):
+            _orig_add = ActorBuilder.add_multiple_convex_collisions_from_file
+
+            def _add(self, filename, *args, **kwargs):
+                if "110_basket" in str(filename):
+                    # pre-decomposed with scripts/robotwin/make_coacd.py; one mesh per convex piece
+                    alt = str(filename).replace(".glb", f"_coacd{threshold}.glb")
+                    if not os.path.exists(alt):
+                        raise FileNotFoundError(f"{alt}: run make_coacd.py first")
+                    filename = alt
+                return _orig_add(self, filename, *args, **kwargs)
+
+            ActorBuilder.add_multiple_convex_collisions_from_file = _add
+            ActorBuilder._sg_coacd = True
+        info["basket_coacd_threshold"] = threshold
+    else:
+        raise ValueError(name)
+    return info
 # depen_<v>: PhysX max depenetration velocity <v> m/s on every dynamic body and link (RoboTwin: unbounded)
 
 
@@ -96,6 +142,8 @@ def apply_sim_intervention(adapter: RoboTwinAdapter, name: str) -> dict[str, Any
     before["target_mass_kg"] = {b: adapter.mass(b) for b in targets}
     if name in ("none", None):
         return {"name": "none", "before": before, "after": before}
+    if name in SCENE_INTERVENTIONS:  # already installed at scene creation; record only
+        return {"name": name, "scene_level": True, "before": before, "after": before}
     if name == "solver_high":
         adapter.set_solver_iterations(position=32, velocity=8)
     elif name == "solver_default":
@@ -439,6 +487,8 @@ def main(argv: list[str] | None = None) -> int:
 
     config = json.loads(Path(args.simuguard_config).read_text()) if args.simuguard_config else {}
     out = Path(args.simuguard_out).resolve()
+    if args.sim_intervention in SCENE_INTERVENTIONS:
+        print("[simuguard] scene intervention:", install_scene_intervention(args.sim_intervention), flush=True)
     module = official_eval_module(args.robotwin_root)  # chdir + sys.path like the official script
     instrumentation = RoboTwinEvalInstrumentation(
         out,
