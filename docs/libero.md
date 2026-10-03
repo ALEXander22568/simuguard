@@ -238,7 +238,7 @@ the air; nothing survives the gravity stage there.)
 ## How to run (h800-2)
 
 ```bash
-source scripts/libero/env.h800-2.sh official          # or: rpent (robosuite 1.5.2)
+source scripts/libero/env.sh official          # or: rpent (robosuite 1.5.2)
 # probe: inventory, contacts, overhead, in-process replay, a frame
 $PY scripts/libero/probe_adapter.py --suite libero_spatial --task 0 --out $RUNS/probe/x
 # policy servers (RPent's pi05_vla_server.py, RLinf-Pi05-LIBERO-130-fullshot-SFT, ~8-12 GB each)

@@ -68,9 +68,13 @@ class Xr1Client:
         raise TypeError(type(value).__name__)
 
     def _decode(self, value: dict) -> Any:
-        if value.get("__hexaanything_ndarray_v2__"):
+        # servers tag arrays with a "__<package>_ndarray[_v2]__" key; accept any package prefix
+        def tagged(suffix: str) -> bool:
+            return any(isinstance(k, str) and k.startswith("__") and k.endswith(suffix) and value[k] for k in value)
+
+        if tagged("_ndarray_v2__"):
             return np.frombuffer(value["data"], dtype=np.dtype(value["dtype"])).reshape(tuple(value["shape"]))
-        if value.get(self.MARK) or value.get("__hexa_sdk_ndarray__"):
+        if tagged("_ndarray__") and "npy" in value:
             return np.load(io.BytesIO(value["npy"]), allow_pickle=False)
         return value
 

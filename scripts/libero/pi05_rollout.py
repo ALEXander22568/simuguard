@@ -17,7 +17,7 @@ metadata).  Every episode writes a SimuGuard segment and one line of ``episodes.
 
 Usage::
 
-    source scripts/libero/env.h800-2.sh official
+    source scripts/libero/env.sh official
     $PY scripts/libero/pi05_rollout.py --suite libero_spatial --task 0 --episodes 0-4 \
         --out $RUNS/pi05_v1 --endpoint http://127.0.0.1:58261 --video
 """

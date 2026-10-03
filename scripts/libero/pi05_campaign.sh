@@ -5,7 +5,7 @@
 #   ENDPOINTS  comma list of Pi0.5 servers (pi05_server.sh), e.g. http://127.0.0.1:58261,http://127.0.0.1:58262;
 #              every job gets the list: episodes are spread over the servers, failed queries move on
 #   JOB        SUITE:TASK:EPISODES, e.g. libero_spatial:0:0-4 (one worker process per job; list long jobs first)
-# Env: PY, SG (source scripts/libero/env.h800-2.sh first).  Finished episodes are skipped, so a rerun
+# Env: PY, SG (source scripts/libero/env.sh first).  Finished episodes are skipped, so a rerun
 # resumes (requeue.py first drops episodes that ended in an infrastructure error); `touch OUT/STOP`
 # lets running jobs finish and starts no new one.
 set -uo pipefail
