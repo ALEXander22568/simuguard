@@ -1,0 +1,1693 @@
+[
+ {
+  "tag": "seg0005_o34143",
+  "onset": 34143,
+  "centre_side": "normal",
+  "sapien": {
+   "first": "actor:002_bowl#2",
+   "n": [
+    0.183713183,
+    0.982713103,
+    0.0228996314
+   ],
+   "sep_mm": [
+    -22.53,
+    -3.71,
+    -4.34
+   ]
+  },
+  "order": 0,
+  "history": "full",
+  "in_range_since": 33751,
+  "block": [
+   "--- step 34143",
+   "[cc] before refresh: pts=4 warm=1 minMargin=0.000545 marginA=0.000589 marginB=0.000545 contactDist=0.0200 pen0=0.00151 pen1=0.00213 pen2=0.00271 pen3=0.00407",
+   "[cc] after refresh: pts=3 pen0=0.00148 pen1=0.00210 pen2=0.00272",
+   "[cc] lostContacts=1 invalidate=1 -> REGENERATE (gjk); warm=1 aIdx=6,7,77,0 bIdx=7,5,6,0",
+   "[gjk] warm start: 1 points in, simplex size after solve 1, dist=0.007329 eps=0.0000109 contactDist+margins=0.02000",
+   "[gjk] iter: simplex size 1 dist=0.007329 vw=-0.030130 (NON_INTERSECT if vw > 0.02000; converged if vw > 0.007328) new support idx a=82 b=11",
+   "[gjk] after simplex solve: size 2 dist=0.002727 prevDist=0.007329 -> progress",
+   "[gjk] iter: simplex size 2 dist=0.002727 vw=-0.001367 (NON_INTERSECT if vw > 0.02000; converged if vw > 0.002726) new support idx a=47 b=8",
+   "[gjk] after simplex solve: size 2 dist=0.002727 prevDist=0.002727 -> NO PROGRESS (degenerate exit, no test against contactDist)",
+   "[cc] gjkPenetration status=4 (0 NON_INTERSECT,1 EPA_CONTACT,2 GJK_CONTACT? see GuGJKType.h) warmAfter=1 normal=(-0.52083 0.33252 -0.78624) closA=(0.02650 0.05209 0.05415) closB=(0.02793 0.05119 0.05630) penDep=0.00273",
+   "[epa] GJK_DEGENERATE: cos(searchDir,normal)=1.00000 dot(centreDir,normal)=0.70800",
+   "[cc] after addGJKEPAContacts: doOverlapTest=0 pts=3 initial=4 dot(localNor,normal)=0.8019 fullContactGen=1 normal=(-0.52083 0.33252 -0.78624) penDep=0.00273",
+   "[full/gjk-normal] signed dot(A face normal, gjk normal in A)=0.6228 (facing B would be negative); signed dot(B face normal, gjk normal)=0.6032 (facing A is positive)",
+   "[full/gjk-normal] distance of witness point to each face plane of A (vertex space, m): f0=-0.06578 f1=-0.07397 f2=-0.20685 f3=-0.00578 f4=-0.13118 f5=-0.09902 f6=-0.03423 f7=-0.04901 f8=-0.03593 f9=-0.08783 f10=-0.02818 f11=-0.01839 f12=-0.04433 f13=-0.12687 f14=-0.12577 f15=-0.14116 f16=-0.18842 f17=-0.29259 f18=-0.89562 f19=-0.00219 f20=-0.01197 f21=-0.25333 f22=-0.22146 f23=-0.17717 f24=-0.06491 f25=-0.35143 f26=-0.01284 f27=-0.01048 f28=-0.02265 f29=-0.01957 f30=-0.12676 f31=-0.12960 f32=-0.10884 f33=-0.18750 f34=-0.20613 f35=-0.21255 f36=-0.21251 f37=-0.09635 f38=-0.09840 f39=-0.05777 f40=-0.07101 f41=-0.09384 f42=-0.10896 f43=-0.11105 f44=-0.06297 f45=-0.07528 f46=-0.02851 f47=-0.01972 f48=-0.01097 f49=-0.01404 f50=-0.01483 f51=-0.01510 f52=-0.02033 f53=-0.25362 f54=-0.21691 f55=-0.27770 f56=-0.19297 f57=-0.13627 f58=-0.21124 f59=-0.06875 f60=-0.14037 f61=-0.15958 f62=-0.12445 f63=-0.06478 f64=-0.05396 f65=-0.05221 f66=-0.17006 f67=-0.18350 f68=-0.16099 f69=-0.15078 f70=-0.15186 f71=-0.13242 f72=-0.00215 f73=-0.00291 f74=-0.24039 f75=-0.20788 f76=-0.20059 f77=-0.31847 f78=-0.28379 f79=-0.00882 f80=-0.01188 f81=-0.01170 f82=-0.01858 f83=-0.00000 f84=-0.28158 f85=-0.33487 f86=-0.08620 f87=-0.08950 f88=-0.13256 f89=-0.04439 f90=-0.04475 f91=-0.17872 f92=-0.18380  toleranceA=0.00100",
+   "[full/gjk-normal] distance of witness point to each face plane of B:  toleranceB=0.00100",
+   "[full/gjk-normal] faceIndex1(B ref)=3 faceIndex0(A inc)=83 referenceProject=0.6032 incidentProject=0.6228 -> reference is A(poly0) gjkNormal=(-0.52083 0.33252 -0.78624) refNormalB=(-0.18039 0.95265 -0.24479) incNormalA_in0=(-1.00000 0.00000 0.00000) closestA=(0.02650 0.05209 0.05415) closestB=(0.02793 0.05119 0.05630)",
+   "[cc] generateFullContactManifold -> 3 contacts: [pen=-0.02253 n=(0.99226 -0.04651 0.11512)] [pen=-0.00434 n=(0.99226 -0.04651 0.11512)] [pen=-0.00371 n=(0.99226 -0.04651 0.11512)]",
+   "step 34143: ret 1 contacts 3 manifoldPts 3 n 0.1837 0.9827 0.0229 sep -0.02253 -0.00434 -0.00371"
+  ],
+  "regenerate": true,
+  "pts_before": 4,
+  "pts_after_refresh": 3,
+  "warm": 1,
+  "gjk_status": 4,
+  "gjk_penDep_mm": 2.73,
+  "degenerate_exit": true,
+  "epa_status": null,
+  "epa_penDep_mm": null,
+  "doOverlapTest": 0,
+  "fullContactGen": 1,
+  "sat": [],
+  "dotA": 0.6228,
+  "dotB": 0.6032,
+  "reference": "A(poly0)",
+  "repro": {
+   "n": [
+    0.1837,
+    0.9827,
+    0.0229
+   ],
+   "sep_mm": [
+    -22.53,
+    -4.34,
+    -3.71
+   ]
+  },
+  "match": true,
+  "true_sep_mm": 1.45,
+  "ext_A_mm": [
+   12.8,
+   33.1,
+   46.8
+  ],
+  "ext_B_mm": [
+   22.5,
+   33.5,
+   43.4
+  ]
+ },
+ {
+  "tag": "seg0034_o22815",
+  "onset": 22815,
+  "centre_side": "normal",
+  "sapien": {
+   "first": "actor:002_bowl#1",
+   "n": [
+    0.168583035,
+    0.983212769,
+    -0.0698019862
+   ],
+   "sep_mm": [
+    -15.31,
+    -13.15,
+    -12.77
+   ]
+  },
+  "order": 0,
+  "history": "from onset-10 (empty cache)",
+  "in_range_since": 22805,
+  "block": [
+   "--- step 22815",
+   "[cc] before refresh: pts=1 warm=1 minMargin=0.000518 marginA=0.000518 marginB=0.000637 contactDist=0.0200 pen0=0.00733",
+   "[cc] after refresh: pts=0",
+   "[cc] lostContacts=1 invalidate=1 -> REGENERATE (gjk); warm=1 aIdx=79,72,26,0 bIdx=105,105,24,125",
+   "[gjk] warm start: 1 points in, simplex size after solve 1, dist=0.019043 eps=0.0000104 contactDist+margins=0.02000",
+   "[gjk] iter: simplex size 1 dist=0.019043 vw=-0.016582 (NON_INTERSECT if vw > 0.02000; converged if vw > 0.019039) new support idx a=6 b=12",
+   "[gjk] after simplex solve: size 2 dist=0.006955 prevDist=0.019043 -> progress",
+   "[gjk] iter: simplex size 2 dist=0.006955 vw=0.002933 (NON_INTERSECT if vw > 0.02000; converged if vw > 0.006954) new support idx a=8 b=13",
+   "[gjk] after simplex solve: size 2 dist=0.006955 prevDist=0.006955 -> NO PROGRESS (degenerate exit, no test against contactDist)",
+   "[cc] gjkPenetration status=4 (0 NON_INTERSECT,1 EPA_CONTACT,2 GJK_CONTACT? see GuGJKType.h) warmAfter=1 normal=(-0.45594 -0.45919 -0.76241) closA=(-0.03163 0.00621 -0.05212) closB=(-0.02846 0.00941 -0.04682) penDep=0.00696",
+   "[epa] GJK_DEGENERATE: cos(searchDir,normal)=1.00000 dot(centreDir,normal)=0.71595",
+   "[cc] after addGJKEPAContacts: doOverlapTest=0 pts=1 initial=1 dot(localNor,normal)=0.0000 fullContactGen=1 normal=(-0.45594 -0.45919 -0.76241) penDep=0.00696",
+   "[full/gjk-normal] signed dot(A face normal, gjk normal in A)=-0.4164 (facing B would be negative); signed dot(B face normal, gjk normal)=-0.4559 (facing A is positive)",
+   "[full/gjk-normal] distance of witness point to each face plane of A (vertex space, m): f0=-0.25897 f1=-0.04945 f2=-0.07587 f3=-0.17205 f4=-0.04514 f5=-0.14000 f6=-0.09017 f7=-0.08750 f8=-0.19050 f9=-0.13798 f10=-0.02807 f11=-0.08149 f12=-0.08595 f13=-0.09109 f14=-0.08609 f15=-0.07383 f16=-0.05288 f17=-0.13807 f18=-0.15946 f19=-0.12132 f20=-0.10612 f21=-0.04462 f22=-0.07583 f23=-0.05145 f24=-0.09776 f25=-0.10278 f26=-0.11190 f27=-0.12074 f28=-0.10971 f29=-0.15209 f30=-0.04487 f31=-0.07971 f32=-0.09500 f33=-0.19284 f34=-0.17670 f35=-0.18917 f36=-0.13177 f37=-0.13101 f38=-0.03666 f39=-0.25899 f40=-0.04764 f41=-0.05525 f42=-0.06142 f43=-0.05437 f44=-0.03060 f45=-0.02961 f46=-0.06053 f47=-0.05479 f48=-0.06306 f49=-0.06791 f50=-0.08216 f51=-0.12685 f52=-0.13326 f53=-0.09861 f54=-0.21536 f55=-0.10681 f56=-0.09474 f57=-0.12106 f58=-0.12266 f59=-0.04114 f60=-0.19297 f61=-0.17678 f62=-0.16229 f63=-0.19509 f64=-0.13252 f65=-0.12689 f66=-0.18931 f67=-0.14985 f68=-0.15876 f69=-0.20308 f70=-0.17831 f71=-0.06241 f72=-0.07361 f73=-0.05761 f74=-0.13594 f75=-0.12284 f76=-0.11402 f77=-0.10585 f78=-0.11236 f79=-0.09866 f80=-0.10489 f81=-0.10177 f82=-0.05146 f83=-0.03648 f84=-0.03125 f85=-0.03092 f86=-0.02852 f87=-0.05684 f88=-0.06453 f89=-0.17117 f90=-0.15411 f91=-0.08243 f92=-0.08386 f93=-0.05184 f94=-0.04701 f95=-0.04717 f96=-0.09217 f97=-0.09044 f98=-0.08969 f99=-0.14164 f100=-0.15228 f101=-0.11899 f102=-0.12484 f103=-0.11658 f104=-0.75553 f105=-0.26049 f106=-0.27393  toleranceA=0.00100",
+   "[full/gjk-normal] distance of witness point to each face plane of B: f109=-0.00000  toleranceB=0.00100",
+   "[full/gjk-normal] faceIndex1(B ref)=109 faceIndex0(A inc)=10 referenceProject=0.4559 incidentProject=0.4164 -> reference is B(poly1) gjkNormal=(-0.45594 -0.45919 -0.76241) refNormalB=(1.00000 0.00000 0.00000) incNormalA_in0=(0.02593 0.99907 0.03440) closestA=(-0.03163 0.00621 -0.05212) closestB=(-0.02846 0.00941 -0.04682)",
+   "[cc] generateFullContactManifold -> 3 contacts: [pen=-0.01531 n=(1.00000 0.00000 0.00000)] [pen=-0.01315 n=(1.00000 0.00000 0.00000)] [pen=-0.01277 n=(1.00000 0.00000 0.00000)]",
+   "step 22815: ret 1 contacts 3 manifoldPts 3 n 0.1686 0.9832 -0.0698 sep -0.01531 -0.01315 -0.01277"
+  ],
+  "regenerate": true,
+  "pts_before": 1,
+  "pts_after_refresh": 0,
+  "warm": 1,
+  "gjk_status": 4,
+  "gjk_penDep_mm": 6.96,
+  "degenerate_exit": true,
+  "epa_status": null,
+  "epa_penDep_mm": null,
+  "doOverlapTest": 0,
+  "fullContactGen": 1,
+  "sat": [],
+  "dotA": -0.4164,
+  "dotB": -0.4559,
+  "reference": "B(poly1)",
+  "repro": {
+   "n": [
+    0.1686,
+    0.9832,
+    -0.0698
+   ],
+   "sep_mm": [
+    -15.31,
+    -13.15,
+    -12.77
+   ]
+  },
+  "match": true,
+  "true_sep_mm": 3.8,
+  "ext_A_mm": [
+   19.6,
+   32.4,
+   39.2
+  ],
+  "ext_B_mm": [
+   15.5,
+   37.7,
+   49.5
+  ]
+ },
+ {
+  "tag": "seg0034_o22820",
+  "onset": 22820,
+  "centre_side": "inverted",
+  "sapien": {
+   "first": "actor:002_bowl#1",
+   "n": [
+    -0.079614982,
+    0.163245887,
+    0.983367741
+   ],
+   "sep_mm": [
+    -57.65,
+    -57.53,
+    -54.7
+   ]
+  },
+  "order": 0,
+  "history": "from onset-5 (empty cache)",
+  "in_range_since": 22815,
+  "block": [
+   "--- step 22820",
+   "[cc] before refresh: pts=1 warm=1 minMargin=0.000545 marginA=0.000545 marginB=0.000624 contactDist=0.0200 pen0=0.02302",
+   "[cc] after refresh: pts=0",
+   "[cc] lostContacts=1 invalidate=1 -> REGENERATE (gjk); warm=1 aIdx=2,4,1,0 bIdx=26,26,26,0",
+   "[gjk] warm start: 1 points in, simplex size after solve 1, dist=0.028961 eps=0.0000109 contactDist+margins=0.02000",
+   "[gjk] iter: simplex size 1 dist=0.028961 vw=0.011233 (NON_INTERSECT if vw > 0.02000; converged if vw > 0.028955) new support idx a=6 b=44",
+   "[gjk] after simplex solve: size 2 dist=0.024719 prevDist=0.028961 -> progress",
+   "[gjk] iter: simplex size 2 dist=0.024719 vw=0.018656 (NON_INTERSECT if vw > 0.02000; converged if vw > 0.024714) new support idx a=28 b=34",
+   "[gjk] after simplex solve: size 2 dist=0.024719 prevDist=0.024719 -> NO PROGRESS (degenerate exit, no test against contactDist)",
+   "[cc] gjkPenetration status=4 (0 NON_INTERSECT,1 EPA_CONTACT,2 GJK_CONTACT? see GuGJKType.h) warmAfter=1 normal=(0.21215 -0.70251 0.67932) closA=(0.02250 -0.00663 0.06854) closB=(0.01726 0.01073 0.05175) penDep=0.02472",
+   "[epa] GJK_DEGENERATE: cos(searchDir,normal)=1.00000 dot(centreDir,normal)=0.93630",
+   "[cc] after addGJKEPAContacts: doOverlapTest=0 pts=1 initial=1 dot(localNor,normal)=0.0000 fullContactGen=1 normal=(0.21215 -0.70251 0.67932) penDep=0.02472",
+   "[full/gjk-normal] signed dot(A face normal, gjk normal in A)=-0.5473 (facing B would be negative); signed dot(B face normal, gjk normal)=-0.7025 (facing A is positive)",
+   "[full/gjk-normal] distance of witness point to each face plane of A (vertex space, m): f0=-0.00000 f1=-0.01118 f2=-0.01179 f3=-0.02024 f4=-0.00904 f5=-0.09196 f6=-0.14794 f7=-0.29758 f8=-0.13187 f9=-0.16072 f10=-0.23097 f11=-0.01471 f12=-0.01042 f13=-0.03519 f14=-0.12766 f15=-0.11629 f16=-0.08373 f17=-0.08894 f18=-0.09396 f19=-0.13349 f20=-0.05648 f21=-0.09111 f22=-0.15782 f23=-0.15215 f24=-0.14027 f25=-0.20642 f26=-0.20931 f27=-0.09672 f28=-0.18101 f29=-0.10536 f30=-0.12297 f31=-0.13595 f32=-0.14136 f33=-0.01054 f34=-0.01229 f35=-0.04083 f36=-0.18034 f37=-0.18995 f38=-0.11903 f39=-0.12630 f40=-0.35945 f41=-0.16640 f42=-0.18518 f43=-0.15895 f44=-0.10118 f45=-0.09820 f46=-0.05053 f47=-0.06236 f48=-0.06530 f49=-0.06222 f50=-0.09232 f51=-0.27061 f52=-0.15593 f53=-0.26048 f54=-0.26397 f55=-0.15064 f56=-0.16706 f57=-0.22974 f58=-0.21903 f59=-0.23896 f60=-0.13437 f61=-0.10603 f62=-0.13710 f63=-0.19001 f64=-0.17704 f65=-0.13407 f66=-0.07043 f67=-0.10213 f68=-0.03731 f69=-0.03889 f70=-0.02853 f71=-0.29864 f72=-0.11735 f73=-0.11599 f74=-0.10427 f75=-0.33322 f76=-0.26109 f77=-0.17362 f78=-0.08608 f79=-0.07763 f80=-0.16977 f81=-0.35077 f82=-0.31583 f83=-0.76299 f84=-0.27511 f85=-0.29509 f86=-0.22020 f87=-0.19870 f88=-0.27102 f89=-0.27345 f90=-0.22792 f91=-0.22256 f92=-0.24740 f93=-0.22541 f94=-0.23111 f95=-0.22654 f96=-0.21830 f97=-0.18538 f98=-0.06219 f99=-0.06958 f100=-0.24225 f101=-0.05166 f102=-0.03256 f103=-0.29789 f104=-0.52631 f105=-0.20873 f106=-0.09042 f107=-0.09171 f108=-0.07378 f109=-0.08023 f110=-0.08628 f111=-0.09740 f112=-0.08999  toleranceA=0.00100",
+   "[full/gjk-normal] distance of witness point to each face plane of B:  toleranceB=0.00100",
+   "[full/gjk-normal] faceIndex1(B ref)=0 faceIndex0(A inc)=0 referenceProject=0.7025 incidentProject=0.5473 -> reference is B(poly1) gjkNormal=(0.21215 -0.70251 0.67932) refNormalB=(0.00000 1.00000 0.00000) incNormalA_in0=(0.00000 0.00000 -1.00000) closestA=(0.02250 -0.00663 0.06854) closestB=(0.01726 0.01073 0.05175)",
+   "[cc] generateFullContactManifold -> 3 contacts: [pen=-0.05765 n=(0.00000 1.00000 0.00000)] [pen=-0.05753 n=(0.00000 1.00000 0.00000)] [pen=-0.05470 n=(0.00000 1.00000 0.00000)]",
+   "step 22820: ret 1 contacts 3 manifoldPts 3 n -0.0796 0.1632 0.9834 sep -0.05765 -0.05753 -0.05470"
+  ],
+  "regenerate": true,
+  "pts_before": 1,
+  "pts_after_refresh": 0,
+  "warm": 1,
+  "gjk_status": 4,
+  "gjk_penDep_mm": 24.72,
+  "degenerate_exit": true,
+  "epa_status": null,
+  "epa_penDep_mm": null,
+  "doOverlapTest": 0,
+  "fullContactGen": 1,
+  "sat": [],
+  "dotA": -0.5473,
+  "dotB": -0.7025,
+  "reference": "B(poly1)",
+  "repro": {
+   "n": [
+    -0.0796,
+    0.1632,
+    0.9834
+   ],
+   "sep_mm": [
+    -57.65,
+    -57.53,
+    -54.7
+   ]
+  },
+  "match": true,
+  "true_sep_mm": 21.72,
+  "ext_A_mm": [
+   18.4,
+   39.5,
+   40.1
+  ],
+  "ext_B_mm": [
+   19.9,
+   39.3,
+   60.4
+  ]
+ },
+ {
+  "tag": "seg0034_o97487",
+  "onset": 97487,
+  "centre_side": "normal",
+  "sapien": {
+   "first": "actor:002_bowl#2",
+   "n": [
+    -0.111053288,
+    -0.257665783,
+    -0.959830999
+   ],
+   "sep_mm": [
+    -11.74,
+    -10.68,
+    -11.72,
+    -11.25
+   ]
+  },
+  "order": 0,
+  "history": "full",
+  "in_range_since": 34415,
+  "block": [
+   "--- step 97487",
+   "[cc] before refresh: pts=4 warm=4 minMargin=0.000525 marginA=0.000590 marginB=0.000525 contactDist=0.0200 pen0=-0.01150 pen1=-0.01043 pen2=-0.01147 pen3=-0.01097",
+   "[cc] after refresh: pts=0",
+   "[cc] lostContacts=1 invalidate=1 -> REGENERATE (gjk); warm=4 aIdx=56,73,56,1 bIdx=2,50,0,59",
+   "[gjk] warm start: 4 points in, simplex size after solve 4, dist=0.000000 eps=0.0000105 contactDist+margins=0.02000",
+   "[cc] gjkPenetration status=5 (0 NON_INTERSECT,1 EPA_CONTACT,2 GJK_CONTACT? see GuGJKType.h) warmAfter=4 normal=(0.00000 0.00000 0.00000) closA=(0.00000 0.00000 0.00000) closB=(0.00000 0.00000 0.00000) penDep=0.00000",
+   "[epa] epaPenetration returned status=5 normal=(0.00590 -0.99644 0.08410) closA=(-0.05176 0.02451 -0.00099) closB=(-0.05169 0.01280 -0.00000) penDep=-0.01175",
+   "[cc] after addGJKEPAContacts: doOverlapTest=0 pts=1 initial=4 dot(localNor,normal)=0.0000 fullContactGen=1 normal=(0.00590 -0.99644 0.08410) penDep=-0.01175",
+   "[full/gjk-normal] signed dot(A face normal, gjk normal in A)=-1.0000 (facing B would be negative); signed dot(B face normal, gjk normal)=0.9964 (facing A is positive)",
+   "[full/gjk-normal] distance of witness point to each face plane of A (vertex space, m): f0=0.00000 f1=0.00623 f2=-0.19578 f3=-0.24720 f4=-0.27963 f5=-0.20392 f6=-0.21215 f7=-0.21322 f8=-0.20708 f9=-0.18386 f10=-0.16988 f11=-0.21745 f12=-0.24854 f13=-0.22103 f14=-0.20957 f15=-0.22642 f16=-0.23892 f17=-0.24988 f18=-0.24008 f19=-0.21209 f20=-0.18942 f21=-0.17451 f22=-0.16550 f23=-0.19065 f24=-0.19782 f25=-0.23253 f26=-0.37136 f27=-0.29372 f28=-0.26421 f29=-0.27047 f30=-0.24360 f31=-0.20776 f32=-0.19351 f33=-0.20106 f34=-0.21287 f35=-0.21926 f36=-0.16957 f37=-0.36790 f38=-0.29766 f39=-0.22860 f40=-0.22035 f41=-0.25471 f42=-0.16098 f43=-0.16414 f44=-0.17100 f45=-0.17878 f46=-0.18773 f47=-0.27818 f48=-0.26366 f49=-0.17575 f50=-0.16145 f51=-0.17214 f52=-0.17591 f53=-0.20273 f54=-0.32300 f55=-0.35108 f56=-0.25718 f57=-0.24833 f58=-0.23086 f59=-0.21086 f60=-0.18707 f61=-0.20395 f62=-0.18071 f63=-0.17883 f64=-0.21352 f65=-0.19394 f66=-0.18598 f67=-0.20251 f68=-0.20726 f69=-0.20685 f70=-0.19466 f71=-0.18626 f72=-0.19796 f73=-0.27919 f74=-0.27886 f75=-0.26564 f76=-0.24152 f77=-0.33854 f78=-0.35694 f79=-0.18939 f80=-0.19898 f81=-0.19486 f82=-0.23061 f83=-0.23794 f84=-0.24327 f85=-0.22365 f86=-0.22061 f87=-0.23011 f88=-0.17318 f89=-0.19100 f90=-0.20796 f91=-0.21402 f92=-0.22034 f93=-0.22563 f94=-0.16103 f95=-0.16702 f96=-0.18877 f97=-0.19687 f98=-0.21196  toleranceA=0.00100",
+   "[full/gjk-normal] distance of witness point to each face plane of B: f1=0.00000 f43=0.00000 f83=-0.00000  toleranceB=0.00100",
+   "[full/gjk-normal] faceIndex1(B ref)=83 faceIndex0(A inc)=0 referenceProject=0.9964 incidentProject=1.0000 -> reference is A(poly0) gjkNormal=(0.00590 -0.99644 0.08410) refNormalB=(0.00000 -1.00000 0.00000) incNormalA_in0=(0.00000 1.00000 0.00000) closestA=(-0.05176 0.02451 -0.00099) closestB=(-0.05169 0.01280 -0.00000)",
+   "[cc] generateFullContactManifold -> 7 contacts: [pen=-0.01070 n=(0.00590 -0.99644 0.08410)] [pen=-0.01172 n=(0.00590 -0.99644 0.08410)] [pen=-0.01125 n=(0.00590 -0.99644 0.08410)] [pen=-0.01106 n=(0.00590 -0.99644 0.08410)] [pen=-0.01087 n=(0.00590 -0.99644 0.08410)] [pen=-0.01068 n=(0.00590 -0.99644 0.08410)] [pen=-0.01174 n=(0.00590 -0.99644 0.08410)]",
+   "step 97487: ret 1 contacts 4 manifoldPts 4 n -0.1111 -0.2577 -0.9598 sep -0.01174 -0.01068 -0.01172 -0.01125"
+  ],
+  "regenerate": true,
+  "pts_before": 4,
+  "pts_after_refresh": 0,
+  "warm": 4,
+  "gjk_status": 5,
+  "gjk_penDep_mm": 0.0,
+  "degenerate_exit": false,
+  "epa_status": 5,
+  "epa_penDep_mm": -11.75,
+  "doOverlapTest": 0,
+  "fullContactGen": 1,
+  "sat": [],
+  "dotA": -1.0,
+  "dotB": 0.9964,
+  "reference": "A(poly0)",
+  "repro": {
+   "n": [
+    -0.1111,
+    -0.2577,
+    -0.9598
+   ],
+   "sep_mm": [
+    -11.74,
+    -10.68,
+    -11.72,
+    -11.25
+   ]
+  },
+  "match": true,
+  "true_sep_mm": -11.74,
+  "ext_A_mm": [
+   18.8,
+   25.5,
+   53.2
+  ],
+  "ext_B_mm": [
+   17.2,
+   26.4,
+   42.7
+  ]
+ },
+ {
+  "tag": "seg0034_o97643",
+  "onset": 97643,
+  "centre_side": "normal",
+  "sapien": {
+   "first": "actor:002_bowl#2",
+   "n": [
+    0.183858261,
+    0.073024258,
+    -0.98023653
+   ],
+   "sep_mm": [
+    -14.17,
+    -13.44,
+    -14.18
+   ]
+  },
+  "order": 0,
+  "history": "full",
+  "in_range_since": 95942,
+  "block": [
+   "--- step 97643",
+   "[cc] before refresh: pts=4 warm=4 minMargin=0.000590 marginA=0.000625 marginB=0.000590 contactDist=0.0200 pen0=-0.01248 pen1=-0.01193 pen2=-0.01297 pen3=-0.01300",
+   "[cc] after refresh: pts=0",
+   "[cc] lostContacts=1 invalidate=1 -> REGENERATE (gjk); warm=4 aIdx=1,11,4,2 bIdx=8,1,99,74",
+   "[gjk] warm start: 4 points in, simplex size after solve 4, dist=0.000000 eps=0.0000118 contactDist+margins=0.02000",
+   "[cc] gjkPenetration status=5 (0 NON_INTERSECT,1 EPA_CONTACT,2 GJK_CONTACT? see GuGJKType.h) warmAfter=4 normal=(0.00000 0.00000 0.00000) closA=(0.00000 0.00000 0.00000) closB=(0.00000 0.00000 0.00000) penDep=0.00000",
+   "[epa] epaPenetration returned status=5 normal=(0.10764 -0.95649 0.27119) closA=(-0.03441 0.01387 0.01939) closB=(-0.03288 0.00030 0.02323) penDep=-0.01418",
+   "[cc] after addGJKEPAContacts: doOverlapTest=0 pts=1 initial=4 dot(localNor,normal)=0.0000 fullContactGen=1 normal=(0.10764 -0.95649 0.27119) penDep=-0.01418",
+   "[full/gjk-normal] signed dot(A face normal, gjk normal in A)=-1.0000 (facing B would be negative); signed dot(B face normal, gjk normal)=0.8959 (facing A is positive)",
+   "[full/gjk-normal] distance of witness point to each face plane of A (vertex space, m): f0=-0.01657 f1=0.00000 f2=-0.23873 f3=-0.23333 f4=-0.25379 f5=-0.27026 f6=-0.28895 f7=-0.20951 f8=-0.30486 f9=-0.25717 f10=-0.23212 f11=-0.28824 f12=-0.30036 f13=-0.26191 f14=-0.21845 f15=-0.22474 f16=-0.23035 f17=-0.23053 f18=-0.23676 f19=-0.22175 f20=-0.24014 f21=-0.18806 f22=-0.19670 f23=-0.21117 f24=-0.22512 f25=-0.31932 f26=-0.42981 f27=-0.00063 f28=-0.00324 f29=-0.79611 f30=-0.19912 f31=-0.22063 f32=-0.21403 f33=-0.19934 f34=-0.19775 f35=-0.22025 f36=-0.26150 f37=-0.24350 f38=-0.31017 f39=-0.31220 f40=-0.30051 f41=-0.28794 f42=-0.22804 f43=-0.22202 f44=-0.21720 f45=-0.20907 f46=-0.21131 f47=-0.27732 f48=-0.31493 f49=-0.25006 f50=-0.28238 f51=-0.19420 f52=-0.19326 f53=-0.19010 f54=-0.20283 f55=-0.24273 f56=-0.23663 f57=-0.28065 f58=-0.27974 f59=-0.24088 f60=-0.24053 f61=-0.27098 f62=-0.26993 f63=-0.24424 f64=-0.25337 f65=-0.26247 f66=-0.28367 f67=-0.29116 f68=-0.28356 f69=-0.27568 f70=-0.22318 f71=-0.22672 f72=-0.19706 f73=-0.19804 f74=-0.19206 f75=-0.27403 f76=-0.29040 f77=-0.22188 f78=-0.25802 f79=-0.25229 f80=-0.26527 f81=-0.25681 f82=-0.24857 f83=-0.19414 f84=-0.19355  toleranceA=0.00100",
+   "[full/gjk-normal] distance of witness point to each face plane of B: f9=0.00000 f10=-0.00141 f36=0.00000  toleranceB=0.00100",
+   "[full/gjk-normal] faceIndex1(B ref)=9 faceIndex0(A inc)=1 referenceProject=0.8959 incidentProject=1.0000 -> reference is A(poly0) gjkNormal=(0.10764 -0.95649 0.27119) refNormalB=(-0.34524 -0.90230 0.25820) incNormalA_in0=(0.03776 0.99351 -0.10725) closestA=(-0.03441 0.01387 0.01939) closestB=(-0.03288 0.00030 0.02323)",
+   "[cc] generateFullContactManifold -> 3 contacts: [pen=-0.01344 n=(0.10773 -0.95652 0.27103)] [pen=-0.01418 n=(0.10773 -0.95652 0.27103)] [pen=-0.01417 n=(0.10773 -0.95652 0.27103)]",
+   "step 97643: ret 1 contacts 3 manifoldPts 3 n 0.1839 0.0730 -0.9802 sep -0.01344 -0.01418 -0.01417"
+  ],
+  "regenerate": true,
+  "pts_before": 4,
+  "pts_after_refresh": 0,
+  "warm": 4,
+  "gjk_status": 5,
+  "gjk_penDep_mm": 0.0,
+  "degenerate_exit": false,
+  "epa_status": 5,
+  "epa_penDep_mm": -14.18,
+  "doOverlapTest": 0,
+  "fullContactGen": 1,
+  "sat": [],
+  "dotA": -1.0,
+  "dotB": 0.8959,
+  "reference": "A(poly0)",
+  "repro": {
+   "n": [
+    0.1839,
+    0.073,
+    -0.9802
+   ],
+   "sep_mm": [
+    -13.44,
+    -14.18,
+    -14.17
+   ]
+  },
+  "match": true,
+  "true_sep_mm": -14.18,
+  "ext_A_mm": [
+   18.8,
+   34.1,
+   57.3
+  ],
+  "ext_B_mm": [
+   15.6,
+   31.4,
+   47.8
+  ]
+ },
+ {
+  "tag": "seg0034_o97697",
+  "onset": 97697,
+  "centre_side": "inverted",
+  "sapien": {
+   "first": "actor:002_bowl#2",
+   "n": [
+    0.0803943649,
+    0.633767128,
+    0.769334793
+   ],
+   "sep_mm": [
+    -17.36,
+    -18.02,
+    -17.65,
+    -17.81
+   ]
+  },
+  "order": 0,
+  "history": "full",
+  "in_range_since": 97566,
+  "block": [
+   "--- step 97697",
+   "[cc] before refresh: pts=3 warm=4 minMargin=0.000537 marginA=0.000537 marginB=0.000625 contactDist=0.0200 pen0=-0.01507 pen1=-0.01491 pen2=-0.01479",
+   "[cc] after refresh: pts=0",
+   "[cc] lostContacts=1 invalidate=1 -> REGENERATE (gjk); warm=4 aIdx=2,75,5,97 bIdx=32,38,57,75",
+   "[gjk] warm start: 4 points in, simplex size after solve 4, dist=0.000000 eps=0.0000107 contactDist+margins=0.02000",
+   "[cc] gjkPenetration status=5 (0 NON_INTERSECT,1 EPA_CONTACT,2 GJK_CONTACT? see GuGJKType.h) warmAfter=4 normal=(0.00000 0.00000 0.00000) closA=(0.00000 0.00000 0.00000) closB=(0.00000 0.00000 0.00000) penDep=0.00000",
+   "[epa] epaPenetration returned status=5 normal=(0.04577 0.99262 -0.11229) closA=(-0.02229 -0.00883 0.01527) closB=(-0.02146 0.00906 0.01324) penDep=-0.01802",
+   "[cc] after addGJKEPAContacts: doOverlapTest=0 pts=1 initial=3 dot(localNor,normal)=0.0000 fullContactGen=1 normal=(0.04577 0.99262 -0.11229) penDep=-0.01802",
+   "[full/gjk-normal] signed dot(A face normal, gjk normal in A)=-0.9283 (facing B would be negative); signed dot(B face normal, gjk normal)=1.0000 (facing A is positive)",
+   "[full/gjk-normal] distance of witness point to each face plane of A (vertex space, m): f0=-0.00000 f1=-0.08588 f2=-0.08393 f3=0.00000 f4=-0.24253 f5=-0.07574 f6=-0.01515 f7=-0.00538 f8=-0.08724 f9=-0.04284 f10=-0.05535 f11=-0.19787 f12=-0.20443 f13=-0.21412 f14=-0.17907 f15=-0.13499 f16=-0.01049 f17=-0.17800 f18=-0.15999 f19=-0.13274 f20=-0.11892 f21=-0.12336 f22=-0.13380 f23=-0.21173 f24=-0.22047 f25=-0.23879 f26=0.00000 f27=-0.01130 f28=-0.09741 f29=-0.14210 f30=-0.12284 f31=-0.12630 f32=-0.01730 f33=-0.04978 f34=-0.05799 f35=-0.02984 f36=-0.24100 f37=-0.23517 f38=-0.29013 f39=-0.08822 f40=-0.07289 f41=-0.08941 f42=-0.04065 f43=-0.03338 f44=-0.02298 f45=-0.02584 f46=-0.00310 f47=-0.00212 f48=-0.00824 f49=-0.19290 f50=-0.07618 f51=-0.09970 f52=-0.07730 f53=-0.09757 f54=-0.33864 f55=-0.30279 f56=-0.19796 f57=-0.15295 f58=-0.03377 f59=-0.03424 f60=-0.02873 f61=-0.03832 f62=-0.03056 f63=-0.05619 f64=-0.05187 f65=-0.07290 f66=-0.07342 f67=-0.11514 f68=-0.15110 f69=-0.14247 f70=-0.12739 f71=-0.03258 f72=-0.02473 f73=-0.11088 f74=-0.21982 f75=-0.06690 f76=-0.07143 f77=-0.06158 f78=-0.24656 f79=-0.60886 f80=-0.07099 f81=-0.08029 f82=-0.08342 f83=-0.22942 f84=-0.04249 f85=-0.05178 f86=-0.06562 f87=-0.14557 f88=0.00000 f89=-0.00187 f90=0.00000 f91=-0.10036 f92=-0.05365 f93=-0.09466 f94=-0.09321 f95=-0.03240 f96=-0.02785 f97=-0.03019 f98=-0.11402 f99=-0.14802 f100=-0.26678 f101=-0.73857 f102=-0.29067 f103=-0.27356 f104=-0.02457 f105=-0.02630 f106=-0.05721 f107=-0.04811 f108=-0.05186 f109=-0.21415 f110=-0.12862 f111=-0.08471 f112=-0.07335 f113=-0.06148 f114=-0.05310 f115=-0.19592 f116=-0.21811 f117=-0.04487 f118=-0.03951 f119=-0.23799 f120=-0.19603 f121=-0.17292 f122=-0.04173 f123=-0.04294 f124=-0.07790 f125=-0.12202 f126=-0.11564  toleranceA=0.00100",
+   "[full/gjk-normal] distance of witness point to each face plane of B: f1=-0.00048 f27=0.00000  toleranceB=0.00100",
+   "[full/gjk-normal] faceIndex1(B ref)=27 faceIndex0(A inc)=26 referenceProject=1.0000 incidentProject=0.9283 -> reference is B(poly1) gjkNormal=(0.04577 0.99262 -0.11229) refNormalB=(0.04577 0.99262 -0.11229) incNormalA_in0=(-0.83513 -0.22944 0.49992) closestA=(-0.02229 -0.00883 0.01527) closestB=(-0.02146 0.00906 0.01324)",
+   "[cc] generateFullContactManifold -> 4 contacts: [pen=-0.01736 n=(0.04577 0.99262 -0.11229)] [pen=-0.01802 n=(0.04577 0.99262 -0.11229)] [pen=-0.01781 n=(0.04577 0.99262 -0.11229)] [pen=-0.01765 n=(0.04577 0.99262 -0.11229)]",
+   "step 97697: ret 1 contacts 4 manifoldPts 4 n 0.0804 0.6338 0.7693 sep -0.01736 -0.01802 -0.01781 -0.01765"
+  ],
+  "regenerate": true,
+  "pts_before": 3,
+  "pts_after_refresh": 0,
+  "warm": 4,
+  "gjk_status": 5,
+  "gjk_penDep_mm": 0.0,
+  "degenerate_exit": false,
+  "epa_status": 5,
+  "epa_penDep_mm": -18.02,
+  "doOverlapTest": 0,
+  "fullContactGen": 1,
+  "sat": [],
+  "dotA": -0.9283,
+  "dotB": 1.0,
+  "reference": "B(poly1)",
+  "repro": {
+   "n": [
+    0.0804,
+    0.6338,
+    0.7693
+   ],
+   "sep_mm": [
+    -17.36,
+    -18.02,
+    -17.81,
+    -17.65
+   ]
+  },
+  "match": true,
+  "true_sep_mm": -18.02,
+  "ext_A_mm": [
+   32.9,
+   40.7,
+   43.1
+  ],
+  "ext_B_mm": [
+   29.7,
+   38.9,
+   66.0
+  ]
+ },
+ {
+  "tag": "seg0034_o97713",
+  "onset": 97713,
+  "centre_side": "normal",
+  "sapien": {
+   "first": "actor:002_bowl#2",
+   "n": [
+    0.635118544,
+    0.127450854,
+    0.76182729
+   ],
+   "sep_mm": [
+    -17.81,
+    -15.9,
+    -12.85,
+    -16.13
+   ]
+  },
+  "order": 0,
+  "history": "full",
+  "in_range_since": 97685,
+  "block": [
+   "--- step 97713",
+   "[cc] before refresh: pts=4 warm=4 minMargin=0.000628 marginA=0.000628 marginB=0.000634 contactDist=0.0200 pen0=-0.01904 pen1=-0.01611 pen2=-0.01432 pen3=-0.01692",
+   "[cc] after refresh: pts=0",
+   "[cc] lostContacts=1 invalidate=1 -> REGENERATE (gjk); warm=4 aIdx=2,26,8,0 bIdx=3,38,9,107",
+   "[gjk] warm start: 4 points in, simplex size after solve 3, dist=0.000126 eps=0.0000126 contactDist+margins=0.02000",
+   "[gjk] iter: simplex size 3 dist=0.000126 vw=-0.029897 (NON_INTERSECT if vw > 0.02000; converged if vw > 0.000126) new support idx a=71 b=4",
+   "[gjk] after simplex solve: size 4 dist=0.000000 prevDist=0.000126 -> progress",
+   "[cc] gjkPenetration status=5 (0 NON_INTERSECT,1 EPA_CONTACT,2 GJK_CONTACT? see GuGJKType.h) warmAfter=4 normal=(0.00000 0.00000 0.00000) closA=(0.00000 0.00000 0.00000) closB=(0.00000 0.00000 0.00000) penDep=0.00000",
+   "[epa] epaPenetration returned status=5 normal=(-0.12432 0.98993 0.06770) closA=(0.03920 -0.00501 -0.02785) closB=(0.03699 0.01257 -0.02665) penDep=-0.01776",
+   "[cc] after addGJKEPAContacts: doOverlapTest=0 pts=1 initial=4 dot(localNor,normal)=0.0000 fullContactGen=1 normal=(-0.12432 0.98993 0.06770) penDep=-0.01776",
+   "[full/gjk-normal] signed dot(A face normal, gjk normal in A)=-0.9225 (facing B would be negative); signed dot(B face normal, gjk normal)=0.9965 (facing A is positive)",
+   "[full/gjk-normal] distance of witness point to each face plane of A (vertex space, m): f0=0.00000 f1=-0.56904 f2=-0.07844 f3=-0.09199 f4=-0.01995 f5=-0.00263 f6=-0.00153 f7=-0.37197 f8=-0.20617 f9=-0.02798 f10=-0.03020 f11=-0.02512 f12=-0.01300 f13=-0.01512 f14=-0.29238 f15=-0.38801 f16=-0.21838 f17=-0.29887 f18=-0.32102 f19=-0.31498 f20=-0.08581 f21=-0.01017 f22=-0.00584 f23=-0.01653 f24=-0.14204 f25=-0.11173 f26=-0.45691 f27=-0.30545 f28=-0.20228 f29=-0.12464 f30=-0.25480 f31=-0.19973 f32=-0.22992 f33=-0.35287 f34=-0.37474 f35=-0.04224 f36=-0.50777 f37=-0.48828 f38=-0.19571 f39=-0.04584 f40=-0.08837 f41=-0.03228 f42=-0.31310 f43=-0.18342 f44=-0.06442 f45=-0.06268 f46=-0.08359 f47=-0.37372 f48=-0.37465 f49=-0.39494 f50=-0.43215 f51=-0.21177 f52=-0.50249 f53=-0.21702 f54=-0.15242 f55=-0.13747 f56=-0.15742 f57=-0.15370 f58=-0.09230 f59=-0.00022 f60=-0.00000 f61=-0.39548 f62=-0.25009 f63=-0.05546 f64=-0.06073 f65=-0.08297 f66=-0.29521 f67=-0.26731 f68=-0.06063 f69=-0.04006 f70=-0.17778 f71=-0.20175 f72=-0.04457 f73=-0.09923 f74=-0.06958 f75=-0.03474 f76=-0.03094 f77=-0.24050 f78=-0.18967 f79=-0.16933  toleranceA=0.00100",
+   "[full/gjk-normal] distance of witness point to each face plane of B: f0=0.00000 f2=-0.00000  toleranceB=0.00100",
+   "[full/gjk-normal] faceIndex1(B ref)=2 faceIndex0(A inc)=0 referenceProject=0.9965 incidentProject=0.9225 -> reference is B(poly1) gjkNormal=(-0.12432 0.98993 0.06770) refNormalB=(-0.19706 0.97450 0.10731) incNormalA_in0=(-1.00000 0.00000 0.00000) closestA=(0.03920 -0.00501 -0.02785) closestB=(0.03699 0.01257 -0.02665)",
+   "[cc] generateFullContactManifold -> 6 contacts: [pen=-0.01773 n=(-0.19706 0.97450 0.10731)] [pen=-0.01613 n=(-0.19706 0.97450 0.10731)] [pen=-0.01781 n=(-0.19706 0.97450 0.10731)] [pen=-0.01590 n=(-0.19706 0.97450 0.10731)] [pen=-0.01285 n=(-0.19706 0.97450 0.10731)] [pen=-0.01303 n=(-0.19706 0.97450 0.10731)]",
+   "step 97713: ret 1 contacts 4 manifoldPts 4 n 0.6351 0.1275 0.7618 sep -0.01781 -0.01590 -0.01285 -0.01613"
+  ],
+  "regenerate": true,
+  "pts_before": 4,
+  "pts_after_refresh": 0,
+  "warm": 4,
+  "gjk_status": 5,
+  "gjk_penDep_mm": 0.0,
+  "degenerate_exit": false,
+  "epa_status": 5,
+  "epa_penDep_mm": -17.76,
+  "doOverlapTest": 0,
+  "fullContactGen": 1,
+  "sat": [],
+  "dotA": -0.9225,
+  "dotB": 0.9965,
+  "reference": "B(poly1)",
+  "repro": {
+   "n": [
+    0.6351,
+    0.1275,
+    0.7618
+   ],
+   "sep_mm": [
+    -17.81,
+    -15.9,
+    -12.85,
+    -16.13
+   ]
+  },
+  "match": true,
+  "true_sep_mm": -17.76,
+  "ext_A_mm": [
+   32.6,
+   50.0,
+   58.6
+  ],
+  "ext_B_mm": [
+   35.9,
+   40.8,
+   45.4
+  ]
+ },
+ {
+  "tag": "seg0043_o10976",
+  "onset": 10976,
+  "centre_side": "inverted",
+  "sapien": {
+   "first": "actor:002_bowl#1",
+   "n": [
+    -0.719789863,
+    -0.187357888,
+    -0.668430746
+   ],
+   "sep_mm": [
+    -15.91,
+    -9.54,
+    -8.21,
+    -10.6
+   ]
+  },
+  "order": 0,
+  "history": "full (no start step in onset-0..400 reproduces it)",
+  "in_range_since": 10403,
+  "block": [
+   "--- step 10976",
+   "[cc] before refresh: pts=4 warm=1 minMargin=0.000634 marginA=0.000634 marginB=0.000634 contactDist=0.0200 pen0=0.00336 pen1=0.00330 pen2=0.00312 pen3=0.00323",
+   "[cc] after refresh: pts=0",
+   "[cc] lostContacts=1 invalidate=1 -> REGENERATE (gjk); warm=1 aIdx=111,52,15,0 bIdx=6,8,255,12",
+   "[gjk] warm start: 1 points in, simplex size after solve 1, dist=0.019980 eps=0.0000127 contactDist+margins=0.02000",
+   "[gjk] iter: simplex size 1 dist=0.019980 vw=-0.043902 (NON_INTERSECT if vw > 0.02000; converged if vw > 0.019975) new support idx a=9 b=7",
+   "[gjk] after simplex solve: size 2 dist=0.010731 prevDist=0.019980 -> progress",
+   "[gjk] iter: simplex size 2 dist=0.010731 vw=-0.002319 (NON_INTERSECT if vw > 0.02000; converged if vw > 0.010728) new support idx a=57 b=8",
+   "[gjk] after simplex solve: size 2 dist=0.005409 prevDist=0.010731 -> progress",
+   "[gjk] iter: simplex size 2 dist=0.005409 vw=-0.006541 (NON_INTERSECT if vw > 0.02000; converged if vw > 0.005408) new support idx a=39 b=9",
+   "[gjk] after simplex solve: size 3 dist=0.004515 prevDist=0.005409 -> progress",
+   "[gjk] iter: simplex size 3 dist=0.004515 vw=0.002234 (NON_INTERSECT if vw > 0.02000; converged if vw > 0.004514) new support idx a=52 b=8",
+   "[gjk] after simplex solve: size 2 dist=0.003141 prevDist=0.004515 -> progress",
+   "[gjk] iter: simplex size 2 dist=0.003141 vw=0.001476 (NON_INTERSECT if vw > 0.02000; converged if vw > 0.003141) new support idx a=15 b=8",
+   "[gjk] after simplex solve: size 2 dist=0.003141 prevDist=0.003141 -> NO PROGRESS (degenerate exit, no test against contactDist)",
+   "[cc] gjkPenetration status=4 (0 NON_INTERSECT,1 EPA_CONTACT,2 GJK_CONTACT? see GuGJKType.h) warmAfter=1 normal=(-0.53255 -0.84097 0.09573) closA=(0.02587 -0.00112 -0.00867) closB=(0.02754 0.00152 -0.00897) penDep=0.00314",
+   "[epa] GJK_DEGENERATE: cos(searchDir,normal)=1.00000 dot(centreDir,normal)=0.85713",
+   "[cc] after addGJKEPAContacts: doOverlapTest=0 pts=1 initial=4 dot(localNor,normal)=0.0000 fullContactGen=1 normal=(-0.53255 -0.84097 0.09573) penDep=0.00314",
+   "[full/gjk-normal] signed dot(A face normal, gjk normal in A)=-0.9617 (facing B would be negative); signed dot(B face normal, gjk normal)=0.9298 (facing A is positive)",
+   "[full/gjk-normal] distance of witness point to each face plane of A (vertex space, m): f0=-0.02988 f1=-0.03535 f2=-0.04870 f3=-0.25726 f4=-0.28158 f5=-0.12198 f6=-0.01926 f7=-0.12923 f8=-0.18008 f9=-0.22172 f10=-0.27691 f11=-0.01391 f12=-0.18861 f13=-0.03547 f14=-0.04726 f15=-0.35788 f16=-0.98049 f17=-0.01022 f18=-0.28868 f19=-0.00308 f20=-0.00369 f21=-0.34495 f22=-0.40692 f23=-0.31136 f24=-0.26281 f25=-0.02117 f26=-0.10059 f27=-0.13018 f28=-0.25734 f29=-0.13811 f30=-0.14281 f31=-0.16817 f32=-0.17521 f33=-0.16894 f34=-0.22743 f35=-0.03611 f36=-0.04956 f37=-0.03254 f38=-0.01182 f39=-0.07053 f40=-0.08967 f41=-0.00208 f42=-0.09168 f43=-0.08665 f44=-0.10768 f45=-0.22803 f46=-0.25025 f47=-0.02892 f48=-0.02309 f49=-0.02329 f50=-0.16966 f51=-0.18492 f52=-0.15966 f53=-0.15933 f54=-0.13464 f55=-0.09695 f56=-0.07917 f57=-0.08208 f58=-0.30735 f59=-0.31539 f60=-0.29359 f61=-0.39439 f62=-0.37757 f63=-0.34997 f64=-0.04517 f65=-0.04443 f66=-0.05528 f67=-0.03350 f68=-0.02616 f69=-0.02671 f70=-0.03998 f71=-0.00689 f72=-0.01207 f73=-0.01241 f74=-0.05566 f75=-0.07384 f76=-0.13420 f77=-0.12913 f78=-0.32083 f79=-0.18904 f80=-0.25314 f81=-0.05993 f82=-0.00096 f83=-0.00149 f84=-0.00674 f85=-0.00337 f86=-0.03060 f87=-0.03138 f88=-0.09486 f89=-0.04477 f90=-0.11020 f91=-0.11421 f92=-0.22217 f93=-0.24382 f94=-0.21343 f95=-0.19832 f96=-0.02556 f97=-0.01856 f98=-0.16330 f99=-0.16838 f100=-0.20159 f101=-0.43385 f102=-0.47150 f103=0.00000 f104=-0.00299 f105=-0.15426 f106=-0.25417 f107=-0.21190 f108=-0.19011 f109=-0.08086 f110=-0.07591 f111=-0.09804  toleranceA=0.00100",
+   "[full/gjk-normal] distance of witness point to each face plane of B: f3=-0.00000 f89=-0.00000  toleranceB=0.00100",
+   "[full/gjk-normal] faceIndex1(B ref)=3 faceIndex0(A inc)=103 referenceProject=0.9298 incidentProject=0.9617 -> reference is A(poly0) gjkNormal=(-0.53255 -0.84097 0.09573) refNormalB=(-0.18490 -0.97974 0.07696) incNormalA_in0=(0.44047 -0.45225 -0.77554) closestA=(0.02587 -0.00112 -0.00867) closestB=(0.02754 0.00152 -0.00897)",
+   "[cc] generateFullContactManifold -> 3 contacts: [pen=0.00313 n=(-0.28026 -0.95458 0.10113)] [pen=0.00298 n=(-0.28026 -0.95458 0.10113)] [pen=0.00303 n=(-0.28026 -0.95458 0.10113)]",
+   "step 10976: ret 1 contacts 3 manifoldPts 3 n 0.8707 -0.4749 -0.1279 sep 0.00313 0.00298 0.00303"
+  ],
+  "regenerate": true,
+  "pts_before": 4,
+  "pts_after_refresh": 0,
+  "warm": 1,
+  "gjk_status": 4,
+  "gjk_penDep_mm": 3.14,
+  "degenerate_exit": true,
+  "epa_status": null,
+  "epa_penDep_mm": null,
+  "doOverlapTest": 0,
+  "fullContactGen": 1,
+  "sat": [],
+  "dotA": -0.9617,
+  "dotB": 0.9298,
+  "reference": "A(poly0)",
+  "repro": {
+   "n": [
+    0.8707,
+    -0.4749,
+    -0.1279
+   ],
+   "sep_mm": [
+    3.13,
+    2.98,
+    3.03
+   ]
+  },
+  "match": false,
+  "true_sep_mm": 2.97,
+  "ext_A_mm": [
+   32.0,
+   35.8,
+   47.0
+  ],
+  "ext_B_mm": [
+   23.5,
+   31.9,
+   53.1
+  ]
+ },
+ {
+  "tag": "seg0072_o35350",
+  "onset": 35350,
+  "centre_side": "inverted",
+  "sapien": {
+   "first": "actor:002_bowl#2",
+   "n": [
+    0.0358408466,
+    0.121360369,
+    -0.991961241
+   ],
+   "sep_mm": [
+    -54.52,
+    -27.09,
+    -41.65,
+    -39.27
+   ]
+  },
+  "order": 0,
+  "history": "full",
+  "in_range_since": 35246,
+  "block": [
+   "--- step 35350",
+   "[cc] before refresh: pts=4 warm=1 minMargin=0.000526 marginA=0.000634 marginB=0.000526 contactDist=0.0200 pen0=-0.05400 pen1=-0.02715 pen2=-0.04120 pen3=-0.03902",
+   "[cc] after refresh: pts=4 pen0=-0.05395 pen1=-0.02708 pen2=-0.04114 pen3=-0.03896",
+   "[cc] lostContacts=0 invalidate=1 -> REGENERATE (gjk); warm=1 aIdx=8,53,52,144 bIdx=5,1,126,76",
+   "[gjk] warm start: 1 points in, simplex size after solve 1, dist=0.036581 eps=0.0000105 contactDist+margins=0.02000",
+   "[gjk] iter: simplex size 1 dist=0.036581 vw=0.011157 (NON_INTERSECT if vw > 0.02000; converged if vw > 0.036573) new support idx a=42 b=1",
+   "[gjk] after simplex solve: size 2 dist=0.026280 prevDist=0.036581 -> progress",
+   "[gjk] iter: simplex size 2 dist=0.026280 vw=0.019659 (NON_INTERSECT if vw > 0.02000; converged if vw > 0.026274) new support idx a=9 b=12",
+   "[gjk] after simplex solve: size 2 dist=0.026280 prevDist=0.026280 -> NO PROGRESS (degenerate exit, no test against contactDist)",
+   "[cc] gjkPenetration status=4 (0 NON_INTERSECT,1 EPA_CONTACT,2 GJK_CONTACT? see GuGJKType.h) warmAfter=1 normal=(-0.49172 0.86359 0.11146) closA=(0.05040 0.07346 0.00293) closB=(0.06332 0.05077 -0.00000) penDep=0.02628",
+   "[epa] GJK_DEGENERATE: cos(searchDir,normal)=1.00000 dot(centreDir,normal)=0.99065",
+   "[cc] after addGJKEPAContacts: doOverlapTest=0 pts=4 initial=4 dot(localNor,normal)=-0.9329 fullContactGen=1 normal=(-0.49172 0.86359 0.11146) penDep=0.02628",
+   "[full/gjk-normal] signed dot(A face normal, gjk normal in A)=0.9322 (facing B would be negative); signed dot(B face normal, gjk normal)=0.1115 (facing A is positive)",
+   "[full/gjk-normal] distance of witness point to each face plane of A (vertex space, m): f0=-0.06287 f1=-0.27684 f2=-0.06419 f3=-0.22852 f4=-0.08509 f5=-0.18454 f6=-0.31196 f7=-0.17368 f8=-0.12213 f9=-0.18702 f10=-0.11827 f11=-0.32436 f12=-0.09219 f13=-0.27025 f14=-0.24745 f15=-0.10605 f16=-0.17048 f17=-0.44822 f18=-0.13202 f19=-0.35162 f20=-0.34295 f21=-0.10683 f22=-0.12751 f23=-0.09337 f24=-0.08194 f25=-0.24236 f26=-0.13824 f27=-0.12404 f28=-0.13292 f29=-0.13656 f30=-0.16180 f31=-0.15803 f32=-0.15226 f33=-0.14179 f34=-0.07904 f35=-0.20825 f36=-0.19007 f37=-0.19053 f38=-0.33985 f39=-0.12340 f40=-0.13936 f41=-0.47097 f42=-0.10710 f43=-0.12150 f44=-0.11479 f45=-0.14857 f46=-0.14068 f47=-0.22555 f48=-0.25965 f49=-0.23801 f50=-0.12471 f51=-0.10975 f52=-0.08241 f53=-0.09280 f54=-0.11204 f55=-0.19307 f56=-0.19428 f57=-0.21664 f58=-0.10398 f59=-0.10165 f60=-0.09527 f61=-0.13568 f62=-0.12860 f63=-0.13500 f64=-0.15784 f65=-0.16660 f66=-0.14107 f67=-0.21221 f68=-0.23130 f69=-0.28600 f70=-0.17021 f71=-0.29946 f72=-0.27166 f73=-0.27875 f74=-0.17949 f75=-0.18474 f76=-0.09939 f77=-0.09033 f78=-0.13743 f79=-0.07907 f80=-0.10078 f81=-0.15521 f82=-0.37761 f83=-0.38814 f84=-0.40984 f85=-0.37708 f86=-0.21789 f87=-0.19662 f88=-0.21701 f89=-0.40129 f90=-0.09724 f91=-0.10547 f92=-0.09260 f93=-0.10803 f94=-0.15914 f95=-0.13574 f96=-0.22066 f97=-0.24670 f98=-0.15113 f99=-0.14340 f100=-0.18118 f101=-0.13988 f102=-0.13999 f103=-0.45623 f104=-0.49920 f105=-0.08466 f106=-0.11842 f107=-0.10555 f108=-0.09917 f109=-0.14700 f110=-0.16007 f111=-0.14738  toleranceA=0.00100",
+   "[full/gjk-normal] distance of witness point to each face plane of B: f93=0.00000  toleranceB=0.00100",
+   "[full/gjk-normal] faceIndex1(B ref)=93 faceIndex0(A inc)=0 referenceProject=0.1115 incidentProject=0.9322 -> reference is A(poly0) gjkNormal=(-0.49172 0.86359 0.11146) refNormalB=(0.00000 0.00000 1.00000) incNormalA_in0=(0.00000 1.00000 0.00000) closestA=(0.05040 0.07346 0.00293) closestB=(0.06332 0.05077 -0.00000)",
+   "[cc] generateFullContactManifold -> 9 contacts: [pen=-0.04828 n=(0.15167 -0.96621 -0.20842)] [pen=-0.02710 n=(0.15167 -0.96621 -0.20842)] [pen=-0.02799 n=(0.15167 -0.96621 -0.20842)] [pen=-0.05162 n=(0.15167 -0.96621 -0.20842)] [pen=-0.05035 n=(0.15167 -0.96621 -0.20842)] [pen=-0.03927 n=(0.15167 -0.96621 -0.20842)] [pen=-0.02709 n=(0.15167 -0.96621 -0.20842)] [pen=-0.04165 n=(0.15167 -0.96621 -0.20842)] [pen=-0.05452 n=(0.15167 -0.96621 -0.20842)]",
+   "step 35350: ret 1 contacts 4 manifoldPts 4 n 0.0358 0.1214 -0.9920 sep -0.05452 -0.02709 -0.04165 -0.03927"
+  ],
+  "regenerate": true,
+  "pts_before": 4,
+  "pts_after_refresh": 4,
+  "warm": 1,
+  "gjk_status": 4,
+  "gjk_penDep_mm": 26.28,
+  "degenerate_exit": true,
+  "epa_status": null,
+  "epa_penDep_mm": null,
+  "doOverlapTest": 0,
+  "fullContactGen": 1,
+  "sat": [],
+  "dotA": 0.9322,
+  "dotB": 0.1115,
+  "reference": "A(poly0)",
+  "repro": {
+   "n": [
+    0.0358,
+    0.1214,
+    -0.992
+   ],
+   "sep_mm": [
+    -54.52,
+    -27.09,
+    -41.65,
+    -39.27
+   ]
+  },
+  "match": true,
+  "true_sep_mm": 21.47,
+  "ext_A_mm": [
+   16.9,
+   29.4,
+   53.1
+  ],
+  "ext_B_mm": [
+   21.6,
+   30.2,
+   43.0
+  ]
+ },
+ {
+  "tag": "seg0103_o23793",
+  "onset": 23793,
+  "centre_side": "inverted",
+  "sapien": {
+   "first": "actor:002_bowl#1",
+   "n": [
+    -0.200441271,
+    0.115827583,
+    -0.972834647
+   ],
+   "sep_mm": [
+    -38.01,
+    -5.77,
+    -37.79,
+    -33.74
+   ]
+  },
+  "order": 0,
+  "history": "full",
+  "in_range_since": 23043,
+  "block": [
+   "--- step 23793",
+   "[cc] before refresh: pts=3 warm=1 minMargin=0.000545 marginA=0.000624 marginB=0.000545 contactDist=0.0200 pen0=0.00144 pen1=0.00147 pen2=0.00146",
+   "[cc] after refresh: pts=0",
+   "[cc] lostContacts=1 invalidate=1 -> REGENERATE (gjk); warm=1 aIdx=41,70,15,0 bIdx=0,0,134,156",
+   "[gjk] warm start: 1 points in, simplex size after solve 1, dist=0.004451 eps=0.0000109 contactDist+margins=0.02000",
+   "[gjk] iter: simplex size 1 dist=0.004451 vw=-0.019955 (NON_INTERSECT if vw > 0.02000; converged if vw > 0.004450) new support idx a=61 b=5",
+   "[gjk] after simplex solve: size 2 dist=0.002549 prevDist=0.004451 -> progress",
+   "[gjk] iter: simplex size 2 dist=0.002549 vw=0.000195 (NON_INTERSECT if vw > 0.02000; converged if vw > 0.002549) new support idx a=68 b=0",
+   "[gjk] after simplex solve: size 2 dist=0.002549 prevDist=0.002549 -> NO PROGRESS (degenerate exit, no test against contactDist)",
+   "[cc] gjkPenetration status=4 (0 NON_INTERSECT,1 EPA_CONTACT,2 GJK_CONTACT? see GuGJKType.h) warmAfter=1 normal=(-0.78750 0.53494 -0.30607) closA=(0.06073 0.05182 -0.00078) closB=(0.06273 0.05046 0.00000) penDep=0.00255",
+   "[epa] GJK_DEGENERATE: cos(searchDir,normal)=1.00000 dot(centreDir,normal)=0.91975",
+   "[cc] after addGJKEPAContacts: doOverlapTest=0 pts=1 initial=3 dot(localNor,normal)=0.0000 fullContactGen=1 normal=(-0.78750 0.53494 -0.30607) penDep=0.00255",
+   "[full/gjk-normal] signed dot(A face normal, gjk normal in A)=0.4755 (facing B would be negative); signed dot(B face normal, gjk normal)=0.3061 (facing A is positive)",
+   "[full/gjk-normal] distance of witness point to each face plane of A (vertex space, m): f0=0.00000 f1=-0.01932 f2=-0.25377 f3=-0.27753 f4=-0.29245 f5=-0.30728 f6=-0.03055 f7=-0.13705 f8=-0.16728 f9=-0.05571 f10=-0.26685 f11=-0.24860 f12=-0.16723 f13=-0.02739 f14=-0.03902 f15=-0.03898 f16=-0.02667 f17=-0.01343 f18=-0.01095 f19=-0.08811 f20=-0.07773 f21=-0.06941 f22=-0.09660 f23=-0.08185 f24=-0.07854 f25=-0.08694 f26=-0.08749 f27=-0.07081 f28=-0.02967 f29=-0.02313 f30=-1.04236 f31=-0.03584 f32=-0.08994 f33=-0.09278 f34=-0.47492 f35=-0.02815 f36=-0.07109 f37=-0.18441 f38=-0.23180 f39=-0.07742 f40=-0.09860 f41=-0.18924 f42=-0.16181 f43=-0.13082 f44=-0.04613 f45=-0.05832 f46=-0.06632 f47=-0.01955 f48=-0.01424 f49=-0.04286 f50=-0.05746 f51=-0.06210 f52=-0.05829 f53=-0.05210 f54=-0.05400 f55=-0.01585 f56=-0.01916 f57=-0.05799 f58=-0.04978 f59=-0.04208 f60=-0.05413 f61=-0.05276 f62=-0.05472 f63=-0.03318 f64=-0.02626 f65=-0.04519 f66=-0.03863 f67=-0.03159 f68=-0.03537 f69=-0.03126 f70=-0.03418 f71=-0.05958 f72=-0.04932 f73=-0.04195 f74=-0.04379 f75=-0.04991 f76=-0.01916 f77=-0.02240 f78=-0.02262 f79=-0.03311 f80=-0.18271 f81=-0.04049 f82=-0.04427 f83=-0.01920 f84=-0.01899 f85=-0.02429 f86=-0.14482 f87=-0.09560 f88=-0.13774  toleranceA=0.00100",
+   "[full/gjk-normal] distance of witness point to each face plane of B: f59=0.00000  toleranceB=0.00100",
+   "[full/gjk-normal] faceIndex1(B ref)=59 faceIndex0(A inc)=0 referenceProject=0.3061 incidentProject=0.4755 -> reference is A(poly0) gjkNormal=(-0.78750 0.53494 -0.30607) refNormalB=(0.00000 0.00000 -1.00000) incNormalA_in0=(0.00000 1.00000 0.00000) closestA=(0.06073 0.05182 -0.00078) closestB=(0.06273 0.05046 0.00000)",
+   "[cc] generateFullContactManifold -> 8 contacts: [pen=-0.03451 n=(0.03500 -0.97150 -0.23444)] [pen=-0.03772 n=(0.03500 -0.97150 -0.23444)] [pen=-0.03801 n=(0.03500 -0.97150 -0.23444)] [pen=-0.03779 n=(0.03500 -0.97150 -0.23444)] [pen=-0.03126 n=(0.03500 -0.97150 -0.23444)] [pen=-0.01879 n=(0.03500 -0.97150 -0.23444)] [pen=-0.03374 n=(0.03500 -0.97150 -0.23444)] [pen=-0.00577 n=(0.03500 -0.97150 -0.23444)]",
+   "step 23793: ret 1 contacts 4 manifoldPts 4 n -0.2004 0.1158 -0.9728 sep -0.03801 -0.00577 -0.03779 -0.03374"
+  ],
+  "regenerate": true,
+  "pts_before": 3,
+  "pts_after_refresh": 0,
+  "warm": 1,
+  "gjk_status": 4,
+  "gjk_penDep_mm": 2.55,
+  "degenerate_exit": true,
+  "epa_status": null,
+  "epa_penDep_mm": null,
+  "doOverlapTest": 0,
+  "fullContactGen": 1,
+  "sat": [],
+  "dotA": 0.4755,
+  "dotB": 0.3061,
+  "reference": "A(poly0)",
+  "repro": {
+   "n": [
+    -0.2004,
+    0.1158,
+    -0.9728
+   ],
+   "sep_mm": [
+    -38.01,
+    -5.77,
+    -37.79,
+    -33.74
+   ]
+  },
+  "match": true,
+  "true_sep_mm": 1.62,
+  "ext_A_mm": [
+   19.4,
+   47.9,
+   66.7
+  ],
+  "ext_B_mm": [
+   26.2,
+   30.8,
+   39.6
+  ]
+ },
+ {
+  "tag": "seg0103_o24059",
+  "onset": 24059,
+  "centre_side": "inverted",
+  "sapien": {
+   "first": "actor:002_bowl#1",
+   "n": [
+    0.0760748461,
+    0.943047881,
+    0.323841482
+   ],
+   "sep_mm": [
+    -31.32,
+    -18.0,
+    -27.44,
+    -22.99
+   ]
+  },
+  "order": 0,
+  "history": "full",
+  "in_range_since": 24024,
+  "block": [
+   "--- step 24059",
+   "[cc] before refresh: pts=4 warm=1 minMargin=0.000590 marginA=0.000590 marginB=0.000637 contactDist=0.0200 pen0=0.00555 pen1=0.00566 pen2=0.00547 pen3=0.00547",
+   "[cc] after refresh: pts=0",
+   "[cc] lostContacts=1 invalidate=1 -> REGENERATE (gjk); warm=1 aIdx=71,3,208,247 bIdx=7,25,23,45",
+   "[gjk] warm start: 1 points in, simplex size after solve 1, dist=0.006361 eps=0.0000118 contactDist+margins=0.02000",
+   "[gjk] iter: simplex size 1 dist=0.006361 vw=-0.006768 (NON_INTERSECT if vw > 0.02000; converged if vw > 0.006359) new support idx a=58 b=82",
+   "[gjk] after simplex solve: size 2 dist=0.006076 prevDist=0.006361 -> progress",
+   "[gjk] iter: simplex size 2 dist=0.006076 vw=0.002699 (NON_INTERSECT if vw > 0.02000; converged if vw > 0.006075) new support idx a=24 b=6",
+   "[gjk] after simplex solve: size 2 dist=0.006076 prevDist=0.006076 -> NO PROGRESS (degenerate exit, no test against contactDist)",
+   "[cc] gjkPenetration status=4 (0 NON_INTERSECT,1 EPA_CONTACT,2 GJK_CONTACT? see GuGJKType.h) warmAfter=1 normal=(-0.84704 -0.24553 -0.47143) closA=(-0.04997 0.01131 -0.03986) closB=(-0.04482 0.01280 -0.03699) penDep=0.00608",
+   "[epa] GJK_DEGENERATE: cos(searchDir,normal)=1.00000 dot(centreDir,normal)=0.92315",
+   "[cc] after addGJKEPAContacts: doOverlapTest=0 pts=1 initial=4 dot(localNor,normal)=0.0000 fullContactGen=1 normal=(-0.84704 -0.24553 -0.47143) penDep=0.00608",
+   "[full/gjk-normal] signed dot(A face normal, gjk normal in A)=-0.1613 (facing B would be negative); signed dot(B face normal, gjk normal)=-0.2455 (facing A is positive)",
+   "[full/gjk-normal] distance of witness point to each face plane of A (vertex space, m): f0=0.00000 f1=-0.04945 f2=-0.06342 f3=-0.24891 f4=-0.35055 f5=-0.02760 f6=-0.02533 f7=-0.01786 f8=-0.15002 f9=-0.10463 f10=-0.07606 f11=-0.12446 f12=-0.25243 f13=-0.03618 f14=-0.08151 f15=-0.11080 f16=-0.07684 f17=-0.10007 f18=-0.13553 f19=-0.12995 f20=-0.02008 f21=-0.03548 f22=-0.06560 f23=-0.04315 f24=-0.12237 f25=-0.04618 f26=-0.31417 f27=-0.17955 f28=-0.16879 f29=-0.17930 f30=-0.17589 f31=-0.14205 f32=-0.09998 f33=-0.01848 f34=-0.01100 f35=-0.00703 f36=-0.44184 f37=-0.33578 f38=-0.21213 f39=-0.03484 f40=-0.03013 f41=-0.03203 f42=-0.04938 f43=-0.04416 f44=-0.06348 f45=-0.09377 f46=-0.08176 f47=-0.14893 f48=-0.12853 f49=-0.03436 f50=-0.04614 f51=-0.03892 f52=-0.04532 f53=-0.14320 f54=-0.21975 f55=-0.26163 f56=-0.02382 f57=-0.02322 f58=-0.19970 f59=-0.15001 f60=-0.07461 f61=-0.10575 f62=-0.05147 f63=-0.05068 f64=-0.06510 f65=-0.01801 f66=-0.02351 f67=-0.03022 f68=-0.03446 f69=-0.01873 f70=-0.02032 f71=-0.03024 f72=-0.02736 f73=-0.04892 f74=-0.04287 f75=-0.03272 f76=-0.00877 f77=-0.23270 f78=-0.26054 f79=-0.06091 f80=-0.06069 f81=-0.04831 f82=-0.01045 f83=-0.01016 f84=-0.01410 f85=-0.05443 f86=-0.06245 f87=-0.06587 f88=-0.04634 f89=-0.05871 f90=-0.04338 f91=-0.04927 f92=-0.01021 f93=-0.00686 f94=-0.05279 f95=-0.06521 f96=-0.11411 f97=-0.11632 f98=-0.10368  toleranceA=0.00100",
+   "[full/gjk-normal] distance of witness point to each face plane of B: f0=-0.00000 f7=-0.00149 f81=-0.00177  toleranceB=0.00100",
+   "[full/gjk-normal] faceIndex1(B ref)=0 faceIndex0(A inc)=0 referenceProject=0.2455 incidentProject=0.1613 -> reference is B(poly1) gjkNormal=(-0.84704 -0.24553 -0.47143) refNormalB=(0.00000 1.00000 0.00000) incNormalA_in0=(0.00000 1.00000 0.00000) closestA=(-0.04997 0.01131 -0.03986) closestB=(-0.04482 0.01280 -0.03699)",
+   "[cc] generateFullContactManifold -> 7 contacts: [pen=-0.01949 n=(0.00000 1.00000 0.00000)] [pen=-0.02299 n=(0.00000 1.00000 0.00000)] [pen=-0.02637 n=(0.00000 1.00000 0.00000)] [pen=-0.02984 n=(0.00000 1.00000 0.00000)] [pen=-0.02744 n=(0.00000 1.00000 0.00000)] [pen=-0.01800 n=(0.00000 1.00000 0.00000)] [pen=-0.03132 n=(0.00000 1.00000 0.00000)]",
+   "step 24059: ret 1 contacts 4 manifoldPts 4 n 0.0761 0.9430 0.3238 sep -0.03132 -0.01800 -0.02744 -0.02299"
+  ],
+  "regenerate": true,
+  "pts_before": 4,
+  "pts_after_refresh": 0,
+  "warm": 1,
+  "gjk_status": 4,
+  "gjk_penDep_mm": 6.08,
+  "degenerate_exit": true,
+  "epa_status": null,
+  "epa_penDep_mm": null,
+  "doOverlapTest": 0,
+  "fullContactGen": 1,
+  "sat": [],
+  "dotA": -0.1613,
+  "dotB": -0.2455,
+  "reference": "B(poly1)",
+  "repro": {
+   "n": [
+    0.0761,
+    0.943,
+    0.3238
+   ],
+   "sep_mm": [
+    -31.32,
+    -18.0,
+    -27.44,
+    -22.99
+   ]
+  },
+  "match": true,
+  "true_sep_mm": 5.4,
+  "ext_A_mm": [
+   19.2,
+   31.1,
+   52.0
+  ],
+  "ext_B_mm": [
+   25.3,
+   41.2,
+   51.2
+  ]
+ },
+ {
+  "tag": "seg0110_o33559",
+  "onset": 33559,
+  "centre_side": "normal",
+  "sapien": {
+   "first": "actor:002_bowl#1",
+   "n": [
+    -0.0393282957,
+    -0.998749971,
+    0.0308516901
+   ],
+   "sep_mm": [
+    -12.44,
+    -0.16,
+    -1.02
+   ]
+  },
+  "order": 0,
+  "history": "from onset-8 (empty cache)",
+  "in_range_since": 33551,
+  "block": [
+   "--- step 33559",
+   "[cc] before refresh: pts=3 warm=3 minMargin=0.000537 marginA=0.000590 marginB=0.000537 contactDist=0.0200 pen0=-0.00003 pen1=-0.00001 pen2=-0.00003",
+   "[cc] after refresh: pts=3 pen0=-0.00001 pen1=0.00000 pen2=-0.00001",
+   "[cc] lostContacts=0 invalidate=1 -> REGENERATE (gjk); warm=3 aIdx=36,60,59,59 bIdx=75,75,73,73",
+   "[gjk] warm start: 3 points in, simplex size after solve 2, dist=0.017691 eps=0.0000107 contactDist+margins=0.02000",
+   "[gjk] iter: simplex size 2 dist=0.017691 vw=-0.019394 (NON_INTERSECT if vw > 0.02000; converged if vw > 0.017687) new support idx a=73 b=5",
+   "[gjk] after simplex solve: size 2 dist=0.017691 prevDist=0.017691 -> NO PROGRESS (degenerate exit, no test against contactDist)",
+   "[cc] gjkPenetration status=4 (0 NON_INTERSECT,1 EPA_CONTACT,2 GJK_CONTACT? see GuGJKType.h) warmAfter=1 normal=(-0.79564 0.05539 -0.60323) closA=(-0.04074 0.05215 0.04624) closB=(-0.02666 0.05117 0.05691) penDep=0.01769",
+   "[epa] GJK_DEGENERATE: cos(searchDir,normal)=1.00000 dot(centreDir,normal)=0.75664",
+   "[cc] after addGJKEPAContacts: doOverlapTest=0 pts=4 initial=3 dot(localNor,normal)=0.0082 fullContactGen=1 normal=(-0.79564 0.05539 -0.60323) penDep=0.01769",
+   "[full/gjk-normal] signed dot(A face normal, gjk normal in A)=-0.8679 (facing B would be negative); signed dot(B face normal, gjk normal)=0.0304 (facing A is positive)",
+   "[full/gjk-normal] distance of witness point to each face plane of A (vertex space, m): f0=-0.05829 f1=-0.06797 f2=-0.22254 f3=-0.17530 f4=-0.22015 f5=-0.10050 f6=-0.10862 f7=-0.12833 f8=-0.12964 f9=-0.05111 f10=-0.03684 f11=-0.22399 f12=-0.18954 f13=-0.09423 f14=-0.02752 f15=-0.01253 f16=-0.04891 f17=-0.03260 f18=-0.00663 f19=-0.01136 f20=-0.13506 f21=-0.13954 f22=-0.04799 f23=-0.06605 f24=-0.13869 f25=-0.29805 f26=-0.90853 f27=-0.00798 f28=-0.00166 f29=-0.00036 f30=-0.00507 f31=-0.01120 f32=-0.01844 f33=-0.19744 f34=-0.20703 f35=-0.20906 f36=-0.00000 f37=0.00000 f38=0.00000 f39=-0.28317 f40=-0.26174 f41=-0.33800 f42=-0.08299 f43=-0.11906 f44=-0.11393 f45=-0.02461 f46=-0.02997 f47=-0.01501 f48=-0.01807 f49=-0.13990 f50=-0.09567 f51=-0.09060 f52=-0.07119 f53=-0.01524 f54=-0.00620 f55=-0.00735 f56=-0.33353 f57=-0.31586 f58=-0.17699 f59=-0.15710 f60=-0.17332 f61=-0.19643 f62=-0.18122 f63=-0.17516 f64=-0.04605 f65=-0.16080 f66=-0.14280 f67=-0.21731 f68=-0.23426 f69=-0.12649 f70=-0.12504 f71=-0.09068 f72=-0.09949 f73=-0.39773 f74=-0.39161 f75=-0.35897 f76=-0.26421 f77=-0.01149 f78=-0.01210 f79=-0.04652 f80=-0.04491 f81=-0.05940 f82=-0.24993 f83=-0.26398 f84=-0.28719 f85=-0.06401 f86=-0.05254 f87=-0.05456 f88=-0.15651 f89=-0.21066 f90=-0.24146 f91=-0.25869 f92=-0.17687 f93=-0.21091 f94=-0.06734 f95=-0.07461 f96=-0.01755 f97=-0.01534 f98=-0.01602  toleranceA=0.00100",
+   "[full/gjk-normal] distance of witness point to each face plane of B: f52=0.00000 f75=0.00000 f76=-0.00000 f79=-0.00000 f81=0.00000  toleranceB=0.00100",
+   "[full/gjk-normal] faceIndex1(B ref)=75 faceIndex0(A inc)=36 referenceProject=0.0304 incidentProject=0.8679 -> reference is A(poly0) gjkNormal=(-0.79564 0.05539 -0.60323) refNormalB=(0.29058 0.88979 -0.35190) incNormalA_in0=(1.00000 0.00000 0.00000) closestA=(-0.04074 0.05215 0.04624) closestB=(-0.02666 0.05117 0.05691)",
+   "[cc] generateFullContactManifold -> 3 contacts: [pen=-0.01244 n=(-0.99117 0.03291 -0.12847)] [pen=-0.00016 n=(-0.99117 0.03291 -0.12847)] [pen=-0.00102 n=(-0.99117 0.03291 -0.12847)]",
+   "step 33559: ret 1 contacts 3 manifoldPts 3 n -0.0393 -0.9987 0.0309 sep -0.01244 -0.00016 -0.00102"
+  ],
+  "regenerate": true,
+  "pts_before": 3,
+  "pts_after_refresh": 3,
+  "warm": 3,
+  "gjk_status": 4,
+  "gjk_penDep_mm": 17.69,
+  "degenerate_exit": true,
+  "epa_status": null,
+  "epa_penDep_mm": null,
+  "doOverlapTest": 0,
+  "fullContactGen": 1,
+  "sat": [],
+  "dotA": -0.8679,
+  "dotB": 0.0304,
+  "reference": "A(poly0)",
+  "repro": {
+   "n": [
+    -0.0393,
+    -0.9987,
+    0.0309
+   ],
+   "sep_mm": [
+    -12.44,
+    -0.16,
+    -1.02
+   ]
+  },
+  "match": true,
+  "true_sep_mm": -0.01,
+  "ext_A_mm": [
+   21.4,
+   24.6,
+   47.7
+  ],
+  "ext_B_mm": [
+   24.7,
+   32.6,
+   39.7
+  ]
+ },
+ {
+  "tag": "seg0110_o33617",
+  "onset": 33617,
+  "centre_side": "normal",
+  "sapien": {
+   "first": "actor:002_bowl#1",
+   "n": [
+    -0.574248493,
+    -0.818076789,
+    -0.031447567
+   ],
+   "sep_mm": [
+    -14.22,
+    -13.86,
+    -2.55,
+    -2.18
+   ]
+  },
+  "order": 0,
+  "history": "full",
+  "in_range_since": 33585,
+  "block": [
+   "--- step 33617",
+   "[cc] before refresh: pts=4 warm=3 minMargin=0.000537 marginA=0.000537 marginB=0.000545 contactDist=0.0200 pen0=0.00084 pen1=0.00106 pen2=0.00100 pen3=0.00092",
+   "[cc] after refresh: pts=0",
+   "[cc] lostContacts=1 invalidate=1 -> REGENERATE (gjk); warm=3 aIdx=62,59,59,47 bIdx=21,21,20,199",
+   "[gjk] warm start: 3 points in, simplex size after solve 2, dist=0.014312 eps=0.0000107 contactDist+margins=0.02000",
+   "[gjk] iter: simplex size 2 dist=0.014312 vw=-0.021100 (NON_INTERSECT if vw > 0.02000; converged if vw > 0.014309) new support idx a=63 b=17",
+   "[gjk] after simplex solve: size 2 dist=0.014312 prevDist=0.014312 -> NO PROGRESS (degenerate exit, no test against contactDist)",
+   "[cc] gjkPenetration status=4 (0 NON_INTERSECT,1 EPA_CONTACT,2 GJK_CONTACT? see GuGJKType.h) warmAfter=1 normal=(-0.78871 0.12582 -0.60176) closA=(0.03762 0.05269 -0.04811) closB=(0.04891 0.05089 -0.03950) penDep=0.01431",
+   "[epa] GJK_DEGENERATE: cos(searchDir,normal)=1.00000 dot(centreDir,normal)=0.73836",
+   "[cc] after addGJKEPAContacts: doOverlapTest=0 pts=1 initial=4 dot(localNor,normal)=0.0000 fullContactGen=1 normal=(-0.78871 0.12582 -0.60176) penDep=0.01431",
+   "[full/gjk-normal] signed dot(A face normal, gjk normal in A)=-0.8674 (facing B would be negative); signed dot(B face normal, gjk normal)=0.0802 (facing A is positive)",
+   "[full/gjk-normal] distance of witness point to each face plane of A (vertex space, m): f0=-0.33655 f1=-0.11610 f2=-0.11981 f3=-0.55693 f4=-0.02785 f5=-0.52968 f6=-0.24905 f7=-0.41550 f8=-0.03052 f9=-0.72462 f10=-0.69531 f11=-0.70213 f12=-0.18561 f13=-0.32193 f14=-0.36228 f15=-0.02200 f16=-0.50514 f17=-0.18737 f18=-0.29887 f19=-0.30579 f20=-0.25466 f21=-0.09025 f22=-0.05071 f23=-0.01166 f24=-0.00674 f25=-0.01568 f26=-0.19135 f27=-0.15729 f28=-0.02485 f29=-0.01386 f30=-0.02107 f31=-0.01354 f32=-0.10209 f33=-0.60008 f34=-0.12928 f35=-0.15413 f36=0.00034 f37=-0.00943 f38=-0.00161 f39=-0.25972 f40=-0.19866 f41=-0.12954 f42=-0.08082 f43=-0.09446 f44=-0.72529 f45=-0.76305 f46=-0.14395 f47=-0.16084 f48=-0.14483 f49=-0.00948 f50=-0.62756 f51=-0.59176 f52=-0.39024 f53=-0.09451 f54=-0.00939 f55=-0.01544 f56=-0.00236 f57=-0.00850 f58=-0.62535 f59=-0.68987 f60=-0.07749 f61=-0.06791 f62=-0.22185 f63=-0.69858 f64=-0.68529 f65=-0.64880 f66=-0.67261 f67=-0.03266 f68=-0.01453 f69=-0.01162 f70=-0.01496 f71=-0.64613 f72=-0.63839 f73=-0.01787 f74=-0.09361 f75=-0.58577 f76=-0.52761 f77=-0.62854 f78=0.00000 f79=-0.00000 f80=-0.32062 f81=-0.26844 f82=-0.18877 f83=-0.06336 f84=-0.06645 f85=-0.06422 f86=-0.04506 f87=-0.11599 f88=-0.21037 f89=-0.37949 f90=-0.37847 f91=-0.68652 f92=-0.70409 f93=-0.65583 f94=-0.68660 f95=-0.73408 f96=-0.71636 f97=-0.69768 f98=-0.68076 f99=-0.61006 f100=-0.43642 f101=-0.08969 f102=-0.02643 f103=-0.02974 f104=-0.21969 f105=-0.25788 f106=-0.71102 f107=-0.71641 f108=-0.71473 f109=-0.07231 f110=-0.06011 f111=-0.06059 f112=-0.06435 f113=-0.06156 f114=-0.08308 f115=-0.00458 f116=-0.00233 f117=-0.67843 f118=-0.63859 f119=-0.02172 f120=-0.01487 f121=-0.01727 f122=-0.10226 f123=-0.12247 f124=-0.09338 f125=-0.08111 f126=-0.06773  toleranceA=0.00100",
+   "[full/gjk-normal] distance of witness point to each face plane of B: f4=-0.00113 f9=0.00024 f13=-0.00092 f14=0.00000 f106=0.00000  toleranceB=0.00100",
+   "[full/gjk-normal] faceIndex1(B ref)=9 faceIndex0(A inc)=79 referenceProject=0.0802 incidentProject=0.8674 -> reference is A(poly0) gjkNormal=(-0.78871 0.12582 -0.60176) refNormalB=(-0.38274 0.75883 0.52697) incNormalA_in0=(1.00000 0.00000 0.00000) closestA=(0.03762 0.05269 -0.04811) closestB=(0.04891 0.05089 -0.03950)",
+   "[cc] generateFullContactManifold -> 4 contacts: [pen=-0.01422 n=(-0.38261 0.10660 -0.91774)] [pen=-0.01386 n=(-0.38261 0.10660 -0.91774)] [pen=-0.00255 n=(-0.38261 0.10660 -0.91774)] [pen=-0.00218 n=(-0.38261 0.10660 -0.91774)]",
+   "step 33617: ret 1 contacts 4 manifoldPts 4 n -0.5742 -0.8181 -0.0314 sep -0.01422 -0.01386 -0.00255 -0.00218"
+  ],
+  "regenerate": true,
+  "pts_before": 4,
+  "pts_after_refresh": 0,
+  "warm": 3,
+  "gjk_status": 4,
+  "gjk_penDep_mm": 14.31,
+  "degenerate_exit": true,
+  "epa_status": null,
+  "epa_penDep_mm": null,
+  "doOverlapTest": 0,
+  "fullContactGen": 1,
+  "sat": [],
+  "dotA": -0.8674,
+  "dotB": 0.0802,
+  "reference": "A(poly0)",
+  "repro": {
+   "n": [
+    -0.5742,
+    -0.8181,
+    -0.0314
+   ],
+   "sep_mm": [
+    -14.22,
+    -13.86,
+    -2.55,
+    -2.18
+   ]
+  },
+  "match": true,
+  "true_sep_mm": 0.78,
+  "ext_A_mm": [
+   32.0,
+   39.0,
+   48.1
+  ],
+  "ext_B_mm": [
+   27.6,
+   36.4,
+   39.3
+  ]
+ },
+ {
+  "tag": "seg0113_o9520",
+  "onset": 9520,
+  "centre_side": "normal",
+  "sapien": {
+   "first": "actor:002_bowl#1",
+   "n": [
+    0.213390619,
+    -0.944944024,
+    -0.248083383
+   ],
+   "sep_mm": [
+    -22.62,
+    -7.13,
+    -16.19,
+    -16.2
+   ]
+  },
+  "order": 0,
+  "history": "full",
+  "in_range_since": 8951,
+  "block": [
+   "--- step 9520",
+   "[cc] before refresh: pts=1 warm=1 minMargin=0.000545 marginA=0.000624 marginB=0.000545 contactDist=0.0200 pen0=0.00157",
+   "[cc] after refresh: pts=0",
+   "[cc] lostContacts=1 invalidate=1 -> REGENERATE (gjk); warm=1 aIdx=71,71,72,0 bIdx=105,105,105,0",
+   "[gjk] warm start: 1 points in, simplex size after solve 1, dist=0.003860 eps=0.0000109 contactDist+margins=0.02000",
+   "[gjk] iter: simplex size 1 dist=0.003860 vw=-0.015928 (NON_INTERSECT if vw > 0.02000; converged if vw > 0.003859) new support idx a=70 b=57",
+   "[gjk] after simplex solve: size 2 dist=0.002465 prevDist=0.003860 -> progress",
+   "[gjk] iter: simplex size 2 dist=0.002465 vw=-0.000837 (NON_INTERSECT if vw > 0.02000; converged if vw > 0.002464) new support idx a=72 b=57",
+   "[gjk] after simplex solve: size 2 dist=0.002465 prevDist=0.002465 -> NO PROGRESS (degenerate exit, no test against contactDist)",
+   "[cc] gjkPenetration status=4 (0 NON_INTERSECT,1 EPA_CONTACT,2 GJK_CONTACT? see GuGJKType.h) warmAfter=1 normal=(0.13316 -0.51532 -0.84659) closA=(0.02399 0.02287 -0.05910) closB=(0.02366 0.02414 -0.05701) penDep=0.00246",
+   "[epa] GJK_DEGENERATE: cos(searchDir,normal)=1.00000 dot(centreDir,normal)=0.96030",
+   "[cc] after addGJKEPAContacts: doOverlapTest=0 pts=1 initial=1 dot(localNor,normal)=0.0000 fullContactGen=1 normal=(0.13316 -0.51532 -0.84659) penDep=0.00246",
+   "[full/gjk-normal] signed dot(A face normal, gjk normal in A)=-0.1269 (facing B would be negative); signed dot(B face normal, gjk normal)=-0.1332 (facing A is positive)",
+   "[full/gjk-normal] distance of witness point to each face plane of A (vertex space, m): f0=0.00000 f1=-0.01821 f2=-0.25321 f3=-0.27438 f4=-0.29459 f5=-0.33670 f6=-0.09834 f7=-0.11789 f8=-0.14630 f9=-0.10653 f10=-0.29089 f11=-0.33782 f12=-0.19913 f13=-0.09712 f14=-0.01879 f15=-0.03410 f16=-0.03174 f17=-0.02684 f18=-0.03690 f19=-0.03272 f20=-0.02976 f21=-0.12079 f22=-0.13549 f23=-0.14517 f24=-0.03965 f25=-0.04705 f26=-0.05285 f27=-0.04811 f28=-0.02348 f29=-0.02036 f30=-1.12431 f31=-0.02156 f32=-0.02599 f33=-0.02524 f34=-0.21341 f35=-0.01365 f36=-0.01742 f37=-0.19399 f38=-0.23512 f39=-0.06550 f40=-0.08061 f41=-0.18807 f42=-0.16369 f43=-0.13306 f44=-0.05003 f45=-0.01439 f46=-0.01716 f47=-0.07622 f48=-0.05549 f49=-0.05823 f50=-0.09113 f51=-0.10223 f52=-0.10291 f53=-0.07841 f54=-0.07597 f55=-0.04988 f56=-0.04600 f57=-0.04677 f58=-0.04146 f59=-0.11714 f60=-0.03132 f61=-0.02973 f62=-0.02285 f63=-0.07612 f64=-0.06783 f65=-0.10266 f66=-0.10247 f67=-0.08703 f68=-0.00945 f69=-0.00948 f70=-0.00916 f71=-0.06968 f72=-0.05890 f73=-0.01137 f74=-0.01079 f75=-0.04706 f76=-0.03972 f77=-0.03602 f78=-0.04032 f79=-0.11369 f80=-0.44421 f81=-0.07598 f82=-0.06987 f83=-0.01873 f84=-0.01761 f85=-0.01497 f86=-0.23290 f87=-0.17559 f88=-0.20595  toleranceA=0.00100",
+   "[full/gjk-normal] distance of witness point to each face plane of B: f0=-0.00000 f115=-0.00151  toleranceB=0.00100",
+   "[full/gjk-normal] faceIndex1(B ref)=0 faceIndex0(A inc)=0 referenceProject=0.1332 incidentProject=0.1269 -> reference is B(poly1) gjkNormal=(0.13316 -0.51532 -0.84659) refNormalB=(-1.00000 0.00000 0.00000) incNormalA_in0=(0.00000 1.00000 0.00000) closestA=(0.02399 0.02287 -0.05910) closestB=(0.02366 0.02414 -0.05701)",
+   "[cc] generateFullContactManifold -> 9 contacts: [pen=-0.01737 n=(-1.00000 0.00000 0.00000)] [pen=-0.02042 n=(-1.00000 0.00000 0.00000)] [pen=-0.02258 n=(-1.00000 0.00000 0.00000)] [pen=-0.00797 n=(-1.00000 0.00000 0.00000)] [pen=-0.01110 n=(-1.00000 0.00000 0.00000)] [pen=-0.01619 n=(-1.00000 0.00000 0.00000)] [pen=-0.01620 n=(-1.00000 0.00000 0.00000)] [pen=-0.02262 n=(-1.00000 0.00000 0.00000)] [pen=-0.00713 n=(-1.00000 0.00000 0.00000)]",
+   "step 9520: ret 1 contacts 4 manifoldPts 4 n 0.2134 -0.9449 -0.2481 sep -0.02262 -0.00713 -0.01619 -0.01620"
+  ],
+  "regenerate": true,
+  "pts_before": 1,
+  "pts_after_refresh": 0,
+  "warm": 1,
+  "gjk_status": 4,
+  "gjk_penDep_mm": 2.46,
+  "degenerate_exit": true,
+  "epa_status": null,
+  "epa_penDep_mm": null,
+  "doOverlapTest": 0,
+  "fullContactGen": 1,
+  "sat": [],
+  "dotA": -0.1269,
+  "dotB": -0.1332,
+  "reference": "B(poly1)",
+  "repro": {
+   "n": [
+    0.2134,
+    -0.9449,
+    -0.2481
+   ],
+   "sep_mm": [
+    -22.62,
+    -7.13,
+    -16.19,
+    -16.2
+   ]
+  },
+  "match": true,
+  "true_sep_mm": 1.77,
+  "ext_A_mm": [
+   30.2,
+   49.8,
+   51.9
+  ],
+  "ext_B_mm": [
+   19.6,
+   35.2,
+   45.3
+  ]
+ },
+ {
+  "tag": "seg0113_o11421",
+  "onset": 11421,
+  "centre_side": "inverted",
+  "sapien": {
+   "first": "actor:002_bowl#2",
+   "n": [
+    0.611395419,
+    -0.258878917,
+    0.747781694
+   ],
+   "sep_mm": [
+    -53.99,
+    -49.49,
+    -51.91,
+    -40.15
+   ]
+  },
+  "order": 0,
+  "history": "full (no start step in onset-0..400 reproduces it)",
+  "in_range_since": 11076,
+  "block": [
+   "--- step 11421",
+   "[cc] before refresh: pts=4 warm=1 minMargin=0.000545 marginA=0.000545 marginB=0.000634 contactDist=0.0200 pen0=0.01883 pen1=0.01622 pen2=0.01803 pen3=0.01683",
+   "[cc] after refresh: pts=1 pen0=0.01688",
+   "[cc] lostContacts=1 invalidate=1 -> REGENERATE (gjk); warm=1 aIdx=96,91,86,0 bIdx=94,12,151,221",
+   "[gjk] warm start: 1 points in, simplex size after solve 1, dist=0.021962 eps=0.0000109 contactDist+margins=0.02000",
+   "[gjk] iter: simplex size 1 dist=0.021962 vw=-0.007101 (NON_INTERSECT if vw > 0.02000; converged if vw > 0.021957) new support idx a=88 b=113",
+   "[gjk] after simplex solve: size 2 dist=0.016881 prevDist=0.021962 -> progress",
+   "[gjk] iter: simplex size 2 dist=0.016881 vw=0.012965 (NON_INTERSECT if vw > 0.02000; converged if vw > 0.016877) new support idx a=91 b=57",
+   "[gjk] after simplex solve: size 2 dist=0.016881 prevDist=0.016881 -> NO PROGRESS (degenerate exit, no test against contactDist)",
+   "[cc] gjkPenetration status=4 (0 NON_INTERSECT,1 EPA_CONTACT,2 GJK_CONTACT? see GuGJKType.h) warmAfter=1 normal=(0.49946 -0.73192 -0.46351) closA=(0.05322 -0.00227 -0.03516) closB=(0.04479 0.01009 -0.02734) penDep=0.01688",
+   "[epa] GJK_DEGENERATE: cos(searchDir,normal)=1.00000 dot(centreDir,normal)=0.99323",
+   "[cc] after addGJKEPAContacts: doOverlapTest=0 pts=1 initial=4 dot(localNor,normal)=1.0000 fullContactGen=1 normal=(0.49946 -0.73192 -0.46351) penDep=0.01688",
+   "[full/gjk-normal] signed dot(A face normal, gjk normal in A)=-0.5668 (facing B would be negative); signed dot(B face normal, gjk normal)=-0.7319 (facing A is positive)",
+   "[full/gjk-normal] distance of witness point to each face plane of A (vertex space, m): f0=-0.45582 f1=-0.12621 f2=-0.08558 f3=-0.04891 f4=-0.08402 f5=-0.36887 f6=-0.03631 f7=-0.23590 f8=-0.07027 f9=-0.04160 f10=-0.14571 f11=-0.05643 f12=-0.07111 f13=-0.08385 f14=-0.06531 f15=-0.08034 f16=-0.23128 f17=-0.17969 f18=-0.23969 f19=-0.18528 f20=-0.08370 f21=-0.02418 f22=-0.07464 f23=-0.09030 f24=-0.07084 f25=-0.01433 f26=-0.01146 f27=-0.18902 f28=-0.26357 f29=-0.15079 f30=-0.06188 f31=-0.04943 f32=-0.05178 f33=-0.06956 f34=-0.05999 f35=-0.10476 f36=-0.10693 f37=-0.12652 f38=-0.11919 f39=-0.08185 f40=-0.37373 f41=-0.02586 f42=-0.02213 f43=-0.04077 f44=-0.14115 f45=-0.15398 f46=-0.11064 f47=-0.11249 f48=-0.14918 f49=-0.09051 f50=-0.13686 f51=-0.06611 f52=-0.02596 f53=-0.01545 f54=-0.01384 f55=-0.05204 f56=-0.05646 f57=-0.07949 f58=-0.04023 f59=-0.04365 f60=-0.01999 f61=-0.02228 f62=-0.02151 f63=-0.01482 f64=-0.01856 f65=-0.02077 f66=-0.04407 f67=-0.04299 f68=-0.04023 f69=-0.05042 f70=-0.04117 f71=-0.11652 f72=-0.16538 f73=-0.19007 f74=-0.19321 f75=-0.22193 f76=-0.16061 f77=-0.22219 f78=-0.03533 f79=-0.02864 f80=-0.15499 f81=-0.19603 f82=-0.12614 f83=-0.75039 f84=-0.30503 f85=-0.34336 f86=-0.28321 f87=-0.23029 f88=-0.00826 f89=-0.00856 f90=-0.01398 f91=-0.01354 f92=-0.00931 f93=-0.01868 f94=-0.02163 f95=-0.02574 f96=-0.02093 f97=-0.08750 f98=-0.04813 f99=-0.05371 f100=-0.17660 f101=-0.09692 f102=-0.05212 f103=-0.09496 f104=-0.00000 f105=-0.16252 f106=-0.14537 f107=-0.14957 f108=-0.05285 f109=-0.04997 f110=-0.05025 f111=-0.06208 f112=-0.06333  toleranceA=0.00100",
+   "[full/gjk-normal] distance of witness point to each face plane of B:  toleranceB=0.00100",
+   "[full/gjk-normal] faceIndex1(B ref)=0 faceIndex0(A inc)=104 referenceProject=0.7319 incidentProject=0.5668 -> reference is B(poly1) gjkNormal=(0.49946 -0.73192 -0.46351) refNormalB=(0.00000 1.00000 0.00000) incNormalA_in0=(-1.00000 0.00000 0.00000) closestA=(0.05322 -0.00227 -0.03516) closestB=(0.04479 0.01009 -0.02734)",
+   "[cc] generateFullContactManifold -> 7 contacts: [pen=-0.04785 n=(0.00000 1.00000 0.00000)] [pen=-0.04571 n=(0.00000 1.00000 0.00000)] [pen=-0.04132 n=(0.00000 1.00000 0.00000)] [pen=-0.04949 n=(0.00000 1.00000 0.00000)] [pen=-0.04525 n=(0.00000 1.00000 0.00000)] [pen=-0.04015 n=(0.00000 1.00000 0.00000)] [pen=-0.05399 n=(0.00000 1.00000 0.00000)]",
+   "step 11421: ret 1 contacts 4 manifoldPts 4 n 0.6114 -0.2589 0.7478 sep -0.05399 -0.04949 -0.04785 -0.04571"
+  ],
+  "regenerate": true,
+  "pts_before": 4,
+  "pts_after_refresh": 1,
+  "warm": 1,
+  "gjk_status": 4,
+  "gjk_penDep_mm": 16.88,
+  "degenerate_exit": true,
+  "epa_status": null,
+  "epa_penDep_mm": null,
+  "doOverlapTest": 0,
+  "fullContactGen": 1,
+  "sat": [],
+  "dotA": -0.5668,
+  "dotB": -0.7319,
+  "reference": "B(poly1)",
+  "repro": {
+   "n": [
+    0.6114,
+    -0.2589,
+    0.7478
+   ],
+   "sep_mm": [
+    -53.99,
+    -49.49,
+    -47.85,
+    -45.71
+   ]
+  },
+  "match": false,
+  "true_sep_mm": 13.68,
+  "ext_A_mm": [
+   19.0,
+   37.7,
+   40.3
+  ],
+  "ext_B_mm": [
+   29.3,
+   43.4,
+   47.4
+  ]
+ },
+ {
+  "tag": "seg0117_o34984",
+  "onset": 34984,
+  "centre_side": "normal",
+  "sapien": {
+   "first": "actor:002_bowl#1",
+   "n": [
+    -0.110815957,
+    0.993214607,
+    -0.0352779292
+   ],
+   "sep_mm": [
+    -10.8,
+    0.0,
+    -0.13,
+    -0.01
+   ]
+  },
+  "order": 0,
+  "history": "from onset-400 (empty cache)",
+  "in_range_since": 34584,
+  "block": [
+   "--- step 34984",
+   "[cc] before refresh: pts=3 warm=3 minMargin=0.000545 marginA=0.000589 marginB=0.000545 contactDist=0.0200 pen0=0.00000 pen1=0.00001 pen2=0.00003",
+   "[cc] after refresh: pts=3 pen0=-0.00000 pen1=0.00000 pen2=0.00003",
+   "[cc] lostContacts=0 invalidate=1 -> REGENERATE (gjk); warm=3 aIdx=8,6,6,98 bIdx=28,4,8,28",
+   "[gjk] warm start: 3 points in, simplex size after solve 2, dist=0.018956 eps=0.0000109 contactDist+margins=0.02000",
+   "[gjk] iter: simplex size 2 dist=0.018956 vw=-0.018065 (NON_INTERSECT if vw > 0.02000; converged if vw > 0.018951) new support idx a=82 b=11",
+   "[gjk] after simplex solve: size 2 dist=0.018956 prevDist=0.018956 -> NO PROGRESS (degenerate exit, no test against contactDist)",
+   "[cc] gjkPenetration status=4 (0 NON_INTERSECT,1 EPA_CONTACT,2 GJK_CONTACT? see GuGJKType.h) warmAfter=1 normal=(0.82818 0.02886 -0.55972) closA=(0.03823 0.05067 0.04720) closB=(0.02253 0.05013 0.05781) penDep=0.01896",
+   "[epa] GJK_DEGENERATE: cos(searchDir,normal)=1.00000 dot(centreDir,normal)=0.74387",
+   "[cc] after addGJKEPAContacts: doOverlapTest=0 pts=3 initial=3 dot(localNor,normal)=-0.0000 fullContactGen=1 normal=(0.82818 0.02886 -0.55972) penDep=0.01896",
+   "[full/gjk-normal] signed dot(A face normal, gjk normal in A)=-0.8910 (facing B would be negative); signed dot(B face normal, gjk normal)=-0.0000 (facing A is positive)",
+   "[full/gjk-normal] distance of witness point to each face plane of A (vertex space, m): f0=-0.07912 f1=-0.08565 f2=-0.19319 f3=0.00000 f4=-0.11979 f5=-0.09759 f6=-0.02588 f7=-0.03995 f8=-0.03600 f9=-0.08192 f10=-0.02398 f11=-0.01436 f12=-0.03577 f13=-0.11520 f14=-0.11392 f15=-0.12879 f16=-0.17488 f17=-0.28311 f18=-0.88383 f19=0.00000 f20=-0.01278 f21=-0.24305 f22=-0.21199 f23=-0.16623 f24=-0.05584 f25=-0.34483 f26=-0.00499 f27=-0.00308 f28=-0.02320 f29=-0.02052 f30=-0.12296 f31=-0.12714 f32=-0.10644 f33=-0.18430 f34=-0.20246 f35=-0.19999 f36=-0.20103 f37=-0.09154 f38=-0.09459 f39=-0.05281 f40=-0.06535 f41=-0.08420 f42=-0.09872 f43=-0.10110 f44=-0.06352 f45=-0.07562 f46=-0.02175 f47=-0.01239 f48=-0.01294 f49=-0.01663 f50=-0.00765 f51=-0.00731 f52=-0.01242 f53=-0.24504 f54=-0.20884 f55=-0.27364 f56=-0.18558 f57=-0.12708 f58=-0.20277 f59=-0.06136 f60=-0.13275 f61=-0.15264 f62=-0.11911 f63=-0.06355 f64=-0.05336 f65=-0.04966 f66=-0.15720 f67=-0.17159 f68=-0.14977 f69=-0.13869 f70=-0.14126 f71=-0.12213 f72=0.00000 f73=-0.00168 f74=-0.23634 f75=-0.20270 f76=-0.19406 f77=-0.31211 f78=-0.27487 f79=-0.00536 f80=-0.00512 f81=-0.00823 f82=-0.02234 f83=-0.00000 f84=-0.27657 f85=-0.32945 f86=-0.07816 f87=-0.08039 f88=-0.12599 f89=-0.03971 f90=-0.03883 f91=-0.16547 f92=-0.17044  toleranceA=0.00100",
+   "[full/gjk-normal] distance of witness point to each face plane of B: f2=0.00034 f4=0.00000 f12=-0.00000 f104=-0.00000  toleranceB=0.00100",
+   "[full/gjk-normal] faceIndex1(B ref)=12 faceIndex0(A inc)=83 referenceProject=0.0000 incidentProject=0.8910 -> reference is A(poly0) gjkNormal=(0.82818 0.02886 -0.55972) refNormalB=(-0.45524 0.61727 -0.64166) incNormalA_in0=(-1.00000 0.00000 0.00000) closestA=(0.03823 0.05067 0.04720) closestB=(0.02253 0.05013 0.05781)",
+   "[cc] generateFullContactManifold -> 4 contacts: [pen=-0.01080 n=(0.99118 -0.03733 -0.12720)] [pen=0.00000 n=(0.99118 -0.03733 -0.12720)] [pen=-0.00013 n=(0.99118 -0.03733 -0.12720)] [pen=-0.00001 n=(0.99118 -0.03733 -0.12720)]",
+   "step 34984: ret 1 contacts 4 manifoldPts 4 n -0.1108 0.9932 -0.0353 sep -0.01080 0.00000 -0.00013 -0.00001"
+  ],
+  "regenerate": true,
+  "pts_before": 3,
+  "pts_after_refresh": 3,
+  "warm": 3,
+  "gjk_status": 4,
+  "gjk_penDep_mm": 18.96,
+  "degenerate_exit": true,
+  "epa_status": null,
+  "epa_penDep_mm": null,
+  "doOverlapTest": 0,
+  "fullContactGen": 1,
+  "sat": [],
+  "dotA": -0.891,
+  "dotB": -0.0,
+  "reference": "A(poly0)",
+  "repro": {
+   "n": [
+    -0.1108,
+    0.9932,
+    -0.0353
+   ],
+   "sep_mm": [
+    -10.8,
+    0.0,
+    -0.13,
+    -0.01
+   ]
+  },
+  "match": true,
+  "true_sep_mm": -0.0,
+  "ext_A_mm": [
+   23.8,
+   25.0,
+   48.6
+  ],
+  "ext_B_mm": [
+   23.6,
+   32.4,
+   39.7
+  ]
+ },
+ {
+  "tag": "seg0122_o37441",
+  "onset": 37441,
+  "centre_side": "normal",
+  "sapien": {
+   "first": "actor:002_bowl#2",
+   "n": [
+    0.978268921,
+    -0.195003688,
+    0.0704519451
+   ],
+   "sep_mm": [
+    -7.16,
+    -0.6,
+    -0.57
+   ]
+  },
+  "order": 0,
+  "history": "from onset-1 (empty cache)",
+  "in_range_since": 37440,
+  "block": [
+   "--- step 37441",
+   "[cc] before refresh: pts=4 warm=3 minMargin=0.000545 marginA=0.000545 marginB=0.000545 contactDist=0.0200 pen0=0.00034 pen1=0.00074 pen2=0.00021 pen3=0.00058",
+   "[cc] after refresh: pts=0",
+   "[cc] lostContacts=1 invalidate=0 -> REGENERATE (gjk); warm=3 aIdx=37,63,63,156 bIdx=8,8,4,130",
+   "[gjk] warm start: 3 points in, simplex size after solve 2, dist=0.022845 eps=0.0000109 contactDist+margins=0.02000",
+   "[gjk] iter: simplex size 2 dist=0.022845 vw=-0.012081 (NON_INTERSECT if vw > 0.02000; converged if vw > 0.022839) new support idx a=11 b=91",
+   "[gjk] after simplex solve: size 2 dist=0.022845 prevDist=0.022845 -> NO PROGRESS (degenerate exit, no test against contactDist)",
+   "[cc] gjkPenetration status=4 (0 NON_INTERSECT,1 EPA_CONTACT,2 GJK_CONTACT? see GuGJKType.h) warmAfter=1 normal=(-0.76757 0.13460 0.62667) closA=(0.03073 0.05403 0.05466) closB=(0.04826 0.05095 0.04035) penDep=0.02284",
+   "[epa] GJK_DEGENERATE: cos(searchDir,normal)=1.00000 dot(centreDir,normal)=0.78317",
+   "[cc] after addGJKEPAContacts: doOverlapTest=0 pts=1 initial=4 dot(localNor,normal)=0.0000 fullContactGen=1 normal=(-0.76757 0.13460 0.62667) penDep=0.02284",
+   "[full/gjk-normal] signed dot(A face normal, gjk normal in A)=-0.8317 (facing B would be negative); signed dot(B face normal, gjk normal)=0.0395 (facing A is positive)",
+   "[full/gjk-normal] distance of witness point to each face plane of A (vertex space, m): f0=-0.00000 f1=-0.09223 f2=-0.10508 f3=-0.31203 f4=-0.12990 f5=-0.14492 f6=-0.19685 f7=-0.13830 f8=-0.04317 f9=-0.07821 f10=-0.10142 f11=-0.28946 f12=-0.21235 f13=-0.31901 f14=-0.08191 f15=-0.09832 f16=-0.12071 f17=-0.06123 f18=0.00000 f19=-0.01940 f20=-0.28560 f21=-0.35593 f22=-0.06015 f23=-0.05066 f24=-0.04855 f25=-0.20375 f26=-0.24336 f27=-0.00064 f28=-0.04468 f29=-0.00772 f30=-0.13988 f31=-0.15354 f32=-0.09826 f33=-0.22717 f34=-0.27722 f35=-0.31058 f36=-0.06847 f37=-0.07150 f38=-0.02212 f39=-0.03698 f40=-0.16641 f41=-0.21514 f42=-0.18147 f43=-0.09008 f44=-0.00776 f45=-0.00457 f46=-0.28580 f47=-0.25853 f48=-0.24434 f49=-0.27370 f50=-0.07249 f51=-0.16360 f52=-0.43876 f53=-0.18239 f54=-0.19483 f55=-0.06438 f56=-0.07509 f57=-0.12021 f58=-0.12583 f59=-0.14237 f60=-0.35820 f61=-0.36396 f62=-0.39957 f63=-0.26551 f64=-0.26064 f65=-0.34593 f66=-0.31660 f67=-0.29690 f68=-0.33289 f69=-0.32527 f70=-0.32773 f71=-0.17220 f72=-0.01197 f73=-0.00892 f74=-0.00327 f75=-0.17353 f76=-0.12444 f77=-0.04295 f78=-0.32673 f79=-0.34588 f80=-0.05032 f81=-0.19738 f82=-0.18559 f83=-0.46391 f84=-0.10955 f85=-0.12030 f86=-0.07057 f87=-0.06061 f88=-0.36019 f89=-0.38141 f90=-0.17595 f91=-0.18837 f92=-0.30725 f93=-0.14370 f94=-0.14699 f95=-0.13992 f96=-0.13594 f97=-0.07874 f98=-0.31752 f99=-0.30326 f100=-0.10373 f101=-0.28463 f102=-0.32390 f103=-0.17940 f104=-0.56434 f105=-0.07936 f106=-0.06869 f107=-0.05569 f108=-0.30189 f109=-0.30116 f110=-0.29543 f111=-0.25594 f112=-0.26754  toleranceA=0.00100",
+   "[full/gjk-normal] distance of witness point to each face plane of B: f0=0.00000 f4=-0.00000 f12=-0.00000 f33=-0.00000 f34=-0.00171  toleranceB=0.00100",
+   "[full/gjk-normal] faceIndex1(B ref)=33 faceIndex0(A inc)=0 referenceProject=0.0395 incidentProject=0.8317 -> reference is A(poly0) gjkNormal=(-0.76757 0.13460 0.62667) refNormalB=(-0.42893 0.66975 -0.60617) incNormalA_in0=(0.00000 0.00000 -1.00000) closestA=(0.03073 0.05403 0.05466) closestB=(0.04826 0.05095 0.04035)",
+   "[cc] generateFullContactManifold -> 3 contacts: [pen=-0.00716 n=(-0.34822 -0.12953 0.92842)] [pen=-0.00060 n=(-0.34822 -0.12953 0.92842)] [pen=-0.00057 n=(-0.34822 -0.12953 0.92842)]",
+   "step 37441: ret 1 contacts 3 manifoldPts 3 n 0.9783 -0.1950 0.0705 sep -0.00716 -0.00060 -0.00057"
+  ],
+  "regenerate": true,
+  "pts_before": 4,
+  "pts_after_refresh": 0,
+  "warm": 3,
+  "gjk_status": 4,
+  "gjk_penDep_mm": 22.84,
+  "degenerate_exit": true,
+  "epa_status": null,
+  "epa_penDep_mm": null,
+  "doOverlapTest": 0,
+  "fullContactGen": 1,
+  "sat": [],
+  "dotA": -0.8317,
+  "dotB": 0.0395,
+  "reference": "A(poly0)",
+  "repro": {
+   "n": [
+    0.9783,
+    -0.195,
+    0.0705
+   ],
+   "sep_mm": [
+    -7.16,
+    -0.6,
+    -0.57
+   ]
+  },
+  "match": true,
+  "true_sep_mm": 0.17,
+  "ext_A_mm": [
+   20.4,
+   43.0,
+   44.6
+  ],
+  "ext_B_mm": [
+   27.9,
+   31.9,
+   44.0
+  ]
+ },
+ {
+  "tag": "seg0122_o37771",
+  "onset": 37771,
+  "centre_side": "normal",
+  "sapien": {
+   "first": "actor:002_bowl#2",
+   "n": [
+    -0.26722002,
+    -0.956915319,
+    -0.113607094
+   ],
+   "sep_mm": [
+    -5.91,
+    -6.24,
+    -3.78,
+    -4.54
+   ]
+  },
+  "order": 0,
+  "history": "from onset-1 (empty cache)",
+  "in_range_since": 37770,
+  "block": [
+   "--- step 37771",
+   "[cc] before refresh: pts=1 warm=3 minMargin=0.000545 marginA=0.000565 marginB=0.000545 contactDist=0.0200 pen0=0.00066",
+   "[cc] after refresh: pts=1 pen0=0.00070",
+   "[cc] lostContacts=0 invalidate=1 -> REGENERATE (gjk); warm=3 aIdx=27,13,13,0 bIdx=20,20,21,0",
+   "[gjk] warm start: 3 points in, simplex size after solve 2, dist=0.024536 eps=0.0000109 contactDist+margins=0.02000",
+   "[gjk] iter: simplex size 2 dist=0.024536 vw=-0.011441 (NON_INTERSECT if vw > 0.02000; converged if vw > 0.024530) new support idx a=27 b=1",
+   "[gjk] after simplex solve: size 2 dist=0.024536 prevDist=0.024536 -> NO PROGRESS (degenerate exit, no test against contactDist)",
+   "[cc] gjkPenetration status=4 (0 NON_INTERSECT,1 EPA_CONTACT,2 GJK_CONTACT? see GuGJKType.h) warmAfter=1 normal=(0.79203 0.00083 0.61049) closA=(0.04309 0.05073 -0.04265) closB=(0.02366 0.05071 -0.05763) penDep=0.02454",
+   "[epa] GJK_DEGENERATE: cos(searchDir,normal)=1.00000 dot(centreDir,normal)=0.74599",
+   "[cc] after addGJKEPAContacts: doOverlapTest=0 pts=2 initial=1 dot(localNor,normal)=0.0283 fullContactGen=1 normal=(0.79203 0.00083 0.61049) penDep=0.02454",
+   "[full/gjk-normal] signed dot(A face normal, gjk normal in A)=-0.9748 (facing B would be negative); signed dot(B face normal, gjk normal)=0.0297 (facing A is positive)",
+   "[full/gjk-normal] distance of witness point to each face plane of A (vertex space, m): f0=-0.35823 f1=-0.14627 f2=-0.11531 f3=-0.20037 f4=-0.10977 f5=-0.05384 f6=-0.00068 f7=-0.40103 f8=0.00001 f9=-0.30379 f10=-0.00000 f11=-0.06142 f12=-0.40194 f13=-0.03994 f14=-0.18053 f15=-0.22989 f16=-0.08453 f17=-0.10711 f18=-0.03185 f19=-0.06157 f20=-0.08138 f21=-0.10436 f22=-0.11251 f23=-0.08793 f24=-0.06990 f25=-0.38330 f26=-0.39357 f27=-0.36577 f28=-0.31966 f29=-0.15600 f30=-0.33392 f31=-0.35175 f32=-0.33375 f33=-0.30284 f34=-0.37569 f35=-0.37701 f36=-0.39922 f37=-0.00577 f38=-0.39711 f39=-0.41519 f40=-0.04422 f41=-0.05296 f42=-0.05359 f43=-0.17873 f44=-0.21345 f45=-0.35497 f46=-0.34403 f47=-0.36605 f48=-0.10046 f49=-0.11725 f50=-0.03282 f51=-0.03390 f52=-0.07239 f53=-0.09516 f54=-0.39429 f55=-0.00641 f56=-0.01362 f57=-0.00051 f58=-0.00779 f59=-0.01057 f60=-0.02860 f61=-0.00053 f62=-0.01551 f63=-0.03014 f64=-0.36751 f65=-0.34637 f66=-0.37400 f67=-0.05602 f68=-0.04122 f69=-0.06133 f70=-0.42322 f71=-0.40903 f72=-0.40332 f73=-0.40029 f74=0.00000 f75=-0.02859 f76=-0.38780 f77=-0.14181 f78=-0.11292 f79=-0.12282 f80=-0.09144 f81=-0.10279 f82=-0.02324 f83=-0.02029 f84=-0.17098 f85=-0.16781 f86=-0.04949 f87=-0.00966 f88=-0.10631 f89=-0.08988 f90=-0.04838 f91=-0.08207 f92=-0.07405 f93=-0.07933 f94=-0.04541  toleranceA=0.00100",
+   "[full/gjk-normal] distance of witness point to each face plane of B: f0=-0.00000 f4=-0.00091 f9=-0.00024 f13=-0.00018 f14=0.00000 f61=-0.00172 f70=-0.00189  toleranceB=0.00100",
+   "[full/gjk-normal] faceIndex1(B ref)=13 faceIndex0(A inc)=74 referenceProject=0.0297 incidentProject=0.9748 -> reference is A(poly0) gjkNormal=(0.79203 0.00083 0.61049) refNormalB=(-0.55865 0.30048 0.77306) incNormalA_in0=(0.00000 0.00000 -1.00000) closestA=(0.04309 0.05073 -0.04265) closestB=(0.02366 0.05071 -0.05763)",
+   "[cc] generateFullContactManifold -> 4 contacts: [pen=-0.00591 n=(0.89438 -0.09719 0.43662)] [pen=-0.00624 n=(0.89438 -0.09719 0.43662)] [pen=-0.00378 n=(0.89438 -0.09719 0.43662)] [pen=-0.00454 n=(0.89438 -0.09719 0.43662)]",
+   "step 37771: ret 1 contacts 4 manifoldPts 4 n -0.2672 -0.9569 -0.1136 sep -0.00591 -0.00624 -0.00378 -0.00454"
+  ],
+  "regenerate": true,
+  "pts_before": 1,
+  "pts_after_refresh": 1,
+  "warm": 3,
+  "gjk_status": 4,
+  "gjk_penDep_mm": 24.54,
+  "degenerate_exit": true,
+  "epa_status": null,
+  "epa_penDep_mm": null,
+  "doOverlapTest": 0,
+  "fullContactGen": 1,
+  "sat": [],
+  "dotA": -0.9748,
+  "dotB": 0.0297,
+  "reference": "A(poly0)",
+  "repro": {
+   "n": [
+    -0.2672,
+    -0.9569,
+    -0.1136
+   ],
+   "sep_mm": [
+    -5.91,
+    -6.24,
+    -3.78,
+    -4.54
+   ]
+  },
+  "match": true,
+  "true_sep_mm": 0.7,
+  "ext_A_mm": [
+   25.1,
+   37.5,
+   40.2
+  ],
+  "ext_B_mm": [
+   21.8,
+   35.3,
+   39.7
+  ]
+ },
+ {
+  "tag": "seg0122_o38599",
+  "onset": 38599,
+  "centre_side": "inverted",
+  "sapien": {
+   "first": "actor:002_bowl#2",
+   "n": [
+    -0.722191334,
+    -0.0687924474,
+    0.688264012
+   ],
+   "sep_mm": [
+    -49.93,
+    -11.58,
+    -11.67,
+    -43.5
+   ]
+  },
+  "order": 0,
+  "history": "full",
+  "in_range_since": 38551,
+  "block": [
+   "--- step 38599",
+   "[cc] before refresh: pts=1 warm=1 minMargin=0.000553 marginA=0.000553 marginB=0.000637 contactDist=0.0200 pen0=0.00914",
+   "[cc] after refresh: pts=0",
+   "[cc] lostContacts=1 invalidate=1 -> REGENERATE (gjk); warm=1 aIdx=13,21,85,0 bIdx=95,103,0,0",
+   "[gjk] warm start: 1 points in, simplex size after solve 1, dist=0.024457 eps=0.0000111 contactDist+margins=0.02000",
+   "[gjk] iter: simplex size 1 dist=0.024457 vw=-0.007804 (NON_INTERSECT if vw > 0.02000; converged if vw > 0.024452) new support idx a=20 b=90",
+   "[gjk] after simplex solve: size 2 dist=0.010199 prevDist=0.024457 -> progress",
+   "[gjk] iter: simplex size 2 dist=0.010199 vw=0.003593 (NON_INTERSECT if vw > 0.02000; converged if vw > 0.010197) new support idx a=13 b=44",
+   "[gjk] after simplex solve: size 2 dist=0.010199 prevDist=0.010199 -> NO PROGRESS (degenerate exit, no test against contactDist)",
+   "[cc] gjkPenetration status=4 (0 NON_INTERSECT,1 EPA_CONTACT,2 GJK_CONTACT? see GuGJKType.h) warmAfter=1 normal=(-0.43338 -0.86126 0.26535) closA=(-0.05093 0.00004 -0.00217) closB=(-0.04651 0.00882 -0.00488) penDep=0.01020",
+   "[epa] GJK_DEGENERATE: cos(searchDir,normal)=1.00000 dot(centreDir,normal)=0.96568",
+   "[cc] after addGJKEPAContacts: doOverlapTest=0 pts=1 initial=1 dot(localNor,normal)=0.0000 fullContactGen=1 normal=(-0.43338 -0.86126 0.26535) penDep=0.01020",
+   "[full/gjk-normal] signed dot(A face normal, gjk normal in A)=-0.7094 (facing B would be negative); signed dot(B face normal, gjk normal)=-0.8978 (facing A is positive)",
+   "[full/gjk-normal] distance of witness point to each face plane of A (vertex space, m): f0=0.00000 f1=-0.75142 f2=-0.08938 f3=-0.10559 f4=-0.00647 f5=-0.03320 f6=-0.04939 f7=-0.05981 f8=-0.01008 f9=-0.03010 f10=-0.03794 f11=-0.05859 f12=-0.11021 f13=-0.01666 f14=-0.01811 f15=-0.01964 f16=-0.16468 f17=-0.01841 f18=-0.02399 f19=-0.05146 f20=-0.07146 f21=-0.08617 f22=-0.15226 f23=-0.08375 f24=-0.03202 f25=-0.02959 f26=-0.02788 f27=-0.05971 f28=-0.07467 f29=-0.04589 f30=-0.04633 f31=-0.18107 f32=-0.15782 f33=-0.02193 f34=-0.01833 f35=-0.13495 f36=-0.01982 f37=-0.02374 f38=-0.02577 f39=-0.09638 f40=-0.11429 f41=-0.11483 f42=-0.04039 f43=-0.09820 f44=-0.12911 f45=-0.13122 f46=-0.23458 f47=-0.08230 f48=-0.11275 f49=-0.20905 f50=-0.17833 f51=-0.53372 f52=-0.13266 f53=-0.16212 f54=-0.07255 f55=-0.06955 f56=-0.10774 f57=-0.09074 f58=-0.08437 f59=-0.06421 f60=-0.05949 f61=-0.03829 f62=-0.03083 f63=-0.04747 f64=-0.02264 f65=-0.02365 f66=-0.03419 f67=-0.15524 f68=-0.14379 f69=-0.17415 f70=-0.02881 f71=-0.04111 f72=-0.03093 f73=-0.06666 f74=-0.14513 f75=-0.11154 f76=-0.09623 f77=-0.12663 f78=-0.09706 f79=-0.12154 f80=-0.20202 f81=-0.17275 f82=-0.04335 f83=-0.04766 f84=-0.08178 f85=-0.08513 f86=-0.13264 f87=-0.04443 f88=-0.04101 f89=-0.03750 f90=-0.04249 f91=-0.06440 f92=-0.03437 f93=-0.03493 f94=-0.17644 f95=-0.16018 f96=-0.13501 f97=-0.12812 f98=-0.02503 f99=-0.02383 f100=-0.08031 f101=-0.08736 f102=-0.03796 f103=-0.08316 f104=-0.03500 f105=-0.03505 f106=-0.14447 f107=-0.06385  toleranceA=0.00100",
+   "[full/gjk-normal] distance of witness point to each face plane of B:  toleranceB=0.00100",
+   "[full/gjk-normal] faceIndex1(B ref)=1 faceIndex0(A inc)=0 referenceProject=0.8978 incidentProject=0.7094 -> reference is B(poly1) gjkNormal=(-0.43338 -0.86126 0.26535) refNormalB=(0.20941 0.97145 0.11154) incNormalA_in0=(-1.00000 0.00000 0.00000) closestA=(-0.05093 0.00004 -0.00217) closestB=(-0.04651 0.00882 -0.00488)",
+   "[cc] generateFullContactManifold -> 14 contacts: [pen=-0.01144 n=(0.20941 0.97145 0.11154)] [pen=-0.01144 n=(0.20941 0.97145 0.11154)] [pen=-0.01158 n=(0.20941 0.97145 0.11154)] [pen=-0.01310 n=(0.20941 0.97145 0.11154)] [pen=-0.01532 n=(0.20941 0.97145 0.11154)] [pen=-0.03104 n=(0.20941 0.97145 0.11154)] [pen=-0.03690 n=(0.20941 0.97145 0.11154)] [pen=-0.03939 n=(0.20941 0.97145 0.11154)] [pen=-0.04350 n=(0.20941 0.97145 0.11154)] [pen=-0.04602 n=(0.20941 0.97145 0.11154)] [pen=-0.04793 n=(0.20941 0.97145 0.11154)] [pen=-0.04933 n=(0.20941 0.97145 0.11154)] [pen=-0.01167 n=(0.20941 0.97145 0.11154)] [pen=-0.04993 n=(0.20941 0.97145 0.11154)]",
+   "step 38599: ret 1 contacts 4 manifoldPts 4 n -0.7222 -0.0688 0.6883 sep -0.04993 -0.01158 -0.01167 -0.04350"
+  ],
+  "regenerate": true,
+  "pts_before": 1,
+  "pts_after_refresh": 0,
+  "warm": 1,
+  "gjk_status": 4,
+  "gjk_penDep_mm": 10.2,
+  "degenerate_exit": true,
+  "epa_status": null,
+  "epa_penDep_mm": null,
+  "doOverlapTest": 0,
+  "fullContactGen": 1,
+  "sat": [],
+  "dotA": -0.7094,
+  "dotB": -0.8978,
+  "reference": "B(poly1)",
+  "repro": {
+   "n": [
+    -0.7222,
+    -0.0688,
+    0.6883
+   ],
+   "sep_mm": [
+    -49.93,
+    -11.58,
+    -11.67,
+    -43.5
+   ]
+  },
+  "match": true,
+  "true_sep_mm": 4.75,
+  "ext_A_mm": [
+   34.5,
+   35.4,
+   38.1
+  ],
+  "ext_B_mm": [
+   25.8,
+   26.0,
+   58.5
+  ]
+ },
+ {
+  "tag": "seg0137_o22878",
+  "onset": 22878,
+  "centre_side": "normal",
+  "sapien": {
+   "first": "actor:002_bowl#1",
+   "n": [
+    -0.431093156,
+    0.550685346,
+    -0.714775681
+   ],
+   "sep_mm": [
+    -13.37,
+    -4.22,
+    -12.31,
+    -6.87
+   ]
+  },
+  "order": 0,
+  "history": "full",
+  "in_range_since": 22680,
+  "block": [
+   "--- step 22878",
+   "[cc] before refresh: pts=1 warm=1 minMargin=0.000540 marginA=0.000634 marginB=0.000540 contactDist=0.0200 pen0=0.00086",
+   "[cc] after refresh: pts=0",
+   "[cc] lostContacts=1 invalidate=0 -> REGENERATE (gjk); warm=1 aIdx=13,69,69,67 bIdx=13,13,12,18",
+   "[gjk] warm start: 1 points in, simplex size after solve 1, dist=0.004051 eps=0.0000108 contactDist+margins=0.02000",
+   "[gjk] iter: simplex size 1 dist=0.004051 vw=-0.023547 (NON_INTERSECT if vw > 0.02000; converged if vw > 0.004050) new support idx a=38 b=28",
+   "[gjk] after simplex solve: size 2 dist=0.001834 prevDist=0.004051 -> progress",
+   "[gjk] iter: simplex size 2 dist=0.001834 vw=-0.001255 (NON_INTERSECT if vw > 0.02000; converged if vw > 0.001833) new support idx a=101 b=13",
+   "[gjk] after simplex solve: size 2 dist=0.001834 prevDist=0.001834 -> NO PROGRESS (degenerate exit, no test against contactDist)",
+   "[cc] gjkPenetration status=4 (0 NON_INTERSECT,1 EPA_CONTACT,2 GJK_CONTACT? see GuGJKType.h) warmAfter=1 normal=(0.87710 0.47643 -0.06086) closA=(-0.04909 0.05070 0.03651) closB=(-0.05070 0.04983 0.03662) penDep=0.00183",
+   "[epa] GJK_DEGENERATE: cos(searchDir,normal)=1.00000 dot(centreDir,normal)=0.85087",
+   "[cc] after addGJKEPAContacts: doOverlapTest=0 pts=1 initial=1 dot(localNor,normal)=0.0000 fullContactGen=1 normal=(0.87710 0.47643 -0.06086) penDep=0.00183",
+   "[full/gjk-normal] signed dot(A face normal, gjk normal in A)=0.1451 (facing B would be negative); signed dot(B face normal, gjk normal)=-0.0609 (facing A is positive)",
+   "[full/gjk-normal] distance of witness point to each face plane of A (vertex space, m): f0=0.00000 f1=-0.06701 f2=-0.05299 f3=-0.32986 f4=-0.09456 f5=-0.01561 f6=-0.09399 f7=-0.16240 f8=-0.12322 f9=-0.25020 f10=-0.15027 f11=-0.10582 f12=-0.03978 f13=-0.06515 f14=-0.05342 f15=-0.08417 f16=-0.47544 f17=-0.26548 f18=-0.02771 f19=-0.14389 f20=-0.16326 f21=-0.07228 f22=-0.07695 f23=-0.08225 f24=-0.08451 f25=-0.08780 f26=-0.02766 f27=-0.02263 f28=-0.02059 f29=-0.01858 f30=-0.01231 f31=-0.01038 f32=-0.01087 f33=-0.01408 f34=-0.07075 f35=-0.06224 f36=-0.04998 f37=-0.09382 f38=-0.18722 f39=-0.05751 f40=-0.09152 f41=-0.23882 f42=-0.04962 f43=-0.04569 f44=-0.03679 f45=-0.01408 f46=-0.01764 f47=-0.13584 f48=-0.15244 f49=-0.13376 f50=-0.01927 f51=-0.02505 f52=-0.05178 f53=-0.06783 f54=-0.02937 f55=-0.02215 f56=-0.03083 f57=-0.02884 f58=-0.05680 f59=-0.06385 f60=-0.06429 f61=-0.06285 f62=-0.06040 f63=-0.04579 f64=-0.07914 f65=-0.06877 f66=-0.06807 f67=-0.06598 f68=-0.07716 f69=-0.07790 f70=-0.08932 f71=-0.12845 f72=-0.10986 f73=-0.13251 f74=-0.04659 f75=-0.03429 f76=-0.03949 f77=-0.04850 f78=-0.03530 f79=-0.05774 f80=-0.03975 f81=-0.05323 f82=-0.15877 f83=-0.15328 f84=-0.15183 f85=-0.14202 f86=-0.13190 f87=-0.11017 f88=-0.18118 f89=-0.48932 f90=-0.04703 f91=-0.06167 f92=-0.09225 f93=-0.12413 f94=-0.19861 f95=-0.15339 f96=-0.12111 f97=-0.11839 f98=-0.15769 f99=-0.14985 f100=-0.22698 f101=-0.08053 f102=-0.10447 f103=-0.20939 f104=-0.24674 f105=-0.04840 f106=-0.02762 f107=-0.02955 f108=-0.03389 f109=-0.03670 f110=-0.03478 f111=-0.02618  toleranceA=0.00100",
+   "[full/gjk-normal] distance of witness point to each face plane of B: f0=-0.00000  toleranceB=0.00100",
+   "[full/gjk-normal] faceIndex1(B ref)=0 faceIndex0(A inc)=0 referenceProject=0.0609 incidentProject=0.1451 -> reference is A(poly0) gjkNormal=(0.87710 0.47643 -0.06086) refNormalB=(0.00000 0.00000 1.00000) incNormalA_in0=(0.00000 1.00000 0.00000) closestA=(-0.04909 0.05070 0.03651) closestB=(-0.05070 0.04983 0.03662)",
+   "[cc] generateFullContactManifold -> 6 contacts: [pen=-0.01231 n=(0.19249 -0.55567 0.80882)] [pen=-0.01059 n=(0.19249 -0.55567 0.80882)] [pen=-0.00903 n=(0.19249 -0.55567 0.80882)] [pen=-0.00687 n=(0.19249 -0.55567 0.80882)] [pen=-0.01337 n=(0.19249 -0.55567 0.80882)] [pen=-0.00422 n=(0.19249 -0.55567 0.80882)]",
+   "step 22878: ret 1 contacts 4 manifoldPts 4 n -0.4311 0.5507 -0.7148 sep -0.01337 -0.00422 -0.01231 -0.00687"
+  ],
+  "regenerate": true,
+  "pts_before": 1,
+  "pts_after_refresh": 0,
+  "warm": 1,
+  "gjk_status": 4,
+  "gjk_penDep_mm": 1.83,
+  "degenerate_exit": true,
+  "epa_status": null,
+  "epa_penDep_mm": null,
+  "doOverlapTest": 0,
+  "fullContactGen": 1,
+  "sat": [],
+  "dotA": 0.1451,
+  "dotB": -0.0609,
+  "reference": "A(poly0)",
+  "repro": {
+   "n": [
+    -0.4311,
+    0.5507,
+    -0.7148
+   ],
+   "sep_mm": [
+    -13.37,
+    -4.22,
+    -12.31,
+    -6.87
+   ]
+  },
+  "match": true,
+  "true_sep_mm": 0.86,
+  "ext_A_mm": [
+   33.1,
+   37.8,
+   44.4
+  ],
+  "ext_B_mm": [
+   22.3,
+   24.3,
+   45.1
+  ]
+ },
+ {
+  "tag": "seg0137_o78683",
+  "onset": 78683,
+  "centre_side": "inverted",
+  "sapien": {
+   "first": "actor:002_bowl#2",
+   "n": [
+    0.172115847,
+    -0.085307233,
+    0.981376052
+   ],
+   "sep_mm": [
+    -37.24,
+    -11.98,
+    -11.86,
+    -13.51
+   ]
+  },
+  "order": 0,
+  "history": "full (no start step in onset-0..400 reproduces it)",
+  "in_range_since": 59074,
+  "block": [
+   "--- step 78683",
+   "[cc] before refresh: pts=4 warm=1 minMargin=0.000540 marginA=0.000540 marginB=0.000634 contactDist=0.0200 pen0=0.00562 pen1=0.01457 pen2=0.01548 pen3=0.00614",
+   "[cc] after refresh: pts=1 pen0=0.00621",
+   "[cc] lostContacts=1 invalidate=1 -> REGENERATE (gjk); warm=1 aIdx=1,2,13,97 bIdx=13,13,13,132",
+   "[gjk] warm start: 1 points in, simplex size after solve 1, dist=0.007558 eps=0.0000108 contactDist+margins=0.02000",
+   "[gjk] iter: simplex size 1 dist=0.007558 vw=-0.018171 (NON_INTERSECT if vw > 0.02000; converged if vw > 0.007556) new support idx a=20 b=11",
+   "[gjk] after simplex solve: size 2 dist=0.006215 prevDist=0.007558 -> progress",
+   "[gjk] iter: simplex size 2 dist=0.006215 vw=0.001687 (NON_INTERSECT if vw > 0.02000; converged if vw > 0.006213) new support idx a=20 b=81",
+   "[gjk] after simplex solve: size 2 dist=0.006215 prevDist=0.006215 -> NO PROGRESS (degenerate exit, no test against contactDist)",
+   "[cc] gjkPenetration status=4 (0 NON_INTERSECT,1 EPA_CONTACT,2 GJK_CONTACT? see GuGJKType.h) warmAfter=1 normal=(0.46815 -0.83476 -0.28983) closA=(0.05440 0.00695 -0.02615) closB=(0.05149 0.01213 -0.02435) penDep=0.00621",
+   "[epa] GJK_DEGENERATE: cos(searchDir,normal)=1.00000 dot(centreDir,normal)=0.89636",
+   "[cc] after addGJKEPAContacts: doOverlapTest=0 pts=1 initial=4 dot(localNor,normal)=0.9999 fullContactGen=1 normal=(0.46815 -0.83476 -0.28983) penDep=0.00621",
+   "[full/gjk-normal] signed dot(A face normal, gjk normal in A)=-0.7972 (facing B would be negative); signed dot(B face normal, gjk normal)=-0.8348 (facing A is positive)",
+   "[full/gjk-normal] distance of witness point to each face plane of A (vertex space, m): f0=-0.30287 f1=-0.00472 f2=-0.74224 f3=-0.00139 f4=-0.11708 f5=-0.12093 f6=-0.01921 f7=-0.12835 f8=-0.12469 f9=-0.15134 f10=-0.20052 f11=-0.06540 f12=-0.08757 f13=-0.07371 f14=-0.06546 f15=-0.11671 f16=-0.22907 f17=-0.00263 f18=-0.01312 f19=-0.17830 f20=-0.12550 f21=-0.11785 f22=-0.15428 f23=-0.12959 f24=-0.07329 f25=-0.10552 f26=-0.16091 f27=-0.14679 f28=-0.15079 f29=-0.10554 f30=-0.17447 f31=-0.15072 f32=-0.12174 f33=-0.12108 f34=-0.11716 f35=-0.11997 f36=-0.10527 f37=-0.05808 f38=-0.06027 f39=-0.04751 f40=-0.04338 f41=-0.03429 f42=-0.34141 f43=-0.28181 f44=-0.32083 f45=-0.12906 f46=-0.13095 f47=-0.13242 f48=-0.07093 f49=-0.08348 f50=-0.05330 f51=-0.12526 f52=-0.11733 f53=-0.11533 f54=-0.09764 f55=-0.25894 f56=-0.29294 f57=-0.16786 f58=-0.20931 f59=-0.19300 f60=-0.19637 f61=-0.19030 f62=-0.20641 f63=-0.11716 f64=-0.11753 f65=-0.11980 f66=-0.08986 f67=-0.10205 f68=-0.11079 f69=-0.02378 f70=-0.02978 f71=-0.05178 f72=-0.14516 f73=-0.14044 f74=-0.36895 f75=-0.28528 f76=-0.10127 f77=-0.09825 f78=-0.08765 f79=-0.29796 f80=-0.22746 f81=-0.24680 f82=-0.13482 f83=-0.13581 f84=-0.13041 f85=-0.21568 f86=-0.24787 f87=-0.16535 f88=-0.03185 f89=-0.13052 f90=-0.12184 f91=-0.16619 f92=-0.17339 f93=-0.33024 f94=-0.29091 f95=-0.15666  toleranceA=0.00100",
+   "[full/gjk-normal] distance of witness point to each face plane of B:  toleranceB=0.00100",
+   "[full/gjk-normal] faceIndex1(B ref)=0 faceIndex0(A inc)=3 referenceProject=0.8348 incidentProject=0.7972 -> reference is B(poly1) gjkNormal=(0.46815 -0.83476 -0.28983) refNormalB=(0.00000 1.00000 0.00000) incNormalA_in0=(0.84377 0.31218 -0.43656) closestA=(0.05440 0.00695 -0.02615) closestB=(0.05149 0.01213 -0.02435)",
+   "[cc] generateFullContactManifold -> 6 contacts: [pen=-0.03724 n=(0.00000 1.00000 0.00000)] [pen=-0.01188 n=(0.00000 1.00000 0.00000)] [pen=-0.01356 n=(0.00000 1.00000 0.00000)] [pen=-0.01767 n=(0.00000 1.00000 0.00000)] [pen=-0.02021 n=(0.00000 1.00000 0.00000)] [pen=-0.01198 n=(0.00000 1.00000 0.00000)]",
+   "step 78683: ret 1 contacts 4 manifoldPts 4 n 0.1721 -0.0853 0.9814 sep -0.03724 -0.01198 -0.01188 -0.01356"
+  ],
+  "regenerate": true,
+  "pts_before": 4,
+  "pts_after_refresh": 1,
+  "warm": 1,
+  "gjk_status": 4,
+  "gjk_penDep_mm": 6.21,
+  "degenerate_exit": true,
+  "epa_status": null,
+  "epa_penDep_mm": null,
+  "doOverlapTest": 0,
+  "fullContactGen": 1,
+  "sat": [],
+  "dotA": -0.7972,
+  "dotB": -0.8348,
+  "reference": "B(poly1)",
+  "repro": {
+   "n": [
+    0.1721,
+    -0.0853,
+    0.9814
+   ],
+   "sep_mm": [
+    -37.24,
+    -11.98,
+    -11.88,
+    -13.56
+   ]
+  },
+  "match": false,
+  "true_sep_mm": 4.34,
+  "ext_A_mm": [
+   19.4,
+   32.8,
+   39.7
+  ],
+  "ext_B_mm": [
+   20.1,
+   45.5,
+   50.0
+  ]
+ }
+]

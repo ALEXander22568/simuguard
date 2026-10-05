@@ -1,0 +1,46 @@
+[
+ {
+  "what": "new constant 4 x float 2^-46",
+  "file_offset": "0x577720",
+  "old": "00000000000000000000000000000000",
+  "new": "00008028000080280000802800008028"
+ },
+ {
+  "what": "executable LOAD segment p_filesz/p_memsz 0x4ee705 -> 0x4ee730",
+  "file_offset": "0x98",
+  "old": "05e74e000000000005e74e0000000000",
+  "new": "30e74e000000000030e74e0000000000"
+ },
+ {
+  "what": "movss xmm3,[rip+disp]: 0x57d900 (FLT_EPSILON) -> 0x577720 (2^-46); next: comiss xmm3,xmm2",
+  "function": "physx::Gu::GJKCPairDoSimplex(Vec3V*, Vec3V*, Vec3V*, const Vec3V&, PxU32&)",
+  "vaddr": "0x3e0f07",
+  "file_offset": "0x3e0f0b",
+  "old": "f1c91900",
+  "new": "11681900"
+ },
+ {
+  "what": "movss xmm3,[rip+disp]: 0x57d900 (FLT_EPSILON) -> 0x577720 (2^-46); next: comiss xmm3,xmm2",
+  "function": "physx::Gu::GJKCPairDoSimplex(Vec3V*, Vec3V*, Vec3V*, PxI32*, PxI32*, const Vec3V&, PxU32&)",
+  "vaddr": "0x3eaec5",
+  "file_offset": "0x3eaec9",
+  "old": "332a1900",
+  "new": "53c81800"
+ },
+ {
+  "what": "movss xmm1,[rip+disp]: 0x57d900 (FLT_EPSILON) -> 0x577720 (2^-46); next: comiss xmm1,xmm2",
+  "function": "physx::Gu::closestPtPointTetrahedron(Vec3V*, Vec3V*, Vec3V*, PxU32&)",
+  "vaddr": "0x43f8b0",
+  "file_offset": "0x43f8b4",
+  "old": "48e01300",
+  "new": "687e1300"
+ },
+ {
+  "what": "movss xmm1,[rip+disp]: 0x57d900 (FLT_EPSILON) -> 0x577720 (2^-46); next: comiss xmm1,xmm2",
+  "function": "physx::Gu::closestPtPointTetrahedron(Vec3V*, Vec3V*, Vec3V*, PxI32*, PxI32*, PxU32&)",
+  "vaddr": "0x43ff79",
+  "file_offset": "0x43ff7d",
+  "old": "7fd91300",
+  "new": "9f771300"
+ }
+]

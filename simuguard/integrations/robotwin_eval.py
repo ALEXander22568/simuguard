@@ -56,14 +56,28 @@ def eval_monitor_config(overrides: dict[str, Any] | None = None) -> MonitorConfi
 
 
 SIM_INTERVENTIONS = ("none", "solver_high", "solver_default", "mass_100g", "mass_50g", "depen_1.0", "depen_0.1",
-                     "pcm_off", "basket_coacd_0.1", "basket_coacd_0.05")
+                     "offset_1mm", "offset_2mm", "pcm_off", "basket_coacd_0.1", "basket_coacd_0.05", "gjk_fix")
 # Scene level interventions: fixed when the scene is built, so they apply to the expert check as well as to the
 # policy rollout (unlike the per rollout settings above).
-SCENE_INTERVENTIONS = ("pcm_off", "basket_coacd_0.1", "basket_coacd_0.05")
+SCENE_INTERVENTIONS = ("pcm_off", "basket_coacd_0.1", "basket_coacd_0.05", "gjk_fix")
 
 
 def install_scene_intervention(name: str) -> dict:
     """Hook SAPIEN before any scene or actor is built."""
+    if name == "gjk_fix":
+        # A copy of the SAPIEN package whose PhysX library carries the PhysX 5.4.0 threshold of the GJK simplex
+        # triangle test (PX_EPS_REAL^2 instead of FLT_EPSILON); it must come first on sys.path before sapien loads.
+        site = os.environ.get("SIMUGUARD_PATCHED_SAPIEN")
+        if not site or not os.path.isdir(os.path.join(site, "sapien")):
+            raise FileNotFoundError("gjk_fix: set SIMUGUARD_PATCHED_SAPIEN to the directory holding the patched sapien package")
+        if "sapien" in sys.modules:
+            raise RuntimeError("gjk_fix: sapien was imported before the patched copy could be selected")
+        sys.path.insert(0, site)
+        import sapien as _sapien
+
+        if not os.path.realpath(_sapien.__file__).startswith(os.path.realpath(site)):
+            raise RuntimeError(f"gjk_fix: sapien loaded from {_sapien.__file__}, not from {site}")
+        return {"name": name, "sapien": os.path.realpath(_sapien.__file__)}
     import sapien.core as _core
     from sapien.wrapper.actor_builder import ActorBuilder
 
@@ -137,6 +151,11 @@ def apply_sim_intervention(adapter: RoboTwinAdapter, name: str) -> dict[str, Any
         cap = float(name.split("_", 1)[1])
         count = adapter.set_max_depenetration_velocity(cap)
         return {"name": name, "max_depenetration_velocity_mps": cap, "bodies": count}
+    if name.startswith("offset_"):  # contact offset of the task's free objects and containers (SAPIEN default 10 mm)
+        offset = float(name.split("_", 1)[1].rstrip("m")) / 1000.0
+        bodies = adapter.body_ids_with_role(BodyRole.TARGET) + adapter.body_ids_with_role(BodyRole.CONTAINER)
+        return {"name": name, "contact_offset_m": offset, "bodies": len(bodies),
+                "shapes": adapter.set_contact_offset(bodies, offset)}
     before = {"solver_iterations": adapter.solver_iterations()}
     targets = adapter.body_ids_with_role(BodyRole.TARGET)
     before["target_mass_kg"] = {b: adapter.mass(b) for b in targets}

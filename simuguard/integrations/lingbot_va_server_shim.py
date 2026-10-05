@@ -200,6 +200,23 @@ def install_overrides(module: Any, padding: str, vae_mode: str) -> None:
             module.logger.info(f"[simuguard] prompt tokenizer padding override: max_length -> {padding}")
 
     server_cls.__init__ = __init__
+    seed = os.environ.get("SIMUGUARD_POLICY_SEED")
+    if seed:
+        # Upstream draws the diffusion noise with torch.randn and never reseeds, so two runs of one
+        # environment seed differ.  Reseeding at every reset gives each episode the same noise sequence,
+        # which pairs runs that differ only in the simulation settings.
+        original_reset = server_cls._reset
+
+        def _reset(self: Any, *args: Any, **kwargs: Any) -> Any:
+            out = original_reset(self, *args, **kwargs)
+            import torch
+
+            torch.manual_seed(int(seed))
+            torch.cuda.manual_seed_all(int(seed))
+            module.logger.info(f"[simuguard] policy sampling seed reset to {seed}")
+            return out
+
+        server_cls._reset = _reset
     server_cls._simuguard_padding = padding
     server_cls._simuguard_vae_mode = vae_mode
     if vae_mode == "gpu_staged":

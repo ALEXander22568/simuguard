@@ -1,0 +1,437 @@
+[
+ {
+  "tag": "seg0005_o34143",
+  "segment": "/mnt/nvme0/shared/USER/simuguard/runs/crosstask4_50seeds_copy/stack_bowls_three/simuguard/segments/seg0005_seed100002_ep2",
+  "onset": 34143,
+  "b0": "actor:002_bowl#2",
+  "s0": 19,
+  "b1": "actor:002_bowl#1",
+  "s1": 13,
+  "sep_mm": [
+   -22.526,
+   -3.712,
+   -4.341
+  ],
+  "normal": [
+   0.18371318555878324,
+   0.9827131180142973,
+   0.02289963175384761
+  ],
+  "centre_side": "normal"
+ },
+ {
+  "tag": "seg0034_o22815",
+  "segment": "/mnt/nvme0/shared/USER/simuguard/runs/crosstask4_50seeds_copy/stack_bowls_three/simuguard/segments/seg0034_seed100023_ep10",
+  "onset": 22815,
+  "b0": "actor:002_bowl#1",
+  "s0": 4,
+  "b1": "actor:002_bowl",
+  "s1": 22,
+  "sep_mm": [
+   -15.306,
+   -13.151,
+   -12.773
+  ],
+  "normal": [
+   0.16858304336594815,
+   0.9832128150879145,
+   -0.06980198948721576
+  ],
+  "centre_side": "normal"
+ },
+ {
+  "tag": "seg0034_o22820",
+  "segment": "/mnt/nvme0/shared/USER/simuguard/runs/crosstask4_50seeds_copy/stack_bowls_three/simuguard/segments/seg0034_seed100023_ep10",
+  "onset": 22820,
+  "b0": "actor:002_bowl#1",
+  "s0": 13,
+  "b1": "actor:002_bowl",
+  "s1": 21,
+  "sep_mm": [
+   -57.651,
+   -57.529,
+   -54.7
+  ],
+  "normal": [
+   -0.07961498682197196,
+   0.1632458964331089,
+   0.9833678005563777
+  ],
+  "centre_side": "inverted"
+ },
+ {
+  "tag": "seg0034_o97487",
+  "segment": "/mnt/nvme0/shared/USER/simuguard/runs/crosstask4_50seeds_copy/stack_bowls_three/simuguard/segments/seg0034_seed100023_ep10",
+  "onset": 97487,
+  "b0": "actor:002_bowl#2",
+  "s0": 20,
+  "b1": "actor:002_bowl",
+  "s1": 8,
+  "sep_mm": [
+   -11.745,
+   -10.684,
+   -11.716,
+   -11.25
+  ],
+  "normal": [
+   -0.11105328598693191,
+   -0.25766577853574685,
+   -0.959830982122932
+  ],
+  "centre_side": "normal"
+ },
+ {
+  "tag": "seg0034_o97643",
+  "segment": "/mnt/nvme0/shared/USER/simuguard/runs/crosstask4_50seeds_copy/stack_bowls_three/simuguard/segments/seg0034_seed100023_ep10",
+  "onset": 97643,
+  "b0": "actor:002_bowl#2",
+  "s0": 1,
+  "b1": "actor:002_bowl",
+  "s1": 20,
+  "sep_mm": [
+   -14.174,
+   -13.437,
+   -14.181
+  ],
+  "normal": [
+   0.18385825522091362,
+   0.07302425591590277,
+   -0.9802365020927604
+  ],
+  "centre_side": "normal"
+ },
+ {
+  "tag": "seg0034_o97697",
+  "segment": "/mnt/nvme0/shared/USER/simuguard/runs/crosstask4_50seeds_copy/stack_bowls_three/simuguard/segments/seg0034_seed100023_ep10",
+  "onset": 97697,
+  "b0": "actor:002_bowl#2",
+  "s0": 18,
+  "b1": "actor:002_bowl",
+  "s1": 1,
+  "sep_mm": [
+   -17.362,
+   -18.024,
+   -17.649,
+   -17.809
+  ],
+  "normal": [
+   0.08039436287198759,
+   0.6337671120551801,
+   0.7693347737465426
+  ],
+  "centre_side": "inverted"
+ },
+ {
+  "tag": "seg0034_o97713",
+  "segment": "/mnt/nvme0/shared/USER/simuguard/runs/crosstask4_50seeds_copy/stack_bowls_three/simuguard/segments/seg0034_seed100023_ep10",
+  "onset": 97713,
+  "b0": "actor:002_bowl#2",
+  "s0": 2,
+  "b1": "actor:002_bowl",
+  "s1": 23,
+  "sep_mm": [
+   -17.809,
+   -15.904,
+   -12.849,
+   -16.132
+  ],
+  "normal": [
+   0.6351185107519428,
+   0.12745084689381328,
+   0.7618272500549478
+  ],
+  "centre_side": "normal"
+ },
+ {
+  "tag": "seg0043_o10976",
+  "segment": "/mnt/nvme0/shared/USER/simuguard/runs/crosstask4_50seeds_copy/stack_bowls_three/simuguard/segments/seg0043_seed100028_ep14",
+  "onset": 10976,
+  "b0": "actor:002_bowl#1",
+  "s0": 23,
+  "b1": "actor:002_bowl",
+  "s1": 23,
+  "sep_mm": [
+   -15.906,
+   -9.537,
+   -8.21,
+   -10.601
+  ],
+  "normal": [
+   -0.7197898316565894,
+   -0.1873578795627462,
+   -0.668430716835732
+  ],
+  "centre_side": "inverted"
+ },
+ {
+  "tag": "seg0072_o35350",
+  "segment": "/mnt/nvme0/shared/USER/simuguard/runs/crosstask4_50seeds_copy/stack_bowls_three/simuguard/segments/seg0072_seed100047_ep24",
+  "onset": 35350,
+  "b0": "actor:002_bowl#2",
+  "s0": 23,
+  "b1": "actor:002_bowl#1",
+  "s1": 3,
+  "sep_mm": [
+   -54.523,
+   -27.091,
+   -41.646,
+   -39.274
+  ],
+  "normal": [
+   0.035840846443279915,
+   0.12136036850226231,
+   -0.9919612364821644
+  ],
+  "centre_side": "inverted"
+ },
+ {
+  "tag": "seg0103_o23793",
+  "segment": "/mnt/nvme0/shared/USER/simuguard/runs/crosstask4_50seeds_copy/stack_bowls_three/simuguard/segments/seg0103_seed100067_ep35",
+  "onset": 23793,
+  "b0": "actor:002_bowl#1",
+  "s0": 21,
+  "b1": "actor:002_bowl",
+  "s1": 10,
+  "sep_mm": [
+   -38.01,
+   -5.767,
+   -37.788,
+   -33.738
+  ],
+  "normal": [
+   -0.2004412728804468,
+   0.11582758382466339,
+   -0.9728346555049356
+  ],
+  "centre_side": "inverted"
+ },
+ {
+  "tag": "seg0103_o24059",
+  "segment": "/mnt/nvme0/shared/USER/simuguard/runs/crosstask4_50seeds_copy/stack_bowls_three/simuguard/segments/seg0103_seed100067_ep35",
+  "onset": 24059,
+  "b0": "actor:002_bowl#1",
+  "s0": 20,
+  "b1": "actor:002_bowl",
+  "s1": 22,
+  "sep_mm": [
+   -31.316,
+   -17.996,
+   -27.442,
+   -22.992
+  ],
+  "normal": [
+   0.07607484631604361,
+   0.9430478839423183,
+   0.3238414833678757
+  ],
+  "centre_side": "inverted"
+ },
+ {
+  "tag": "seg0110_o33559",
+  "segment": "/mnt/nvme0/shared/USER/simuguard/runs/crosstask4_50seeds_copy/stack_bowls_three/simuguard/segments/seg0110_seed100071_ep38",
+  "onset": 33559,
+  "b0": "actor:002_bowl#1",
+  "s0": 20,
+  "b1": "actor:002_bowl",
+  "s1": 18,
+  "sep_mm": [
+   -12.442,
+   -0.162,
+   -1.022
+  ],
+  "normal": [
+   -0.03932829481371033,
+   -0.9987499479298202,
+   0.03085168937395831
+  ],
+  "centre_side": "normal"
+ },
+ {
+  "tag": "seg0110_o33617",
+  "segment": "/mnt/nvme0/shared/USER/simuguard/runs/crosstask4_50seeds_copy/stack_bowls_three/simuguard/segments/seg0110_seed100071_ep38",
+  "onset": 33617,
+  "b0": "actor:002_bowl#1",
+  "s0": 18,
+  "b1": "actor:002_bowl",
+  "s1": 12,
+  "sep_mm": [
+   -14.216,
+   -13.862,
+   -2.546,
+   -2.179
+  ],
+  "normal": [
+   -0.5742485173580176,
+   -0.8180768244817576,
+   -0.03144756839506385
+  ],
+  "centre_side": "normal"
+ },
+ {
+  "tag": "seg0113_o9520",
+  "segment": "/mnt/nvme0/shared/USER/simuguard/runs/crosstask4_50seeds_copy/stack_bowls_three/simuguard/segments/seg0113_seed100073_ep39",
+  "onset": 9520,
+  "b0": "actor:002_bowl#1",
+  "s0": 21,
+  "b1": "actor:002_bowl",
+  "s1": 12,
+  "sep_mm": [
+   -22.617,
+   -7.132,
+   -16.186,
+   -16.195
+  ],
+  "normal": [
+   0.213390604736034,
+   -0.9449439628582652,
+   -0.24808336677033976
+  ],
+  "centre_side": "normal"
+ },
+ {
+  "tag": "seg0113_o11421",
+  "segment": "/mnt/nvme0/shared/USER/simuguard/runs/crosstask4_50seeds_copy/stack_bowls_three/simuguard/segments/seg0113_seed100073_ep39",
+  "onset": 11421,
+  "b0": "actor:002_bowl#2",
+  "s0": 13,
+  "b1": "actor:002_bowl#1",
+  "s1": 23,
+  "sep_mm": [
+   -53.989,
+   -49.489,
+   -51.905,
+   -40.149
+  ],
+  "normal": [
+   0.6113953840594709,
+   -0.25887890185813245,
+   0.7477816516360236
+  ],
+  "centre_side": "inverted"
+ },
+ {
+  "tag": "seg0117_o34984",
+  "segment": "/mnt/nvme0/shared/USER/simuguard/runs/crosstask4_50seeds_copy/stack_bowls_three/simuguard/segments/seg0117_seed100075_ep41",
+  "onset": 34984,
+  "b0": "actor:002_bowl#1",
+  "s0": 19,
+  "b1": "actor:002_bowl",
+  "s1": 13,
+  "sep_mm": [
+   -10.805,
+   0.002,
+   -0.129,
+   -0.013
+  ],
+  "normal": [
+   -0.1108159591453004,
+   0.9932146247761103,
+   -0.0352779297799264
+  ],
+  "centre_side": "normal"
+ },
+ {
+  "tag": "seg0122_o37441",
+  "segment": "/mnt/nvme0/shared/USER/simuguard/runs/crosstask4_50seeds_copy/stack_bowls_three/simuguard/segments/seg0122_seed100078_ep43",
+  "onset": 37441,
+  "b0": "actor:002_bowl#2",
+  "s0": 13,
+  "b1": "actor:002_bowl#1",
+  "s1": 13,
+  "sep_mm": [
+   -7.164,
+   -0.598,
+   -0.57
+  ],
+  "normal": [
+   0.9782689225703246,
+   -0.19500368857363454,
+   0.07045194515251588
+  ],
+  "centre_side": "normal"
+ },
+ {
+  "tag": "seg0122_o37771",
+  "segment": "/mnt/nvme0/shared/USER/simuguard/runs/crosstask4_50seeds_copy/stack_bowls_three/simuguard/segments/seg0122_seed100078_ep43",
+  "onset": 37771,
+  "b0": "actor:002_bowl#2",
+  "s0": 16,
+  "b1": "actor:002_bowl",
+  "s1": 12,
+  "sep_mm": [
+   -5.913,
+   -6.235,
+   -3.776,
+   -4.541
+  ],
+  "normal": [
+   -0.26722001512952626,
+   -0.9569153004712448,
+   -0.11360709149609827
+  ],
+  "centre_side": "normal"
+ },
+ {
+  "tag": "seg0122_o38599",
+  "segment": "/mnt/nvme0/shared/USER/simuguard/runs/crosstask4_50seeds_copy/stack_bowls_three/simuguard/segments/seg0122_seed100078_ep43",
+  "onset": 38599,
+  "b0": "actor:002_bowl#2",
+  "s0": 5,
+  "b1": "actor:002_bowl",
+  "s1": 22,
+  "sep_mm": [
+   -49.93,
+   -11.582,
+   -11.672,
+   -43.499
+  ],
+  "normal": [
+   -0.7221913070217656,
+   -0.06879244489979795,
+   0.6882639868443665
+  ],
+  "centre_side": "inverted"
+ },
+ {
+  "tag": "seg0137_o22878",
+  "segment": "/mnt/nvme0/shared/USER/simuguard/runs/crosstask4_50seeds_copy/stack_bowls_three/simuguard/segments/seg0137_seed100089_ep47",
+  "onset": 22878,
+  "b0": "actor:002_bowl#1",
+  "s0": 23,
+  "b1": "actor:002_bowl",
+  "s1": 14,
+  "sep_mm": [
+   -13.366,
+   -4.223,
+   -12.312,
+   -6.873
+  ],
+  "normal": [
+   -0.43109317040487893,
+   0.5506853640961489,
+   -0.7147757048197441
+  ],
+  "centre_side": "normal"
+ },
+ {
+  "tag": "seg0137_o78683",
+  "segment": "/mnt/nvme0/shared/USER/simuguard/runs/crosstask4_50seeds_copy/stack_bowls_three/simuguard/segments/seg0137_seed100089_ep47",
+  "onset": 78683,
+  "b0": "actor:002_bowl#2",
+  "s0": 14,
+  "b1": "actor:002_bowl",
+  "s1": 23,
+  "sep_mm": [
+   -37.24,
+   -11.976,
+   -11.862,
+   -13.508
+  ],
+  "normal": [
+   0.17211583505829034,
+   -0.08530722688464863,
+   0.9813759811425173
+  ],
+  "centre_side": "inverted"
+ }
+]

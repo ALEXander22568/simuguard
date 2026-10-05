@@ -312,6 +312,19 @@ class RoboTwinAdapter(SimAdapter):
     def solver_iterations(self) -> dict[str, list[int]]:
         return io.solver_iterations(self._bodies, self._articulations)
 
+    def set_contact_offset(self, body_ids: list[str], offset: float) -> int:
+        """Contact offset (m) of every collision shape of the given bodies; SAPIEN's default is 0.01.
+
+        PhysX generates contacts for a shape pair once the shapes are closer than the sum of their
+        offsets.  Returns the number of shapes changed.
+        """
+        changed = 0
+        for body_id in body_ids:
+            for shape in self._bodies[body_id].component.get_collision_shapes():
+                shape.set_contact_offset(float(offset))
+                changed += 1
+        return changed
+
     def set_solver_iterations(self, *, position: int, velocity: int) -> None:
         io.set_solver_iterations(self._bodies, self._articulations, position=position, velocity=velocity)
 
