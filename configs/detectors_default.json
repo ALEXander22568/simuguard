@@ -1,0 +1,19 @@
+{
+  "ejection": {
+    "contact_window_ms": 40.0,
+    "post_window_ms": 240.0,
+    "min_speed_mps": 0.5,
+    "min_delta_v_mps": 0.35,
+    "min_flight_distance_m": 0.04,
+    "min_free_flight_ms": 16.0,
+    "violent_delta_v_mps": 0.75,
+    "violent_speed_mps": 1.0,
+    "monitored_roles": ["target", "container", "object"],
+    "risky_pair_roles": ["target", "container"]
+  },
+  "penetration": {"max_penetration_m": 0.005, "ignore_robot_robot": true, "cooldown_ms": 100.0},
+  "impulse_spike": {"max_force_estimate_n": 200.0, "metric": "net", "require_free_body": true, "cooldown_ms": 100.0},
+  "actuation_bound": {"ratio": 3.0, "margin_mps": 0.5, "contact_window_ms": 40.0, "cooldown_ms": 200.0},
+  "non_finite": {"max_linear_speed_mps": 100.0},
+  "disabled": []
+}

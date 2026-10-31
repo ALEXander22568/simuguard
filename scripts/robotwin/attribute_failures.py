@@ -1,0 +1,517 @@
+#!/usr/bin/env python3
+"""Attribute recorded failures to the policy or to the simulator by counterfactual replay.
+
+Question per failed episode: *would the policy's own actions have succeeded if
+the simulator had not misbehaved?*  Each failed episode is replayed from its
+start with the recorded actuation (bit-exact), under several conditions:
+
+* ``baseline``   - unchanged.  Gate: the replay must be bit-identical to the
+  recording and must also fail; otherwise the episode is not interpretable.
+* ``vclamp_<v>`` - after every substep, if the target moves faster than
+  ``v`` m/s, its velocity and that substep's displacement are scaled down to
+  ``v``.  Normal target motion in this task peaks below ~1.7 m/s, so the clamp
+  only acts on the anomalous energy and leaves everything else unchanged.
+* ``mass_<g>g``  - target mass changed (removes the anomaly, but also changes
+  grasp dynamics; used as a second, independent counterfactual).
+
+Success is evaluated exactly as the benchmark does: RoboTwin's
+``check_success()`` after every substep for the policy phase (the evaluator
+stops at the first success), and at the end for the expert check.
+
+Verdicts (policy and expert phases alike).  The *primary* counterfactual
+(``--primary``, default ``vclamp_2.0``) decides; the others only bound it,
+because changing the mass also changes grasp dynamics and was measured to turn
+failures *without* any anomaly into successes too:
+
+* ``environment_caused``     - the recording has confirmed anomaly events and
+  the same actions succeed under the primary counterfactual;
+* ``environment_possible``   - anomaly events; only a secondary counterfactual
+  succeeds (upper bound);
+* ``anomaly_unresolved``     - anomaly events, but no counterfactual succeeds
+  (policy may also be wrong; needs the closed-loop retry test);
+* ``outcome_changed_without_anomaly`` - no events, yet a counterfactual
+  succeeds: the intervention changes more than the anomaly (confound check);
+* ``policy_failure``         - no events and no counterfactual succeeds;
+* ``unverifiable``           - baseline gate failed.
+
+Usage (batch)::
+
+    python scripts/robotwin/attribute_failures.py --robotwin-root <RoboTwin> \\
+        --runs runs/campaign_x/default runs/campaign_x/mass_100g \\
+        --output-dir runs/attribution --workers 4 --gpus 0 2 5 6
+
+Usage (one segment)::
+
+    python scripts/robotwin/attribute_failures.py --robotwin-root <RoboTwin> \\
+        --segment-dir <seg> --report out.json
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import subprocess
+import sys
+import time
+from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+
+import numpy as np
+
+SIMUGUARD_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(SIMUGUARD_ROOT))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+HERE = Path(__file__).resolve()
+DEFAULT_CONDITIONS = ["baseline", "vclamp_2.0", "mass_100g"]
+EVENT_LEAD_S = 0.1  # <condition>@event starts this long before the first physics-invalid onset
+
+
+# ---------------------------------------------------------------------------- selection
+def recorded_outcome(summary: dict) -> tuple[str | None, bool | None]:
+    meta = summary.get("metadata") or {}
+    outcome = meta.get("outcome") or {}
+    phase = meta.get("phase")
+    if phase == "policy":
+        return phase, bool(outcome.get("eval_success"))
+    if phase == "expert":
+        return phase, bool(outcome.get("plan_success")) and bool(outcome.get("check_success"))
+    return phase, None
+
+
+def first_invalid_onset(segment: Path) -> int | None:
+    """Onset substep of the first physics-invalid event: the carrier stage's verdicts if it ran,
+    else the gravity stage's.  None if the episode has none."""
+
+    for name in ("events_carrier.json", "events_gravity.json"):
+        path = segment / name
+        if path.is_file():
+            events = [e for e in json.loads(path.read_text()).get("events", []) if e.get("verdict") == "physics_invalid"]
+            return min(int(e["onset_substep"]) for e in events) if events else None
+    return None
+
+
+def find_episodes(roots: list[str], phases: list[str], select: str = "failures") -> list[dict]:
+    """select: failures | successes-with-events | both | invalid.
+
+    ``invalid``: every episode, successful or not, that holds a physics-invalid event (the
+    gravity stage, and the carrier stage if it ran); these are the episodes a fix can change.
+
+    A successful episode that contains an event matters as much as a failed one: if the
+    artifact is what produced the success, removing it must take the success away. An
+    audit that can only correct upwards is biased by construction.
+    """
+
+    found = []
+    for root in roots:
+        root_path = Path(root).resolve()
+        for summary_path in sorted(root_path.glob("**/simuguard/segments/*/summary.json")):
+            segment = summary_path.parent
+            if not (segment / "controls.npz").is_file():
+                continue
+            summary = json.loads(summary_path.read_text())
+            phase, success = recorded_outcome(summary)
+            events = int(summary.get("confirmed_count", 0))
+            if phase not in phases or success is None:
+                continue
+            if select == "failures":
+                wanted = success is False
+            elif select == "invalid":
+                wanted = first_invalid_onset(segment) is not None
+            elif select == "invalid-failures":
+                wanted = success is False and first_invalid_onset(segment) is not None
+            elif select == "successes-with-events":
+                wanted = success is True and events > 0
+            else:
+                wanted = success is False or events > 0
+            if not wanted:
+                continue
+            outcome = (summary.get("metadata") or {}).get("outcome") or {}
+            if phase == "expert" and not outcome.get("plan_success"):
+                continue  # planner failure: nothing was executed that could be attributed
+            run = segment.parents[2]  # <config>/<rep>/simuguard/segments/<seg> -> <rep>
+            found.append(
+                {
+                    "segment": str(segment),
+                    "key": f"{run.parent.name}_{run.name}_{segment.name}",
+                    "config": run.parent.name,
+                    "repeat": run.name,
+                    "phase": phase,
+                    "seed": summary["metadata"].get("seed"),
+                    "recorded_success": bool(success),
+                    "recorded_confirmed_events": events,
+                }
+            )
+    return found
+
+
+# ---------------------------------------------------------------------------- one segment
+def run_condition(robotwin_root: str, segment: Path, name: str, phase: str, stop_on_success: bool) -> dict:
+    from replay_intervention import build_intervention
+    from simuguard.adapters.robotwin import RoboTwinAdapter, make_task_env
+    from simuguard.core import ControlLog, StateLog, SubstepMonitor
+    from simuguard.core.types import BodyRole
+    from simuguard.integrations.robotwin_eval import eval_monitor_config, reapply_recorded_intervention
+    from simuguard.presets import default_detectors
+
+    summary = json.loads((segment / "summary.json").read_text())
+    manifest = json.loads((segment / "manifest.json").read_text())
+    meta = {**manifest["metadata"], **(summary.get("metadata") or {})}
+    controls = ControlLog.load(segment / "controls.npz")
+    recorded_states = StateLog.load(segment / "states.npz")
+
+    if name.split("@")[0] == "pcm_off":  # scene flag: PhysX persistent contact manifolds off (SAT narrowphase)
+        import sapien.core as _core
+        if not getattr(_core.Engine, "_pcm_off_patched", False):
+            _orig_create_scene = _core.Engine.create_scene
+
+            def _create_scene_pcm_off(self, config=None, *args, **kwargs):
+                if config is None:
+                    config = _core.SceneConfig()
+                config.enable_pcm = False
+                return _orig_create_scene(self, config, *args, **kwargs)
+
+            _core.Engine.create_scene = _create_scene_pcm_off
+            _core.Engine._pcm_off_patched = True
+    env, _ = make_task_env(robotwin_root, meta["task"], int(meta["seed"]))
+    result: dict = {"name": name}
+    try:
+        result["enable_pcm"] = bool(env.scene.physx_system.config.enable_pcm)
+    except Exception:  # noqa: BLE001
+        result["enable_pcm"] = None
+    try:
+        adapter = RoboTwinAdapter(env)
+        # every free task object: the targets plus any container that is itself a dynamic body
+        # (a bowl at the bottom of a stack gets ejected just like the one placed into it)
+        targets = adapter.body_ids_with_role(BodyRole.TARGET) + [
+            c for c in adapter.body_ids_with_role(BodyRole.CONTAINER) if adapter.mass(c) is not None]
+        target = targets[0]
+        # the physics the episode was recorded under (closed-loop campaigns), then the counterfactual on top
+        result["recorded_sim_intervention"] = reapply_recorded_intervention(adapter, meta)
+        clamp = None
+        apply = None
+        base, _, when = name.partition("@")
+        trigger = None  # substep from which a deferred intervention applies
+        if when:
+            if when != "event":
+                raise SystemExit(f"unknown trigger in {name}: only <condition>@event")
+            onset = first_invalid_onset(segment)
+            lead = max(1, round(EVENT_LEAD_S / adapter.timestep()))
+            trigger = max(1, onset - lead) if onset is not None else None
+            result["first_invalid_onset"] = onset
+        if base.startswith("vclamp_"):
+            clamp = _install_velocity_clamp(adapter, targets, float(base.split("_", 1)[1]))
+            result["description"] = f"target speed clamped to {clamp.cap} m/s after each substep"
+            if when:
+                clamp.active = False
+        elif base == "pcm_off":
+            description, apply = "PhysX persistent contact manifold (PCM) disabled for the whole scene", None
+            result["description"] = description
+        else:
+            description, apply = build_intervention(base)
+            result["description"] = description
+            if apply is not None and not when:
+                apply(adapter)
+        if when:
+            result["description"] += f", from {EVENT_LEAD_S} s before the first physics-invalid event"
+        gate = None
+        try:
+            gate = adapter.containment_gate()
+        except Exception:  # noqa: BLE001
+            pass
+        monitor = SubstepMonitor(
+            adapter,
+            default_detectors(ejection_gate=gate),
+            episode_id=f"attribution:{name}",
+            config=eval_monitor_config(
+                {"snapshot_interval_substeps": 0, "bundle_statuses": [], "save_episode_logs": False}
+            ),
+        )
+        monitor.attach()
+
+        first_success = None
+        applied = 0
+        started = time.time()
+        for record in controls.between(0, controls.newest_substep):
+            if record.substep == 0:
+                continue
+            if trigger is not None and record.substep == trigger:
+                if clamp is not None:
+                    clamp.active = True
+                elif apply is not None:
+                    apply(adapter)
+                result["applied_at_substep"] = record.substep
+            adapter.apply_control(record)
+            adapter.scene.step()
+            applied += 1
+            if first_success is None and env.check_success():
+                first_success = record.substep
+                if stop_on_success:
+                    break
+        final_success = bool(env.check_success())
+        summary_after = monitor.finalize()
+
+        result.update(
+            {
+                "substeps_replayed": applied,
+                "wall_s": round(time.time() - started, 1),
+                "first_success_substep": first_success,
+                "success_at_end": final_success,
+                # policy phase: the evaluator stops at the first successful substep
+                "success": (first_success is not None) if phase == "policy" else final_success,
+                "confirmed_events": summary_after["confirmed_count"],
+                "target_mass_kg": adapter.mass(target),
+            }
+        )
+        columns = [monitor.state_log.body_ids.index(t) for t in targets]
+        speeds = np.linalg.norm(monitor.state_log.array()[:, columns, 7:10], axis=2)
+        result["peak_target_speed_mps"] = float(np.nanmax(speeds)) if speeds.size else None
+        if clamp is not None:
+            result["clamped_substeps"] = clamp.count
+            result["clamp_max_raw_speed_mps"] = round(clamp.max_raw, 3)
+        if trigger is not None:  # the replay must match the recording until the intervention starts
+            live = recorded_states.array()
+            replayed = monitor.state_log.array()[:, [monitor.state_log.body_ids.index(b) for b in recorded_states.body_ids], :]
+            n = min(trigger - 1, len(live), len(replayed))
+            result["prefix_substeps"] = n
+            result["prefix_bit_identical"] = bool(np.array_equal(live[:n], replayed[:n], equal_nan=True))
+        if name == "baseline":
+            live = recorded_states.array()
+            replayed = monitor.state_log.array()[:, [monitor.state_log.body_ids.index(b) for b in recorded_states.body_ids], :]
+            result["bit_identical"] = bool(live.shape == replayed.shape and np.array_equal(live, replayed, equal_nan=True))
+            result["reproduces_recorded_events"] = summary_after["confirmed_count"] == summary["confirmed_count"]
+            result["reproduces_recorded_outcome"] = bool(result["success"]) is bool(recorded_outcome(summary)[1])
+    finally:
+        try:
+            env.close_env()
+        except Exception:  # noqa: BLE001
+            pass
+    return result
+
+
+class _Clamp:
+    def __init__(self, cap: float) -> None:
+        self.cap = cap
+        self.count = 0
+        self.max_raw = 0.0
+        self.active = True  # callers that install early (under the monitor) switch it on later
+
+
+def _install_velocity_clamp(adapter, target, cap: float) -> _Clamp:
+    """Wrap the raw physics step (installed *before* the monitor, so it observes the clamped state).
+
+    ``target`` is one body id or a list of them; tasks with several target objects clamp each.
+    """
+
+    targets = [target] if isinstance(target, str) else list(target)
+    handles = [(adapter._bodies[t].component, adapter._bodies[t].entity) for t in targets]
+    scene = adapter.scene
+    raw_step = scene.step
+    clamp = _Clamp(cap)
+
+    def clamped_step(*args, **kwargs):
+        before = [entity.get_pose() for _, entity in handles]
+        out = raw_step(*args, **kwargs)
+        if not clamp.active:
+            return out
+        for (component, entity), pose0 in zip(handles, before):
+            velocity = np.asarray(component.get_linear_velocity(), dtype=float)
+            speed = float(np.linalg.norm(velocity))
+            if speed > cap:
+                scale = cap / speed
+                after = entity.get_pose()
+                p0, p1 = np.asarray(pose0.p, dtype=float), np.asarray(after.p, dtype=float)
+                entity.set_pose(type(after)(p0 + (p1 - p0) * scale, after.q))
+                component.set_linear_velocity(velocity * scale)
+                clamp.count += 1
+                clamp.max_raw = max(clamp.max_raw, speed)
+        return out
+
+    scene.step = clamped_step
+    return clamp
+
+
+def attribute_segment(args) -> int:
+    segment = Path(args.segment_dir).resolve()
+    summary = json.loads((segment / "summary.json").read_text())
+    phase, recorded_success = recorded_outcome(summary)
+    report = {
+        "segment": str(segment),
+        "phase": phase,
+        "seed": (summary.get("metadata") or {}).get("seed"),
+        "recorded_success": bool(recorded_success),
+        "recorded_confirmed_events": int(summary.get("confirmed_count", 0)),
+        "recorded_event_onsets": [e["onset_substep"] for e in summary.get("events", []) if e["status"] == "confirmed"],
+        "conditions": [],
+    }
+    for name in args.conditions:
+        # the policy evaluator stops at the first successful substep; the expert check is judged at the end
+        stop = name != "baseline" and phase == "policy"
+        condition = run_condition(args.robotwin_root, segment, name, phase, stop_on_success=stop)
+        report["conditions"].append(condition)
+        print(json.dumps(condition, default=str)[:400], flush=True)
+    report["verdict"] = verdict(report, args.primary)
+    Path(args.report).write_text(json.dumps(report, indent=2, default=str))
+    print("verdict:", report["verdict"])
+    return 0
+
+
+def verdict(report: dict, primary: str = "vclamp_2.0") -> str:
+    conditions = {c["name"]: c for c in report["conditions"]}
+    baseline = conditions.get("baseline")
+    recorded_success = bool(report.get("recorded_success"))
+    if baseline is not None and not (baseline.get("bit_identical")
+                                     and bool(baseline.get("success")) is recorded_success):
+        return "unverifiable"
+    if recorded_success:
+        # the episode already succeeded: did it need the artifact to succeed?
+        if report["recorded_confirmed_events"] == 0 or primary not in conditions:
+            return "success_without_event"
+        return ("success_without_artifact" if conditions[primary].get("success")
+                else "artifact_assisted_success")
+    primary_success = bool(conditions.get(primary, {}).get("success"))
+    any_success = any(c.get("success") for n, c in conditions.items() if n != "baseline")
+    if report["recorded_confirmed_events"] > 0:
+        if primary_success:
+            return "environment_caused"
+        return "environment_possible" if any_success else "anomaly_unresolved"
+    return "outcome_changed_without_anomaly" if any_success else "policy_failure"
+
+
+# ---------------------------------------------------------------------------- batch
+def batch(args) -> int:
+    out = Path(args.output_dir).resolve()
+    out.mkdir(parents=True, exist_ok=True)
+    failures = find_episodes(args.runs, args.phases, args.select)
+    if args.limit:
+        failures = failures[: args.limit]
+    print(f"[attribution] {len(failures)} segments to audit ({args.select})", flush=True)
+    gpus = args.gpus or [None]
+
+    def work(indexed):
+        index, item = indexed
+        report = out / f"{item['key']}.json"
+        if report.exists():
+            return
+        env = dict(os.environ)
+        gpu = gpus[index % len(gpus)]
+        if gpu is not None:
+            env["CUDA_VISIBLE_DEVICES"] = str(gpu)
+        proc = subprocess.run(
+            [args.python, "-B", str(HERE), "--robotwin-root", args.robotwin_root, "--segment-dir", item["segment"],
+             "--report", str(report), "--conditions", *args.conditions],
+            capture_output=True, text=True, env=env,
+        )
+        (out / f"{item['key']}.log").write_text(proc.stdout + proc.stderr)
+        status = json.loads(report.read_text())["verdict"] if report.exists() else f"error {proc.returncode}"
+        print(f"[attribution] {item['key']} phase={item['phase']} events={item['recorded_confirmed_events']} -> {status}", flush=True)
+
+    with ThreadPoolExecutor(max_workers=args.workers) as pool:
+        list(pool.map(work, enumerate(failures)))
+    write_summary(out, failures, args.runs, args.primary)
+    return 0
+
+
+def write_summary(out: Path, failures: list[dict], roots: list[str], primary: str = "vclamp_2.0") -> None:
+    rows = []
+    for item in failures:
+        path = out / f"{item['key']}.json"
+        if not path.exists():
+            rows.append({**item, "verdict": "missing"})
+            continue
+        report = json.loads(path.read_text())
+        conditions = {c["name"]: c for c in report["conditions"]}
+        rows.append(
+            {
+                **item,
+                "verdict": verdict(report, primary),
+                "counterfactual_success": {n: c.get("success") for n, c in conditions.items() if n != "baseline"},
+                "baseline_bit_identical": conditions.get("baseline", {}).get("bit_identical"),
+            }
+        )
+
+    summary: dict = {"failures": len(rows), "primary_counterfactual": primary, "by_phase": {}, "corrected_policy_success": {}, "rows": rows}
+    for phase in sorted({r["phase"] for r in rows}):
+        phase_rows = [r for r in rows if r["phase"] == phase]
+        by_config: dict = {}
+        for row in phase_rows:
+            by_config.setdefault(row["config"], Counter())[row["verdict"]] += 1
+        conditions = sorted({n for r in phase_rows for n in (r.get("counterfactual_success") or {})})
+        agreement = {}
+        for with_events in (True, False):
+            group = [r for r in phase_rows if (r["recorded_confirmed_events"] > 0) == with_events and r.get("counterfactual_success")]
+            agreement["with_events" if with_events else "without_events"] = {
+                "episodes": len(group),
+                **{n: sum(1 for r in group if r["counterfactual_success"].get(n)) for n in conditions},
+            }
+        summary["by_phase"][phase] = {
+            "verdicts": dict(Counter(r["verdict"] for r in phase_rows)),
+            "verdicts_by_config": {c: dict(v) for c, v in by_config.items()},
+            "counterfactual_success_by_group": agreement,
+        }
+
+    # policy phase: recorded successes + failures attributed to the environment, per run
+    for root in roots:
+        for rep_dir in sorted(Path(root).resolve().glob("**/simuguard")):
+            run = rep_dir.parent
+            total = succeeded = 0
+            for summary_path in rep_dir.glob("segments/*/summary.json"):
+                phase, success = recorded_outcome(json.loads(summary_path.read_text()))
+                if phase == "policy":
+                    total += 1
+                    succeeded += bool(success)
+            if not total:
+                continue
+            key_prefix = f"{run.parent.name}_{run.name}_"
+            mine = [r for r in rows if r["phase"] == "policy" and r["key"].startswith(key_prefix)]
+            attributed = sum(1 for r in mine if r["verdict"] == "environment_caused")
+            possible = sum(1 for r in mine if r["verdict"] == "environment_possible")
+            summary["corrected_policy_success"][f"{run.parent.name}/{run.name}"] = {
+                "episodes": total,
+                "official_success": succeeded,
+                "environment_caused_failures": attributed,
+                "environment_possible_failures": possible,
+                "official_rate": round(succeeded / total, 4),
+                "corrected_rate": round((succeeded + attributed) / total, 4),
+                "corrected_rate_upper": round((succeeded + attributed + possible) / total, 4),
+            }
+    (out / "summary.json").write_text(json.dumps(summary, indent=2, default=str))
+    print(json.dumps({k: v for k, v in summary.items() if k != "rows"}, indent=1, default=str))
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--robotwin-root", required=True)
+    parser.add_argument("--conditions", nargs="+", default=DEFAULT_CONDITIONS)
+    parser.add_argument("--segment-dir", help="attribute one segment")
+    parser.add_argument("--report", help="output for --segment-dir")
+    parser.add_argument("--runs", nargs="+", help="batch: roots searched for **/simuguard/segments")
+    parser.add_argument("--phases", nargs="+", default=["policy", "expert"])
+    parser.add_argument("--select", default="failures",
+                        choices=("failures", "successes-with-events", "both", "invalid", "invalid-failures"),
+                        help="which recorded episodes to audit")
+    parser.add_argument("--output-dir")
+    parser.add_argument("--workers", type=int, default=2)
+    parser.add_argument("--gpus", nargs="*", default=None, help="render devices, assigned round-robin")
+    parser.add_argument("--primary", default="vclamp_2.0", help="counterfactual that decides environment_caused")
+    parser.add_argument("--limit", type=int, default=0)
+    parser.add_argument("--summary-only", action="store_true", help="rebuild summary.json from existing reports")
+    parser.add_argument("--python", default=sys.executable)
+    args = parser.parse_args()
+    if args.segment_dir:
+        if not args.report:
+            parser.error("--report is required with --segment-dir")
+        return attribute_segment(args)
+    if not (args.runs and args.output_dir):
+        parser.error("batch mode needs --runs and --output-dir")
+    if args.summary_only:
+        write_summary(Path(args.output_dir).resolve(), find_episodes(args.runs, args.phases, args.select),
+                      args.runs, args.primary)
+        return 0
+    return batch(args)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,0 +1,34 @@
+# Hy-Embodied-0.5-VLA on RoboTwin 2.0 (aloha-agilex) through XPolicyLab, set up to reproduce the
+# upstream robotwin_eval deployment (Hy-Embodied-0.5-VLA/robotwin_eval/deploy_policy.yml, commit af57e75)
+# that produced the reported 90.9 / 90.1 % with checkpoint tencent/Hy-Embodied-0.5-VLA-RoboTwin.
+# Copy next to XPolicyLab/policy/Hy_Embodied_05_VLA/deploy.yml; apply model_execute_first_action.patch.
+policy_name: Hy_Embodied_05_VLA
+protocol: ws
+host: localhost
+bench_name: null
+task_name: null
+env_cfg_type: null
+action_type: ee                 # upstream: TASK_ENV.take_action(action, action_type="ee"), 16-d PosQuat(wxyz)+gripper
+seed: null
+eval_batch: false
+
+hy_root: Hy-Embodied-0.5-VLA
+ckpt_path: checkpoints/Hy-Embodied-0.5-VLA-RoboTwin
+norm_path: null                 # -> <ckpt_path>/norm_stats.pkl
+
+with_absolute: true             # upstream blend_mode rel_abs: token stream is rel + abs
+blend_mode: rel_abs
+umi_coord_frame: false          # upstream: False (RoboTwin frame)
+umi_gripper_space: false
+
+exc_action_size: 7              # upstream: 7 env steps per network forward
+exc_action_interval: 1
+execute_first_action: true      # upstream executes chunk slots 0..6 (the XPolicyLab default skips slot 0)
+
+# upstream grows the frame history on every env step; XPolicyLab calls update_obs once per env step
+history_cadence: step
+img_history_size: 6
+img_history_interval: 5
+
+policy_uv_env_path: Hy-Embodied-0.5-VLA
+port: 6000
