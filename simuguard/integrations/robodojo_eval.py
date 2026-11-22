@@ -1,12 +1,16 @@
-"""Run RoboDojo evaluation episodes under SimuGuard (inside the ``hexa/robodojo`` image).
+"""Run RoboDojo evaluation episodes under SimuGuard (native RoboDojo install or image).
 
 The environment is RoboDojo's own ``EvalEnv`` built exactly like ``src/eval_client/main.py``
-builds it (same configs, ``process_randomization`` / ``process_config``, one env per
-process as for every ``eval_batch: false`` policy).  Each layout id is one official
+builds it (same configs, ``process_randomization`` / ``process_config``, ``eval_batch``
+read from the policy's ``deploy.yml``), by default with one env per process (``num_envs = 1``;
+the official batch policies run 10 envs side by side).  Each layout id is one official
 episode: ``env.reset(seed=[id])`` -> ``env.run_eval()`` (the XPolicyLab policy loop,
-RoboDojo's reward manager and video writer) -> ``env.close()``.  What differs from
-``main.py`` is only the outer loop (explicit layout ids, no resume manifest, no
-PhysX-crash re-exec) and the instrumentation:
+RoboDojo's reward manager and video writer) -> ``env.close()``.  As in ``main.py`` a
+layout that fails ``check_layout_stability`` (``UnStableError``) or is marked unstable
+during the episode uses up its id and is not counted.  What differs from ``main.py`` is
+only the outer loop (explicit layout list, ``--layouts all`` = every layout file of the
+eval seed, an optional cap on counted episodes, resume from ``episodes.jsonl`` instead of
+the resume manifest, no PhysX-crash re-exec) and the instrumentation:
 
 * before the env exists, :func:`install_contact_reporting` makes RoboDojo create every
   scene object with ``PhysxContactReportAPI`` (contact reporting only, no dynamics change);
@@ -16,6 +20,13 @@ PhysX-crash re-exec) and the instrumentation:
   recorded per-substep actuation from the episode start, reporting the position error of
   every logged body against the recorded trajectory; ``--public-restore`` additionally
   restores a mid-episode public snapshot in place and replays from there.
+
+``--num-envs N`` (only for policies with ``eval_batch: true``) runs N layouts side by side as
+``main.py`` does: ``env.reset(seed=[ids...])`` pads a short batch with ``None``, envs that fail
+the stability check start ended, and ``run_eval`` scores the rest.  Each running env gets its
+own adapter (bodies of that env only) and monitor; a monitor detaches when its env ends, so
+every layout still has its own segment directory and record.  ``--replay`` then replays all
+envs of the batch together (one physics step for the whole scene, as recorded).
 
 ``--policy scripted`` runs a built-in IK push probe instead of a policy server.
 
@@ -44,15 +55,30 @@ KIT_ENABLE_EXTS = ("isaacsim.replicator.behavior", "isaacsim.sensors.camera")
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--task", required=True)
-    ap.add_argument("--layouts", type=int, nargs="+", default=[], help="RoboDojo layout ids (eval seeds)")
+    ap.add_argument("--layouts", nargs="+", default=[],
+                    help="RoboDojo layout ids, or 'all' = every layout file of the eval seed, in id order "
+                         "(also forced by EVAL_NUM_FORCE=all)")
+    ap.add_argument("--max-counted", default="0",
+                    help="stop after this many counted episodes: an int, 'official' (eval_nums of the task "
+                         "config, as main.py) or 0 = no cap (run every listed layout)")
+    ap.add_argument("--resume", action="store_true",
+                    help="skip layouts already finished in <out>/<task>/episodes.jsonl (errors are retried)")
+    ap.add_argument("--max-attempts", type=int, default=2, help="--resume: give up a layout after this many errors")
+    ap.add_argument("--ckpt-name", default="", help="checkpoint dir name, for the official additional_info")
+    ap.add_argument("--action-type", default="", help="joint | ee, for the official additional_info")
+    ap.add_argument("--env-manifest", default=None, help="environment fingerprint JSON to embed in each run record")
     ap.add_argument("--replay-from", nargs="+", default=[],
                     help="replay recorded segment dirs (of --task) in this fresh process instead of running episodes")
     ap.add_argument("--policy", default="scripted", help="'scripted' or an XPolicyLab policy name (Xiaomi_Robotics_1, Pi_05)")
     ap.add_argument("--policy-url", default="", help="ws://host:port of the policy server")
-    ap.add_argument("--additional-info", default="simuguard")
+    ap.add_argument("--additional-info", default=None,
+                    help="default: ckpt_name=<ckpt>,action_type=<type> as eval.sh, or 'simuguard'")
     ap.add_argument("--env-cfg", default="arx_x5")
     ap.add_argument("--eval-seed", type=int, default=0, help="RoboDojo eval seed (layout set)")
     ap.add_argument("--out", required=True)
+    ap.add_argument("--num-envs", type=int, default=1,
+                    help="envs side by side in one scene (eval_batch policies only, as main.py with "
+                         "scene.num_envs): layouts run in batches of this size, one adapter + monitor per env")
     ap.add_argument("--monitor", choices=("on", "off"), default="on")
     ap.add_argument("--contact-report", choices=("on", "off"), default="on")
     ap.add_argument("--replay", choices=("none", "first", "all"), default="none")
@@ -84,9 +110,46 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     if args.no_cameras and args.policy != "scripted":
         ap.error("--no-cameras only makes sense with --policy scripted (policies need images)")
     args.kit_args = " ".join(f"--enable {ext}" for ext in KIT_ENABLE_EXTS) if not args.no_cameras else ""
+    if os.environ.get("EVAL_NUM_FORCE", "").lower() == "all" and not args.replay_from:
+        args.layouts = ["all"]
     if not args.layouts and not args.replay_from:
         ap.error("give --layouts or --replay-from")
+    if args.layouts != ["all"]:
+        args.layouts = [int(x) for x in args.layouts]
+    if args.num_envs > 1 and args.replay_from:
+        if len(args.replay_from) > args.num_envs or args.replay_detect or args.intervention != "none" \
+                or args.replay_frames or args.replay_speeds:
+            ap.error("--replay-from with --num-envs N: at most N one-env segments, plain replay only")
+    elif args.num_envs > 1 and (args.policy == "scripted" or args.public_restore or args.intervention != "none"):
+        ap.error("--num-envs > 1 is for policy episodes only (no scripted probe, public restore, intervention)")
+    if args.additional_info is None:
+        args.additional_info = (f"ckpt_name={args.ckpt_name},action_type={args.action_type}"
+                                if args.ckpt_name else "simuguard")
     return args
+
+
+def layout_files(env_cfg_name: str, eval_seed: int, task: str) -> dict[int, Path]:
+    """Layout files of one eval seed: ``Assets/Eval_Layout/<bench>/<cfg>/<seed>/<task>_<i>.json``."""
+
+    from env.global_configs import ASSETS_PATH, BENCHMARK
+
+    folder = Path(ASSETS_PATH, "Eval_Layout", BENCHMARK, env_cfg_name, str(eval_seed))
+    out: dict[int, Path] = {}
+    for f in folder.glob(f"{task}_*.json"):
+        tail = f.stem[len(task) + 1:]
+        if tail.isdigit():
+            out[int(tail)] = f
+    return dict(sorted(out.items()))
+
+
+def eval_batch_from_deploy(policy: str) -> bool:
+    """``eval_batch`` of ``XPolicyLab/policy/<policy>/deploy.yml``, as ``main.py`` reads it."""
+
+    from env.global_configs import ROOT_DIR
+    from utils.load_file import load_yaml
+
+    path = os.path.join(ROOT_DIR, "XPolicyLab", "policy", policy, "deploy.yml")
+    return bool((load_yaml(path) if os.path.isfile(path) else {}).get("eval_batch", False))
 
 
 # ---------------------------------------------------------------------------- env construction
@@ -105,7 +168,7 @@ class NullModelClient:
 
 
 def build_env(args: argparse.Namespace, simulation_app: Any) -> tuple[Any, int]:
-    """RoboDojo EvalEnv for one task, assembled like ``src/eval_client/main.py`` (num_envs = 1)."""
+    """RoboDojo EvalEnv for one task, assembled like ``src/eval_client/main.py`` (``--num-envs``, default 1)."""
 
     import importlib
 
@@ -121,9 +184,12 @@ def build_env(args: argparse.Namespace, simulation_app: Any) -> tuple[Any, int]:
     policy_name = args.policy if args.policy != "scripted" else "demo_policy"
     eval_cfg = load_yaml(os.path.join(ENV_CONFIG_PATH, args.env_cfg + ".yml"))
     eval_cfg["task_name"] = args.task
-    eval_cfg["num_envs"] = 1
+    num_envs = int(getattr(args, "num_envs", 1))
+    eval_cfg["num_envs"] = num_envs
     eval_cfg["device_id"] = 0
-    eval_cfg["eval_batch"] = False
+    eval_cfg["eval_batch"] = eval_batch_from_deploy(policy_name) if args.policy != "scripted" else False
+    if num_envs > 1 and not eval_cfg["eval_batch"]:
+        raise ValueError(f"{policy_name}: eval_batch is false in deploy.yml, main.py runs it with one env")
     eval_cfg["policy_name"] = policy_name
     eval_cfg["additional_info"] = args.additional_info
     eval_cfg["seed"] = args.eval_seed
@@ -152,15 +218,15 @@ def build_env(args: argparse.Namespace, simulation_app: Any) -> tuple[Any, int]:
             "deploy_cfg": deploy_cfg,
         }
     )
-    OmegaConf.update(env_cfg, "sim.scene.num_envs", 1, force_add=True)
-    OmegaConf.update(env_cfg, "eval_cfg.num_envs", 1, force_add=True)
+    OmegaConf.update(env_cfg, "sim.scene.num_envs", num_envs, force_add=True)
+    OmegaConf.update(env_cfg, "eval_cfg.num_envs", num_envs, force_add=True)
     env_cfg = process_randomization(env_cfg)
     env_cfg, eval_num = process_config(env_cfg, task_name=args.task)
     eval_cfg["eval_num"] = eval_num
     OmegaConf.update(env_cfg, "camera.default_frequency", eval_cfg["observation"].get("collect_freq", 0), force_add=True)
-    env_cfg.sim.seed = [0]
-    if args.policy == "scripted":
-        eval_env_mod.WsModelClient = NullModelClient  # no server: the scripted probe drives the env
+    env_cfg.sim.seed = [0 for _ in range(num_envs)]
+    if args.policy == "scripted" or args.replay_from:
+        eval_env_mod.WsModelClient = NullModelClient  # no server: the scripted probe / the replay drives the env
     env = eval_env_mod.create_eval_env(env_cfg, simulation_app, resume_state=None)
     return env, int(eval_num)
 
@@ -178,6 +244,62 @@ class _NoCameras:
 
     def __getattr__(self, name: str) -> Any:
         return lambda *args, **kwargs: None
+
+
+class CallProfiler:
+    """Wall time per wrapped method (instance attributes; removed again by ``unwrap``).
+
+    Timing only: the wrapped methods run unchanged.  Nested calls overlap (``env.step`` contains
+    the physics substeps whose hook times the adapter reports separately).
+    """
+
+    def __init__(self) -> None:
+        self.stats: dict[str, list] = {}
+        self.wrapped: list[tuple[Any, str]] = []
+
+    def wrap(self, obj: Any, attr: str, key: str, by_func: bool = False) -> None:
+        if obj is None or attr in getattr(obj, "__dict__", {}):  # already wrapped, or an instance override
+            return
+        fn = getattr(obj, attr, None)
+        if fn is None:
+            return
+        stats = self.stats
+
+        def timed(*a: Any, **k: Any) -> Any:
+            name = f"{key}:{k.get('func_name', a[0] if a else '?')}" if by_func else key
+            t = time.perf_counter()
+            try:
+                return fn(*a, **k)
+            finally:
+                s = stats.setdefault(name, [0, 0.0])
+                s[0] += 1
+                s[1] += time.perf_counter() - t
+
+        setattr(obj, attr, timed)
+        self.wrapped.append((obj, attr))
+
+    def wrap_env(self, env: Any) -> None:
+        self.wrap(env.model_client, "call", "policy_call", by_func=True)
+        self.wrap(env, "setup_scene", "reset.setup_scene")
+        self.wrap(env, "step", "env.step")
+        self.wrap(env, "take_action", "env.take_action")
+        self.wrap(env, "get_obs", "env.get_obs")
+        self.wrap(env, "_stream_vision", "obs.stream_video")
+        self.wrap(env, "save_video", "save_video")
+        obs = getattr(env, "obs_manager", None)
+        self.wrap(obs, "render_for_capture", "obs.render_for_capture")
+        self.wrap(obs, "get_obs", "obs.get_obs")
+
+    def snapshot(self) -> dict[str, dict[str, float]]:
+        return {k: {"n": v[0], "s": round(v[1], 3)} for k, v in sorted(self.stats.items())}
+
+    def unwrap(self) -> None:
+        for obj, attr in reversed(self.wrapped):
+            try:
+                delattr(obj, attr)
+            except AttributeError:
+                pass
+        self.wrapped.clear()
 
 
 def install_no_cameras() -> None:
@@ -541,6 +663,274 @@ def detector_config(path: str | None) -> dict[str, Any]:
     return cfg
 
 
+def replay_recorded_batch(env: Any, adapters: dict[int, Any], seg_dirs: dict[int, Path]) -> dict[int, dict[str, Any]]:
+    """Batched counterpart of :func:`replay_recorded`: replay every env's ``controls.npz`` side by side.
+
+    The envs of one scene share every physics step, so the recorded actuation of all monitored envs is
+    applied before each raw step (an env whose episode ended keeps its last targets, as it did in the
+    run) and each env's logged bodies are compared with its own ``states.npz``.
+    """
+
+    from simuguard.core.controls import ControlLog
+    from simuguard.core.snapshot import Snapshot
+    from simuguard.core.statelog import StateLog
+
+    started = time.time()
+    plan: dict[int, dict[str, Any]] = {}
+    for k, adapter in adapters.items():
+        seg = seg_dirs[k]
+        controls = ControlLog.load(seg / "controls.npz")
+        ref = StateLog.load(seg / "states.npz")
+        report = adapter.restore_snapshot(Snapshot.load(seg / "initial_snapshot.json.gz"), method="none")
+        ids = _comparable_ids(adapter, ref.body_ids)
+        newest = controls.newest_substep or 0
+        plan[k] = {
+            "controls": {r.substep: r for r in controls.between(0, newest)}, "last": newest, "ids": ids,
+            "arr": ref.array(), "row": {int(s): i for i, s in enumerate(ref.substeps)},
+            "col": {b: ref.body_ids.index(b) for b in ids},
+            "free": [b for b in ids if adapter.bodies()[b].kind.value in ("dynamic", "kinematic")],
+            "worst": 0.0, "worst_free": 0.0, "first": None, "curve": [], "initial": report.public_state_error,
+        }
+    last = max((p["last"] for p in plan.values()), default=0)
+    stepper = next(iter(adapters.values()))
+    for k_sub in range(1, last + 1):
+        for k, adapter in adapters.items():
+            record = plan[k]["controls"].get(k_sub)
+            if record is not None:
+                adapter.apply_control(record)
+        stepper.step_physics()
+        for k, adapter in adapters.items():
+            if adapter is not stepper:
+                adapter._invalidate()
+                adapter._internal_step += 1
+            p = plan[k]
+            if k_sub > p["last"] or k_sub not in p["row"]:
+                continue
+            now = adapter.read_states(p["ids"])
+            errs = {b: float(np.linalg.norm(now[b].position - p["arr"][p["row"][k_sub], p["col"][b], :3])) for b in p["ids"]}
+            b_max = max(errs, key=errs.get)
+            p["worst"] = max(p["worst"], errs[b_max])
+            p["worst_free"] = max([p["worst_free"]] + [errs[b] for b in p["free"]])
+            if errs[b_max] > 0.0 and p["first"] is None:
+                p["first"] = {"substep": k_sub, "body": b_max, "error_m": errs[b_max]}
+            if k_sub % 100 == 0 or k_sub == p["last"]:
+                p["curve"].append([k_sub, errs[b_max], max((errs[b] for b in p["free"]), default=0.0)])
+    wall = time.time() - started
+    return {k: {"initial_public_state_error": p["initial"], "substeps": p["last"], "bodies_compared": len(p["ids"]),
+                "free_bodies_compared": len(p["free"]), "max_position_error_m": p["worst"],
+                "max_free_body_position_error_m": p["worst_free"], "bit_exact": p["worst"] == 0.0,
+                "first_divergence": p["first"], "curve_every_100": p["curve"], "wall_s": wall,
+                "batched_with_envs": sorted(adapters)}
+            for k, p in plan.items()}
+
+
+def run_batched(args: argparse.Namespace, env: Any, out: Path, files: dict[int, Path], layouts: list[int],
+                done: dict[int, dict[str, Any]], attempts: dict[int, int], max_counted: int, counted: int,
+                det_cfg: dict[str, Any]) -> None:
+    """``--num-envs N``: the layouts in batches of N side by side, as ``main.py`` runs eval_batch policies.
+
+    One ``env.reset(seed=[l_0 .. l_N-1])`` -> ``env.run_eval()`` (the policy's ``eval_one_episode_batch``)
+    per batch; a short last batch is padded with ``None`` seeds like ``main.py`` (those envs start ended).
+    Every env gets its own :class:`RoboDojoAdapter` (that env's bodies only) and :class:`SubstepMonitor`
+    with its own segment dir, so each layout is recorded and detected exactly as a one-env episode.  A
+    monitor detaches when its env's ``end_flag`` is set (the scene keeps stepping for the other envs;
+    in a one-env run physics stops there).  One ``episodes.jsonl`` record per layout, as before.
+    """
+
+    import hashlib
+
+    from simuguard.adapters.isaac.robodojo import RoboDojoAdapter, physics_settings
+    from simuguard.core.monitor import SubstepMonitor
+    from simuguard.core.recorder import EpisodeRecorder
+    from simuguard.presets import default_detectors
+    from utils.cluttered_generator import UnStableError
+
+    n_envs = int(env.num_envs)
+    episodes_log = out / "episodes.jsonl"
+    pending = [lid for lid in layouts if lid not in done]
+    batch_no = -1
+    while pending:
+        if max_counted and counted >= max_counted:
+            break
+        take = n_envs if not max_counted else min(n_envs, max_counted - counted)
+        batch, pending = pending[:take], pending[take:]
+        batch_no += 1
+        seeds: list[int | None] = list(batch) + [None] * (n_envs - len(batch))
+        started = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        batch_id = f"{started}:{'-'.join(map(str, batch))}"
+        records: dict[int, dict[str, Any]] = {}
+        segs: dict[int, Path] = {}
+        for k, layout in enumerate(batch):
+            rec: dict[str, Any] = {"task": args.task, "layout": layout, "policy": args.policy, "monitor": args.monitor,
+                                   "attempt": attempts.get(layout, 0) + 1, "started_utc": started,
+                                   "num_envs": n_envs, "env_idx": k, "batch": list(seeds), "batch_id": batch_id}
+            if layout in files:
+                rec["layout_file"] = files[layout].name
+                rec["layout_sha256"] = hashlib.sha256(files[layout].read_bytes()).hexdigest()
+            rec["status"] = "error"
+            seg = out / "segments" / (f"layout{layout:03d}" if rec["attempt"] == 1 else
+                                      f"layout{layout:03d}_a{rec['attempt']}")
+            if seg.exists():
+                seg.rename(seg.with_name(f"{seg.name}_stale{int(time.time())}"))
+            rec["segment"] = str(seg)
+            records[k], segs[k] = rec, seg
+        current = out / "current_layout.json"
+        current.write_text(json.dumps({"layouts": batch, "attempts": [records[k]["attempt"] for k in records],
+                                       "pid": os.getpid(), "started_utc": started}))
+        evaluated_before = int(env.success_nums + env.fail_nums)
+        unstable_before = int(env.unstable_nums)
+        adapters: dict[int, Any] = {}
+        monitors: dict[int, Any] = {}
+        digests: dict[int, Any] = {}
+        ended_at: dict[int, int] = {}
+        prof = CallProfiler()
+        try:
+            t0 = time.time()
+            prof.wrap_env(env)
+            try:
+                env.reset(seed=list(seeds))
+            except UnStableError as exc:  # every env of the batch failed check_layout_stability
+                for rec in records.values():
+                    rec["status"] = "unstable_layout"
+                    rec["error"] = f"unstable layout: {exc}"
+                continue
+            reset_wall = time.time() - t0
+            reset_profile = prof.snapshot()
+            prof.stats.clear()
+            prof.wrap_env(env)
+            physics = physics_settings(env) if batch_no == 0 else None
+            for k, rec in records.items():
+                rec["reset_wall_s"] = reset_wall
+                rec["profile_reset"] = reset_profile
+                if physics is not None:
+                    rec["physics"] = physics
+                if env.end_flag[k]:  # check_layout_stability dropped this env (main.py: unstable, not counted)
+                    rec["status"] = "unstable_layout"
+                    rec["error"] = "unstable layout: check_layout_stability (batched)"
+            running = [k for k in records if not env.end_flag[k]]
+            if args.monitor == "on":
+                for k in running:
+                    adapters[k] = RoboDojoAdapter(env, task_name=args.task, env_idx=k)
+                    monitors[k] = SubstepMonitor(
+                        adapters[k], default_detectors(det_cfg), episode_id=f"{args.task}:layout{batch[k]}",
+                        config=monitor_config(), recorder=EpisodeRecorder(segs[k]),
+                        metadata={"phase": "policy", "seed": batch[k], "task": args.task, "policy": args.policy,
+                                  "env_idx": k, "num_envs": n_envs, "batch": list(seeds)})
+                for k in running:
+                    monitors[k].attach()
+            official_end = env.is_episode_end
+
+            def is_episode_end() -> bool:  # instance attribute: detach a monitor when its env ends
+                result = official_end()
+                for k, monitor in monitors.items():
+                    if env.end_flag[k] and k not in ended_at:
+                        monitor.detach()
+                        ended_at[k] = int(monitor.substep)
+                        digests[k] = final_state_digest(adapters[k])
+                return result
+
+            env.is_episode_end = is_episode_end
+            t1 = time.time()
+            env.run_eval()
+            episode_wall = time.time() - t1
+            episode_profile = prof.snapshot()
+            del env.is_episode_end
+            details = env.eval_result.get("details", {})
+            evaluated_after = int(env.success_nums + env.fail_nums)
+            by_layout = {}
+            for idx in range(evaluated_before, evaluated_after):
+                d = details.get(idx, details.get(str(idx)))
+                if d is not None:
+                    by_layout[int(d["layout_id"])] = (idx, d)
+            for k in running:
+                rec, layout = records[k], batch[k]
+                rec["episode_wall_s"] = episode_wall
+                rec["profile_episode"] = episode_profile
+                rec["actions"] = int(env.take_action_cnt[k])
+                rec["video_dir"] = str(Path(env.save_dir).resolve())
+                if layout in by_layout:
+                    idx, d = by_layout[layout]
+                    rec["status"] = "counted"
+                    rec["detail_index"] = idx
+                    rec["video"] = str(Path(env.save_dir).resolve() / f"episode_{idx:07d}.mp4")
+                    rec["success"] = bool(d.get("success", False))
+                    rec["score"] = d.get("score")
+                    counted += 1
+                else:  # mark_env_unstable during the episode: dropped from the eval set, like main.py
+                    rec["status"] = "unstable_episode"
+                    rec["success"] = None
+                    rec["score"] = None
+                rec["official_eval_time"] = evaluated_after
+                rec["official_success_rate"] = env.eval_result.get("success_rate")
+                rec["official_score"] = env.eval_result.get("score")
+                if k in monitors:
+                    monitor = monitors[k]
+                    if k not in ended_at:  # should not happen: run_eval returns once every env ended
+                        monitor.detach()
+                        ended_at[k] = int(monitor.substep)
+                        digests[k] = final_state_digest(adapters[k])
+                    rec["final_states"] = digests[k]
+                    rec["monitor_detached_at_substep"] = ended_at[k]
+                    monitor.metadata["outcome"] = {"eval_success": rec["success"], "score": rec["score"],
+                                                   "actions": rec["actions"]}
+                    summary = monitor.finalize()
+                    rec["substeps"] = summary["substeps"]
+                    rec["confirmed"] = summary["confirmed_count"]
+                    rec["flags"] = summary["flag_count"]
+                    rec["monitor_errors"] = summary["error_count"]
+                    rec["events_by_detector"] = summary["event_counts_by_detector"]
+                    rec["hook"] = adapters[k].hook_statistics()
+            for adapter in adapters.values():
+                adapter.close()
+            do_replay = args.monitor == "on" and monitors and (
+                args.replay == "all" or (args.replay == "first" and batch_no == 0))
+            if do_replay:
+                env.close()
+                t2 = time.time()
+                with use_null_client(env):
+                    env.reset(seed=list(seeds))
+                replay_adapters = {k: RoboDojoAdapter(env, task_name=args.task, env_idx=k) for k in monitors}
+                replay_reset = time.time() - t2
+                for k, result in replay_recorded_batch(env, replay_adapters, {k: segs[k] for k in monitors}).items():
+                    records[k]["replay_reset_wall_s"] = replay_reset
+                    records[k]["replay"] = result
+                for adapter in replay_adapters.values():
+                    adapter.close()
+        except Exception as exc:  # noqa: BLE001
+            for rec in records.values():
+                if rec["status"] == "error":
+                    rec["error"] = f"{type(exc).__name__}: {exc}"
+                    rec["traceback"] = traceback.format_exc()
+            for monitor in monitors.values():
+                try:
+                    monitor.finalize()
+                except Exception:  # noqa: BLE001
+                    pass
+        finally:
+            prof.unwrap()
+            vars(env).pop("is_episode_end", None)
+            delta = int(env.unstable_nums) - unstable_before
+            finished = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            with episodes_log.open("a", encoding="utf-8") as fh:
+                for rec in records.values():
+                    rec["unstable_nums_delta_batch"] = delta
+                    rec["finished_utc"] = finished
+                    fh.write(json.dumps(rec, default=str) + "\n")
+            current.unlink(missing_ok=True)
+            try:
+                env.close()
+            except Exception:  # noqa: BLE001
+                pass
+        for rec in records.values():
+            print(f"[simuguard] {args.task} layout {rec['layout']} (env {rec['env_idx']}/{n_envs}): " + json.dumps(
+                {k: rec.get(k) for k in ("status", "success", "score", "confirmed", "flags", "substeps",
+                                         "episode_wall_s", "error")}, default=str), flush=True)
+            if rec.get("replay"):
+                r = rec["replay"]
+                print(f"[simuguard]   replay: max err {r['max_position_error_m']:.3e} m, bit_exact={r['bit_exact']}, "
+                      f"first={r['first_divergence']}", flush=True)
+
+
 def run(args: argparse.Namespace) -> int:
     from isaaclab.app import AppLauncher
 
@@ -567,28 +957,101 @@ def run(args: argparse.Namespace) -> int:
     env, eval_num = build_env(args, app)
     det_cfg = detector_config(args.detector_config)
     episodes_log = out / "episodes.jsonl"
+    files = layout_files(args.env_cfg, args.eval_seed, args.task)
+    layouts = list(files) if args.layouts == ["all"] else list(args.layouts)
+    if args.max_counted == "official":
+        max_counted = int(eval_num)
+    else:
+        max_counted = int(args.max_counted)
+    done: dict[int, dict[str, Any]] = {}
+    attempts: dict[int, int] = {}
+    if args.resume and episodes_log.exists():
+        for line in episodes_log.read_text().splitlines():
+            try:
+                rec = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            lid = int(rec["layout"])
+            if rec.get("status") in ("counted", "unstable_layout", "unstable_episode"):
+                done[lid] = rec
+            else:
+                attempts[lid] = attempts.get(lid, 0) + 1
+                if attempts[lid] >= args.max_attempts:
+                    done[lid] = rec
+    counted_before = sum(1 for r in done.values() if r.get("status") == "counted")
     run_info = {
-        "task": args.task, "policy": args.policy, "layouts": args.layouts, "monitor": args.monitor,
+        "task": args.task, "policy": args.policy, "layouts": layouts, "monitor": args.monitor,
+        "layout_spec": args.layouts, "max_counted": max_counted, "layout_files": len(files),
+        "eval_batch": bool(env.eval_batch), "num_envs": int(env.num_envs),
+        "additional_info": args.additional_info, "eval_seed": args.eval_seed,
+        "eval_num_force": os.environ.get("EVAL_NUM_FORCE"),
+        "count_rule": ("every layout file of the eval seed (EVAL_NUM_FORCE=all / --layouts all), overriding "
+                       "the task's eval_nums" if args.layouts == ["all"] else "explicit layout list"),
+        "resumed_layouts": sorted(done), "save_dir": str(Path(env.save_dir).resolve()),
         "contact_report": args.contact_report, "contact_patch": patched, "replay": args.replay,
         "no_cameras": bool(args.no_cameras), "intervention": args.intervention,
         "simuguard": __version__, "eval_num_official": eval_num, "started_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "robodojo_run_id": os.environ.get("ROBODOJO_RUN_ID"),
     }
+    if args.env_manifest:
+        run_info["environment"] = json.loads(Path(args.env_manifest).read_text())
     (out / "run.json").write_text(json.dumps(run_info, indent=2))
+    with (out / "runs.jsonl").open("a", encoding="utf-8") as fh:  # one line per process (resume history)
+        fh.write(json.dumps(run_info, default=str) + "\n")
     if args.replay_from:
-        replay_only(args, env, out)
+        if int(env.num_envs) > 1:
+            replay_cross_batch(args, env, out)
+        else:
+            replay_only(args, env, out)
         app.close()
         return 0
-    for n, layout in enumerate(args.layouts):
-        record: dict[str, Any] = {"task": args.task, "layout": layout, "policy": args.policy, "monitor": args.monitor}
-        seg = out / "segments" / f"layout{layout:03d}"
+    import hashlib
+
+    if int(env.num_envs) > 1:
+        run_batched(args, env, out, files, layouts, done, attempts, max_counted, counted_before, det_cfg)
+        try:
+            env.model_client.close()
+        except Exception:  # noqa: BLE001
+            pass
+        app.close()
+        return 0
+
+    counted = counted_before
+    n = -1
+    for layout in layouts:
+        if layout in done:
+            continue
+        if max_counted and counted >= max_counted:
+            break
+        n += 1
+        record: dict[str, Any] = {"task": args.task, "layout": layout, "policy": args.policy, "monitor": args.monitor,
+                                  "attempt": attempts.get(layout, 0) + 1, "started_utc": time.strftime(
+                                      "%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+        if layout in files:
+            record["layout_file"] = files[layout].name
+            record["layout_sha256"] = hashlib.sha256(files[layout].read_bytes()).hexdigest()
+        evaluated_before = int(env.success_nums + env.fail_nums)
+        unstable_before = int(env.unstable_nums)
+        record["status"] = "error"
+        seg = out / "segments" / (f"layout{layout:03d}" if record["attempt"] == 1 else
+                                  f"layout{layout:03d}_a{record['attempt']}")  # never reuse a crashed try's dir
+        if seg.exists():  # a preempted try of the same attempt number: keep it aside
+            seg.rename(seg.with_name(f"{seg.name}_stale{int(time.time())}"))
         record["segment"] = str(seg)
         monitor = adapter = None
+        current = out / "current_layout.json"  # lets a supervisor attribute a hard crash to this layout
+        current.write_text(json.dumps({"layout": layout, "attempt": record["attempt"], "pid": os.getpid(),
+                                       "started_utc": record["started_utc"]}))
+        prof = CallProfiler()
         try:
             t0 = time.time()
             env.env_seeds = [layout]
+            prof.wrap_env(env)
             env.reset(seed=[layout])
             record["reset_wall_s"] = time.time() - t0
+            record["profile_reset"] = prof.snapshot()
+            prof.stats.clear()
+            prof.wrap_env(env)  # objects rebuilt by reset get wrapped too
             if n == 0:
                 record["physics"] = physics_settings(env)
             if args.monitor == "on":
@@ -614,15 +1077,30 @@ def run(args: argparse.Namespace) -> int:
                 env.eval_one_episode = scripted  # instance attribute: replaces the XPolicyLab module call
             env.run_eval()
             record["episode_wall_s"] = time.time() - t1
+            record["profile_episode"] = prof.snapshot()
             reader = adapter
             if reader is None and args.policy == "scripted":
                 reader = probe_adapter
             if reader is not None:  # lets runs with and without the monitor be compared bit for bit
                 record["final_states"] = final_state_digest(reader)
             details = env.eval_result.get("details", {})
-            last = details[max(details)] if details else {}
-            record["success"] = bool(last.get("success", False))
+            evaluated_after = int(env.success_nums + env.fail_nums)
+            if evaluated_after > evaluated_before:  # run_eval wrote details[evaluated_before] for this episode
+                record["status"] = "counted"
+                last = details.get(evaluated_before, details.get(str(evaluated_before), {}))
+                record["detail_index"] = evaluated_before
+                record["video"] = str(Path(env.save_dir).resolve() / f"episode_{evaluated_before:07d}.mp4")
+                if int(last.get("layout_id", layout)) != layout:
+                    raise RuntimeError(f"details[{evaluated_before}] is layout {last.get('layout_id')}, not {layout}")
+                counted += 1
+            else:  # mark_env_unstable during the episode: dropped from the eval set, like main.py
+                record["status"] = "unstable_episode"
+                last = {}
+            record["success"] = bool(last.get("success", False)) if last else None
             record["score"] = last.get("score")
+            record["official_eval_time"] = evaluated_after
+            record["official_success_rate"] = env.eval_result.get("success_rate")
+            record["official_score"] = env.eval_result.get("score")
             record["actions"] = int(env.take_action_cnt[0])
             record["video_dir"] = str(Path(env.save_dir).resolve())
             if monitor is not None:
@@ -649,7 +1127,8 @@ def run(args: argparse.Namespace) -> int:
                 record["replay_reset_wall_s"] = time.time() - t2
                 record["replay"] = replay_recorded(env, replay_adapter, seg)
                 replay_adapter.close()
-        except UnStableError as exc:
+        except UnStableError as exc:  # check_layout_stability failed: the id is used up, not counted (main.py)
+            record["status"] = "unstable_layout"
             record["error"] = f"unstable layout: {exc}"
         except Exception as exc:  # noqa: BLE001
             record["error"] = f"{type(exc).__name__}: {exc}"
@@ -660,14 +1139,19 @@ def run(args: argparse.Namespace) -> int:
                 except Exception:  # noqa: BLE001
                     pass
         finally:
+            prof.unwrap()
+            record["unstable_nums_delta"] = int(env.unstable_nums) - unstable_before
+            record["finished_utc"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
             with episodes_log.open("a", encoding="utf-8") as fh:
                 fh.write(json.dumps(record, default=str) + "\n")
+            current.unlink(missing_ok=True)
             try:
                 env.close()
             except Exception:  # noqa: BLE001
                 pass
         print(f"[simuguard] {args.task} layout {layout}: " + json.dumps(
-            {k: record.get(k) for k in ("success", "confirmed", "flags", "substeps", "episode_wall_s", "error")}, default=str),
+            {k: record.get(k) for k in ("status", "success", "score", "confirmed", "flags", "substeps", "episode_wall_s",
+                                        "error")}, default=str),
             flush=True)
         if record.get("replay"):
             r = record["replay"]
@@ -747,6 +1231,189 @@ def replay_only(args: argparse.Namespace, env: Any, out: Path) -> None:
               flush=True)
         if "confirmed" in r:
             print(f"[simuguard]   replayed confirmed events: {r['confirmed']}", flush=True)
+
+
+def replay_cross_batch(args: argparse.Namespace, env: Any, out: Path) -> None:
+    """Replay one-env segments side by side in an N-env scene (batch vs one-env physics check).
+
+    Segment ``i`` (recorded with ``num_envs = 1``) is rebuilt in env ``i`` of one ``env.reset(seed=[...])``
+    and gets that segment's recorded actuation at every substep; env ``i``'s bodies (``env{i}/`` ids, world
+    positions minus the env origin) are compared with the segment's ``states.npz``.  Same actuation, so any
+    difference comes from the scene holding N envs (PhysX solves them in one scene).  Spare envs start
+    ended (``None`` seed) like ``main.py``'s padding.
+    """
+
+    from simuguard.adapters.isaac.robodojo import RoboDojoAdapter
+    from simuguard.core.controls import ControlLog
+    from simuguard.core.snapshot import Snapshot
+    from simuguard.core.snapshot_types import ControlRecord
+    from simuguard.core.statelog import StateLog
+
+    n_envs = int(env.num_envs)
+    segs = [Path(s) for s in args.replay_from]
+    metas = [json.loads((seg / "manifest.json").read_text())["metadata"] for seg in segs]
+    if all(int(m.get("num_envs", 1)) > 1 for m in metas):
+        replay_batch_fresh(args, env, out, segs, metas)
+        return
+    layouts = []
+    for seg, meta in zip(segs, metas):
+        if meta.get("task") != args.task or int(meta.get("num_envs", 1)) != 1:
+            raise ValueError(f"{seg}: task {meta.get('task')}, num_envs {meta.get('num_envs', 1)} (need {args.task}, 1)")
+        layouts.append(int(meta["seed"]))
+    seeds: list[int | None] = layouts + [None] * (n_envs - len(layouts))
+    record: dict[str, Any] = {"mode": "cross_batch", "num_envs": n_envs, "batch": seeds, "segments": [str(s) for s in segs]}
+    try:
+        t0 = time.time()
+        with use_null_client(env):
+            env.env_seeds = list(seeds)
+            env.reset(seed=list(seeds))
+        record["reset_wall_s"] = time.time() - t0
+        record["end_flag_after_reset"] = [bool(env.end_flag[k]) for k in range(n_envs)]
+        origins = _to_np(env.env_origins)
+        record["env_origins"] = origins.tolist()
+
+        def remap(payload: dict[str, Any], pre: str) -> dict[str, Any]:
+            if payload.get("__writes__"):
+                raise RuntimeError("segment has between-step writes: cross-batch replay does not remap them")
+            return {pre + k: v for k, v in payload.items() if k != "__writes__"}
+
+        plan = {}
+        for k, seg in enumerate(segs):
+            pre = f"env{k}/"
+            adapter = RoboDojoAdapter(env, task_name=args.task, env_idx=k, physics_step_counter=False)
+            bodies = adapter.bodies()
+            ref = StateLog.load(seg / "states.npz")
+            ids = [b for b in ref.body_ids if pre + b in bodies and bodies[pre + b].kind.value != "static"]
+            missing = [b for b in ref.body_ids if pre + b not in bodies]
+            snap = Snapshot.load(seg / "initial_snapshot.json.gz")
+            adapter.apply_control(ControlRecord(snap.substep, snap.control.control_step, remap(snap.control.payload, pre)))
+            off = origins[k]
+            now = adapter.read_states([pre + b for b in ids])
+            init_err = {}
+            for b, d in snap.public_state.get("bodies", {}).items():
+                if pre + b in now:
+                    init_err[b] = float(np.linalg.norm(now[pre + b].position - off - np.asarray(d["pose_xyzw"][:3])))
+            controls = ControlLog.load(seg / "controls.npz")
+            newest = controls.newest_substep or 0
+            plan[k] = {"adapter": adapter, "pre": pre, "off": off, "ids": ids, "missing": missing,
+                       "free": [b for b in ids if bodies[pre + b].kind.value in ("dynamic", "kinematic")],
+                       "controls": {r.substep: r for r in controls.between(0, newest)}, "last": newest,
+                       "arr": ref.array(), "row": {int(s): i for i, s in enumerate(ref.substeps)},
+                       "col": {b: ref.body_ids.index(b) for b in ids}, "worst": 0.0, "worst_free": 0.0,
+                       "first": None, "curve": [], "final": {},
+                       "initial_position_error_m": max(init_err.values(), default=None),
+                       "initial_bodies_compared": len(init_err)}
+        started = time.time()
+        last = max(p["last"] for p in plan.values())
+        stepper = plan[0]["adapter"]
+        for k_sub in range(1, last + 1):
+            for p in plan.values():
+                rec = p["controls"].get(k_sub)
+                if rec is not None:
+                    p["adapter"].apply_control(ControlRecord(rec.substep, rec.control_step, remap(rec.payload, p["pre"])))
+            stepper.step_physics()
+            for p in plan.values():
+                a = p["adapter"]
+                if a is not stepper:
+                    a._invalidate()
+                    a._internal_step += 1
+                if k_sub > p["last"] or k_sub not in p["row"]:
+                    continue
+                now = a.read_states([p["pre"] + b for b in p["ids"]])
+                r = p["arr"][p["row"][k_sub]]
+                errs = {b: float(np.linalg.norm(now[p["pre"] + b].position - p["off"] - r[p["col"][b], :3])) for b in p["ids"]}
+                b_max = max(errs, key=errs.get)
+                p["worst"] = max(p["worst"], errs[b_max])
+                p["worst_free"] = max([p["worst_free"]] + [errs[b] for b in p["free"]])
+                if errs[b_max] > 0.0 and p["first"] is None:
+                    p["first"] = {"substep": k_sub, "body": b_max, "error_m": errs[b_max]}
+                if k_sub % 100 == 0 or k_sub == p["last"]:
+                    p["curve"].append([k_sub, errs[b_max], max((errs[b] for b in p["free"]), default=0.0)])
+                if k_sub == p["last"]:
+                    p["final"] = {b: errs[b] for b in p["free"]}
+        record["wall_s"] = time.time() - started
+        record["envs"] = {
+            str(k): {"segment": str(segs[k]), "layout": layouts[k], "substeps": p["last"], "bodies_compared": len(p["ids"]),
+                     "free_bodies_compared": len(p["free"]), "bodies_missing_in_batch": p["missing"],
+                     "initial_position_error_m": p["initial_position_error_m"],
+                     "initial_bodies_compared": p["initial_bodies_compared"],
+                     "max_position_error_m": p["worst"], "max_free_body_position_error_m": p["worst_free"],
+                     "bit_exact": p["worst"] == 0.0, "first_divergence": p["first"],
+                     "final_free_body_error_m": p["final"], "curve_every_100": p["curve"]}
+            for k, p in plan.items()}
+        for p in plan.values():
+            p["adapter"].close()
+    except Exception as exc:  # noqa: BLE001
+        record["error"] = f"{type(exc).__name__}: {exc}"
+        record["traceback"] = traceback.format_exc()
+    finally:
+        with (out / "replays.jsonl").open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(record, default=str) + "\n")
+        try:
+            env.close()
+        except Exception:  # noqa: BLE001
+            pass
+    for k, r in (record.get("envs") or {}).items():
+        print(f"[simuguard] cross-batch replay env {k} layout {r['layout']}: bit_exact={r['bit_exact']} "
+              f"init err {r['initial_position_error_m']} max err {r['max_position_error_m']:.3e} "
+              f"free {r['max_free_body_position_error_m']:.3e} first={r['first_divergence']}", flush=True)
+    if record.get("error"):
+        print(f"[simuguard] cross-batch replay error: {record['error']}", flush=True)
+
+
+def replay_batch_fresh(args: argparse.Namespace, env: Any, out: Path, segs: list[Path], metas: list[dict[str, Any]]) -> None:
+    """Fresh-process replay of one recorded batch: same ``env.reset(seed=batch)``, every env's actuation.
+
+    The segments must be all monitored envs of one batch (same ``batch`` seeds, recorded with this
+    ``num_envs``); each env's bodies are compared with its own ``states.npz`` (:func:`replay_recorded_batch`).
+    """
+
+    from simuguard.adapters.isaac.robodojo import RoboDojoAdapter
+
+    n_envs = int(env.num_envs)
+    record: dict[str, Any] = {"mode": "batch_fresh_process", "num_envs": n_envs, "segments": [str(s) for s in segs]}
+    try:
+        batches = {json.dumps(m.get("batch")) for m in metas}
+        if len(batches) != 1 or any(int(m["num_envs"]) != n_envs or m.get("task") != args.task for m in metas):
+            raise ValueError(f"segments are not one {n_envs}-env {args.task} batch: {sorted(batches)}")
+        seeds = list(metas[0]["batch"])
+        by_env = {int(m["env_idx"]): seg for m, seg in zip(metas, segs)}
+        record["batch"] = seeds
+        t0 = time.time()
+        with use_null_client(env):
+            env.env_seeds = list(seeds)
+            env.reset(seed=list(seeds))
+        record["reset_wall_s"] = time.time() - t0
+        running = [k for k in range(n_envs) if not env.end_flag[k]]
+        record["running_after_reset"] = running
+        if sorted(by_env) != running:
+            raise ValueError(f"segments for envs {sorted(by_env)} but envs {running} are running after reset")
+        adapters = {k: RoboDojoAdapter(env, task_name=args.task, env_idx=k) for k in running}
+        record["envs"] = {str(k): {"segment": str(by_env[k]), "layout": seeds[k], **r}
+                          for k, r in replay_recorded_batch(env, adapters, by_env).items()}
+        for adapter in adapters.values():
+            adapter.close()
+    except Exception as exc:  # noqa: BLE001
+        record["error"] = f"{type(exc).__name__}: {exc}"
+        record["traceback"] = traceback.format_exc()
+    finally:
+        with (out / "replays.jsonl").open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(record, default=str) + "\n")
+        try:
+            env.close()
+        except Exception:  # noqa: BLE001
+            pass
+    for k, r in (record.get("envs") or {}).items():
+        print(f"[simuguard] fresh-process batch replay env {k} layout {r['layout']}: bit_exact={r['bit_exact']} "
+              f"max err {r['max_position_error_m']:.3e} first={r['first_divergence']}", flush=True)
+    if record.get("error"):
+        print(f"[simuguard] fresh-process batch replay error: {record['error']}", flush=True)
+
+
+def _to_np(value: Any) -> np.ndarray:
+    if hasattr(value, "detach"):
+        value = value.detach().cpu().numpy()
+    return np.asarray(value, dtype=np.float64)
 
 
 def main(argv: list[str] | None = None) -> int:

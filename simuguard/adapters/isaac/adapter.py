@@ -331,10 +331,17 @@ class IsaacAdapter(SimAdapter):
         if self._hook is not None and not self._hook.removed:
             raise RuntimeError("a SimuGuard substep hook is already installed")
         sim = self.sim
+        # Several adapters may hook one SimulationContext (one per env of a batched scene): each
+        # hook wraps the previous one, and a removed hook that is not the outermost turns into a
+        # pass-through instead of unhooking the others.
+        shadowed = "step" in vars(sim)
         original = sim.step
-        self._raw_step = original
+        self._raw_step = getattr(original, "_simuguard_raw_step", original)
+        removed = {"flag": False}
 
         def hooked_step(*args: Any, **kwargs: Any) -> Any:
+            if removed["flag"]:
+                return original(*args, **kwargs)
             t0 = time.perf_counter()
             if before is not None:
                 before()
@@ -355,13 +362,27 @@ class IsaacAdapter(SimAdapter):
 
         if self.detect_between_step_writes:
             self.mark_post_step()
+        hooked_step._simuguard_raw_step = self._raw_step  # type: ignore[attr-defined]
+        hooked_step._simuguard_removed = removed  # type: ignore[attr-defined]
+        hooked_step._simuguard_below = (shadowed, original)  # type: ignore[attr-defined]
         sim.step = hooked_step  # instance attribute shadows the class method
 
         def remove() -> None:
-            try:
-                del sim.step
-            except AttributeError:
-                pass
+            removed["flag"] = True
+            if vars(sim).get("step") is not hooked_step:
+                return  # another hook wraps this one: stay in the chain as a pass-through
+            fn: Any = hooked_step  # unhook this one and every removed hook right below it
+            while fn is not None and getattr(fn, "_simuguard_removed", {}).get("flag"):
+                below_shadowed, below = fn._simuguard_below
+                if below_shadowed:
+                    sim.step = below
+                    fn = below
+                else:
+                    try:
+                        del sim.step
+                    except AttributeError:
+                        pass
+                    fn = None
 
         self._hook = HookHandle(remove_fn=remove, mechanism="simulation_context_step_instance_attribute")
         return self._hook

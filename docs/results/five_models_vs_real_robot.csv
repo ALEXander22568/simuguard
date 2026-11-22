@@ -1,0 +1,6 @@
+model,robotwin_success,robotwin_episodes,repaired_success,repaired_episodes,real_success,real_trials
+LingBot-VA,89,100,98,100,24,30
+InternVLA-A1,86,100,98,100,23,30
+HyVLA,90,100,94,100,20,30
+LingBot-VLA,82,100,95,100,21,30
+StarVLA,60,100,71,100,10,30

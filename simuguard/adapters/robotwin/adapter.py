@@ -309,6 +309,56 @@ class RoboTwinAdapter(SimAdapter):
                     changed += 1
         return changed
 
+    def _rigid_body_component(self, body_id: str) -> Any | None:
+        """The body's dynamic rigid-body component (actor or articulation link); None if static or unknown."""
+
+        import sapien
+
+        handle = self._bodies.get(body_id)
+        component = None if handle is None else handle.component
+        return component if isinstance(component, sapien.physx.PhysxRigidBodyComponent) else None
+
+    def max_depenetration_velocities(self, body_ids: Iterable[str]) -> dict[str, float | None]:
+        """Current max depenetration velocity (m/s) per body; None for a static body (no such setting)."""
+
+        values: dict[str, float | None] = {}
+        for body_id in body_ids:
+            component = self._rigid_body_component(body_id)
+            values[body_id] = None if component is None else float(component.get_max_depenetration_velocity())
+        return values
+
+    def set_body_max_depenetration_velocity(self, body_ids: Iterable[str], cap: float) -> dict[str, float]:
+        """Cap the max depenetration velocity of the given dynamic bodies only.
+
+        Static bodies are skipped.  Returns each changed body's value *before* the change, so
+        :meth:`restore_max_depenetration_velocity` can put it back exactly.
+        """
+
+        originals: dict[str, float] = {}
+        for body_id in body_ids:
+            component = self._rigid_body_component(body_id)
+            if component is None or body_id in originals:
+                continue
+            originals[body_id] = float(component.get_max_depenetration_velocity())
+            component.set_max_depenetration_velocity(float(cap))
+        return originals
+
+    def restore_max_depenetration_velocity(self, originals: dict[str, float]) -> dict[str, float]:
+        """Set each body back to its stored value; returns the values read back after restoring."""
+
+        restored: dict[str, float] = {}
+        for body_id, value in originals.items():
+            component = self._rigid_body_component(body_id)
+            component.set_max_depenetration_velocity(float(value))
+            restored[body_id] = float(component.get_max_depenetration_velocity())
+        return restored
+
+    def rest_offset(self, body_id: str) -> float:
+        """Largest rest offset (m) over the body's collision shapes (RoboTwin: 0)."""
+
+        shapes = self._bodies[body_id].component.get_collision_shapes()
+        return max((float(shape.get_rest_offset()) for shape in shapes), default=0.0)
+
     def solver_iterations(self) -> dict[str, list[int]]:
         return io.solver_iterations(self._bodies, self._articulations)
 

@@ -1,0 +1,11 @@
+model,engine,place_can_basket,stack_bowls_three,place_bread_basket,stack_bowls_two,place_object_basket,total
+LingBot-VA,released,15,15,19,20,20,89
+LingBot-VA,repaired,20,19,20,19,20,98
+InternVLA-A1,released,13,18,16,20,19,86
+InternVLA-A1,repaired,20,20,18,20,20,98
+HyVLA,released,16,18,20,17,19,90
+HyVLA,repaired,18,20,18,20,18,94
+LingBot-VLA,released,13,13,17,19,20,82
+LingBot-VLA,repaired,18,20,17,20,20,95
+StarVLA,released,13,11,10,17,9,60
+StarVLA,repaired,16,14,10,18,13,71

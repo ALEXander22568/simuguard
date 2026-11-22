@@ -174,7 +174,9 @@ class RoboDojoAdapter(IsaacAdapter):
     def __init__(self, env: Any, *, task_name: str | None = None, env_idx: int = 0, **kwargs: Any) -> None:
         self.env = env
         self.env_idx = env_idx
-        bodies, arts, self.layout_info = robodojo_specs(env, task_name=task_name)
+        # one env of a batched scene per adapter (detectors see that env's bodies only)
+        env_ids = None if int(env.num_envs) == 1 else [env_idx]
+        bodies, arts, self.layout_info = robodojo_specs(env, task_name=task_name, env_ids=env_ids)
         super().__init__(
             env.sim.sim,
             bodies,
@@ -197,6 +199,8 @@ class RoboDojoAdapter(IsaacAdapter):
             "env_seeds": list(getattr(env, "env_seeds", None) or []),
             "physics": physics_settings(env),
         }
+        if int(env.num_envs) > 1:
+            payload["env_idx"] = self.env_idx
         try:
             payload["contact_report_bodies"] = contact_report_coverage(self)
         except Exception as exc:  # noqa: BLE001

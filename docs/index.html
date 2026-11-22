@@ -162,13 +162,20 @@ footer{border-top:1px solid var(--line);padding:34px clamp(20px,6vw,96px);displa
 .bug .clip video{width:100%;height:100%;display:block;object-fit:cover}
 .bug .clip .soon{position:absolute;inset:0;display:none;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .bug .clip.na .soon{display:flex}
+.bugs.two{grid-template-columns:repeat(2,minmax(0,1fr));max-width:980px}
+.bugs.two .clip{aspect-ratio:16/9}
+.bugs.two .clip video{position:absolute;inset:0}
+.bug .clip.img{background:#fff;display:flex;align-items:center}
+.bug .clip.img img{width:100%;display:block}
 .bug .tx{padding:14px 16px 16px}
 .bug h3{font-size:20px;font-weight:600;margin:0 0 4px}
 .bug .eng{font-family:var(--mono);font-size:11.5px;color:var(--cyan);letter-spacing:.04em;margin-bottom:10px}
 .bug p{font-size:14px;line-height:1.5;margin:0}
 .bug .n{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:10px}
 .cliplab{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:12px}
-@media (max-width:900px){.bugs{grid-template-columns:1fr}}
+.bugs.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:1180px){.bugs.four{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:900px){.bugs,.bugs.two,.bugs.four{grid-template-columns:1fr}}
 @media (max-width:560px){.bugs{grid-template-columns:1fr}}
 @media (max-width:900px){
   nav.links{display:none}
@@ -197,7 +204,7 @@ footer{border-top:1px solid var(--line);padding:34px clamp(20px,6vw,96px);displa
     SimuGuard
   </a>
   <nav class="links">
-    <a href="#film">Video</a><a href="#problem">Problem</a><a href="#method">Method</a><a href="#cause">Cause</a><a href="#fix">Fix</a><a href="#where">Where</a><a href="#platforms">Platforms</a><a href="#cite">Cite</a>
+    <a href="#film">Video</a><a href="#problem">Problem</a><a href="#method">Method</a><a href="#cause">Cause</a><a href="#fix">Fix</a><a href="#rank">Real robot</a><a href="#platforms">Platforms</a><a href="#other">Other errors</a><a href="#cite">Cite</a>
   </nav>
   <a class="gh" href="https://github.com/ALEXander22568/simuguard" target="_blank" rel="noopener">GitHub ↗</a>
 </header>
@@ -221,12 +228,12 @@ footer{border-top:1px solid var(--line);padding:34px clamp(20px,6vw,96px);displa
     <h1 class="reveal d1">When the Simulator Fails,<br><span class="dim">Not the Policy</span></h1>
     <p class="lead reveal d2">Many failures in simulated robot benchmarks are the simulator's fault, not the policy's. We find the cause and fix it.</p>
     <div class="authors reveal d3">
-      Alex Zhou<sup>1</sup> · Junhao Wu<sup>1</sup> · Xueyang Zhou<sup>1</sup> · Yixiao Huo<sup>1</sup> · Hongcheng Gao<sup>1</sup> ·
-      Di Zhu<sup>2</sup> · Zhenghao Zhang<sup>2</sup> · Yongchao Chen<sup>1,†</sup>
-      <div class="aff"><sup>1</sup>College of AI, Tsinghua University &nbsp; <sup>2</sup>University of Chinese Academy of Sciences &nbsp; <sup>†</sup>Corresponding author</div>
+      Alex Zhou · Junhao Wu · Xueyang Zhou · Yixiao Huo · Hongcheng Gao ·
+      Di Zhu · Zhenghao Zhang · Yongchao Chen<sup>†</sup>
+      <div class="aff">College of AI, Tsinghua University &nbsp; <sup>†</sup>Corresponding author</div>
     </div>
     <div class="btns reveal d4">
-      <a class="btn primary" href="#" id="paper-link">Paper <span class="tag">arXiv</span></a>
+      <a class="btn primary" href="https://arxiv.org/abs/2610.41857" target="_blank" rel="noopener" id="paper-link">Paper <span class="tag">arXiv</span></a>
       <a class="btn" href="https://github.com/ALEXander22568/simuguard" target="_blank" rel="noopener">Code <span class="tag">GitHub</span></a>
       <a class="btn" href="#cite">BibTeX</a>
     </div>
@@ -237,7 +244,7 @@ footer{border-top:1px solid var(--line);padding:34px clamp(20px,6vw,96px);displa
 <section id="film" data-scene="outro">
   <div class="wide">
     <div class="kicker reveal">Video</div>
-    <h2 class="reveal d1">The work in under two minutes.</h2>
+    <h2 class="reveal d1">The work in about two minutes.</h2>
     <div class="vid reveal d2" id="film-box">
       <video id="film-video" controls playsinline preload="none" poster="media/film_poster.jpg">
         <source src="media/simuguard_film.mp4" type="video/mp4">
@@ -271,7 +278,7 @@ footer{border-top:1px solid var(--line);padding:34px clamp(20px,6vw,96px);displa
     <div class="col">
       <div class="kicker reveal">02 · SimuGuard</div>
       <h2 class="reveal d1">An auditing plugin.<br>The evaluation stays the same.</h2>
-      <p class="reveal d2">SimuGuard attaches to the benchmark's own evaluation script on LIBERO, RoboTwin, RoboCasa and RoboDojo. It records every physics step, flags objects that move faster than the robot or gravity can explain, replays any episode bit for bit, and reruns it with one change.</p>
+      <p class="reveal d2">SimuGuard attaches to the benchmark's own evaluation script on LIBERO, RoboTwin, RoboCasa, RoboDojo and RoboLab. It records every physics step, flags objects that move faster than the robot or gravity can explain, replays any episode bit for bit, and reruns it with one change.</p>
     </div>
     <div class="steps">
       <div class="stepc reveal"><div class="i">01 · RECORD</div><h3>Every step</h3><p>State, controls and contacts at every physics step, with no change to the evaluation.</p></div>
@@ -316,9 +323,31 @@ footer{border-top:1px solid var(--line);padding:34px clamp(20px,6vw,96px);displa
   </div>
 </section>
 
+<section id="rank" data-scene="grid">
+  <div class="col">
+    <div class="kicker reveal">05 · Against a real robot</div>
+    <h2 class="reveal d1">The repaired ranking<br>follows the real robot.</h2>
+    <p class="reveal d2">Five models, five container tasks, 20 episodes per task in each engine. The same five models run on a real dual-arm Piper-X robot: three tasks, 10 trials each. As released, RoboTwin ranks HyVLA first, although it is fourth on the robot. In the repaired engine, the five models fall into the same order as on the robot.</p>
+    <div class="panel reveal d3">
+      <table>
+        <tr><th>Model</th><th>RoboTwin</th><th>Repaired</th><th>Real robot</th></tr>
+        <tr><td>LingBot-VA</td><td>89 / 100</td><td class="mint">98 / 100</td><td>24 / 30</td></tr>
+        <tr><td>InternVLA-A1</td><td>86 / 100</td><td class="mint">98 / 100</td><td>23 / 30</td></tr>
+        <tr><td>HyVLA</td><td class="red">90 / 100</td><td class="mint">94 / 100</td><td>20 / 30</td></tr>
+        <tr><td>LingBot-VLA</td><td>82 / 100</td><td class="mint">95 / 100</td><td>21 / 30</td></tr>
+        <tr><td>StarVLA</td><td>60 / 100</td><td class="mint">71 / 100</td><td>10 / 30</td></tr>
+      </table>
+    </div>
+    <div class="stats reveal d4">
+      <div class="stat"><div class="n red">0.40</div><div class="l">Spearman correlation with the real ranking, RoboTwin as released</div></div>
+      <div class="stat"><div class="n mint">0.97</div><div class="l">Spearman correlation with the real ranking, repaired engine</div></div>
+    </div>
+  </div>
+</section>
+
 <section id="where" data-scene="waffle">
   <div class="col">
-    <div class="kicker reveal">05 · Where it happens</div>
+    <div class="kicker reveal">06 · Where it happens</div>
     <h2 class="reveal d1">Thin walls, small pieces.</h2>
     <p class="reveal d2">Failures with an artifact gather in five tasks that place an object into a container with thin walls. Each dot is one failed LingBot-VA episode on RoboTwin&nbsp;2.0.</p>
     <div class="stats reveal d3">
@@ -331,11 +360,11 @@ footer{border-top:1px solid var(--line);padding:34px clamp(20px,6vw,96px);displa
 <section id="platforms" data-scene="platforms">
   <div class="wide">
     <div class="col" style="max-width:760px">
-      <div class="kicker reveal">06 · Four benchmarks, two engines</div>
+      <div class="kicker reveal">07 · Five benchmarks, two engines</div>
       <h2 class="reveal d1">Not only RoboTwin.</h2>
-      <p class="reveal d2">On every benchmark we tested, an object at rest can be thrown in a single physics step, though nothing pushes it that hard. On RoboTwin we traced it to the GJK threshold. RoboDojo runs Isaac Sim with contact generation on the GPU and also shows a false contact, on a path we have not located. On MuJoCo, these events are few and slow.</p>
+      <p class="reveal d2">On every benchmark we tested, an object at rest can be thrown in a single physics step, though nothing pushes it that hard. On RoboTwin we traced it to the GJK threshold. RoboDojo and RoboLab run Isaac Sim with PhysX on the GPU and also eject objects. On MuJoCo, these events are few and slow.</p>
     </div>
-    <div class="bugs">
+    <div class="bugs four">
       <div class="bug reveal">
         <div class="clip"><video muted loop playsinline preload="none" poster="media/bug_robotwin.jpg"><source src="media/bug_robotwin.mp4" type="video/mp4"></video><div class="soon">Clip coming soon</div></div>
         <div class="tx"><h3>RoboTwin 2.0</h3><div class="eng">SAPIEN · PhysX 5.3.1 · LingBot-VA</div>
@@ -348,6 +377,12 @@ footer{border-top:1px solid var(--line);padding:34px clamp(20px,6vw,96px);displa
         <p>Insert Tubes: a tube is thrown at 4.31&nbsp;m/s.</p>
         <div class="n">7 of 40 episodes · peak 6.30 m/s</div></div>
       </div>
+      <div class="bug reveal d1">
+        <div class="clip"><video muted loop playsinline preload="none" poster="media/bug_robolab.jpg"><source src="media/bug_robolab.mp4" type="video/mp4"></video><div class="soon">Clip coming soon</div></div>
+        <div class="tx"><h3>RoboLab</h3><div class="eng">Isaac Sim · GPU PhysX · GR00T N1.7</div>
+        <p>Clutter Plastic: objects on the table are thrown when the gripper comes down among them.</p>
+        <div class="n">2 policies · 120 tasks · 4800 episodes</div></div>
+      </div>
       <div class="bug reveal d2">
         <div class="clip"><video muted loop playsinline preload="none" poster="media/bug_libero.jpg"><source src="media/bug_libero.mp4" type="video/mp4"></video><div class="soon">Clip coming soon</div></div>
         <div class="tx"><h3>LIBERO</h3><div class="eng">MuJoCo · π0.5</div>
@@ -355,22 +390,52 @@ footer{border-top:1px solid var(--line);padding:34px clamp(20px,6vw,96px);displa
         <div class="n">2 of 400 episodes · peak 1.57 m/s</div></div>
       </div>
     </div>
-    <div class="cliplab reveal">Each clip is replayed from the recorded episode, 2× slower than real time.</div>
+    <div class="cliplab reveal">Each clip is replayed from the recorded episode in slow motion.</div>
     <div class="panel reveal d3" style="max-width:760px">
       <table>
-        <tr><th>Benchmark</th><th>Engine</th><th>Episodes</th><th>Artifact</th><th>Peak m/s</th></tr>
-        <tr><td>RoboTwin 2.0</td><td>PhysX · SAPIEN</td><td>2060</td><td class="red">80</td><td>21.8</td></tr>
-        <tr><td>RoboDojo</td><td>PhysX · Isaac Sim</td><td>40</td><td class="red">7</td><td>6.30</td></tr>
-        <tr><td>LIBERO</td><td>MuJoCo</td><td>400</td><td>2</td><td>1.57</td></tr>
-        <tr><td>RoboCasa</td><td>MuJoCo</td><td>300</td><td>5</td><td>1.19</td></tr>
+        <tr><th>Benchmark</th><th>Policy</th><th>Episodes</th><th>Reported %</th><th>Corrected %</th></tr>
+        <tr><td>RoboTwin 2.0</td><td>LingBot-VA</td><td>2060</td><td>90.8</td><td class="mint">93.0</td></tr>
+        <tr><td></td><td>HyVLA</td><td>220</td><td>78.2</td><td class="mint">80.0</td></tr>
+        <tr><td>RoboLab</td><td>π0.5-DROID</td><td>2400</td><td>28.1</td><td class="mint">28.5</td></tr>
+        <tr><td></td><td>GR00T N1.7-DROID</td><td>2400</td><td>8.8</td><td class="mint">9.1</td></tr>
+        <tr><td>RoboDojo</td><td>XR-1</td><td>40</td><td>40.0</td><td class="mint">48.5</td></tr>
+        <tr><td></td><td>InternW0</td><td>360</td><td>39.7</td><td class="mint">40.6</td></tr>
+        <tr><td></td><td>OpenWAM</td><td>360</td><td>19.4</td><td class="mint">19.8</td></tr>
+        <tr><td></td><td>X-VLA</td><td>360</td><td>15.8</td><td class="mint">16.7</td></tr>
+        <tr><td>LIBERO</td><td>π0.5</td><td>400</td><td>95.2</td><td class="mint">95.5</td></tr>
+        <tr><td>RoboCasa</td><td>XR-1</td><td>300</td><td>61.7</td><td class="mint">62.7</td></tr>
       </table>
+    </div>
+  </div>
+</section>
+
+<section id="other" data-scene="platforms">
+  <div class="wide">
+    <div class="col" style="max-width:760px">
+      <div class="kicker reveal">08 · Two other simulation errors</div>
+      <h2 class="reveal d1">Not only ejections.</h2>
+      <p class="reveal d2">The same recordings show two other errors that the success check does not see.</p>
+    </div>
+    <div class="bugs two">
+      <div class="bug reveal">
+        <div class="clip"><video muted loop playsinline preload="none" poster="media/bug_stick.jpg"><source src="media/bug_stick.mp4" type="video/mp4"></video><div class="soon">Clip coming soon</div></div>
+        <div class="tx"><h3>Objects stuck to an open gripper</h3><div class="eng">RoboLab · Isaac Sim · GR00T N1.7</div>
+        <p>The gripper is fully open and the drill touches only one finger. It still hangs from the finger and moves with it past the table edge.</p>
+        <div class="n">flagged in 179 of 4800 episodes</div></div>
+      </div>
+      <div class="bug reveal d1">
+        <div class="clip img"><img src="media/init_libero.png" alt="LIBERO objects that start inside the floor"></div>
+        <div class="tx"><h3>Objects that start inside their support</h3><div class="eng">LIBERO · MuJoCo</div>
+        <p>Stored initial states place objects up to 37.7&nbsp;mm inside the floor or the table. MuJoCo pushes them out at up to 1.83&nbsp;m/s before the policy acts.</p>
+        <div class="n">650 of 2000 stored initial states</div></div>
+      </div>
     </div>
   </div>
 </section>
 
 <section id="report" data-scene="range">
   <div class="col">
-    <div class="kicker reveal">07 · What to report</div>
+    <div class="kicker reveal">09 · What to report</div>
     <h2 class="reveal d1">A success rate in simulation counts the simulator's failures too.</h2>
     <p class="reveal d2">Benchmarks on PhysX&nbsp;5.3.1 or earlier should rerun in a repaired engine. Where the engine cannot change, report the success rate together with the range it spans when every flagged episode fails or passes.</p>
     <div class="range reveal d3" id="range"></div>
@@ -387,7 +452,7 @@ footer{border-top:1px solid var(--line);padding:34px clamp(20px,6vw,96px);displa
              Auditing Contact Artifacts in Simulated Robot Benchmarks},
   author  = {Zhou, Alex and Wu, Junhao and Zhou, Xueyang and Huo, Yixiao and
              Gao, Hongcheng and Zhu, Di and Zhang, Zhenghao and Chen, Yongchao},
-  journal = {arXiv preprint},
+  journal = {arXiv preprint arXiv:2610.41857},
   year    = {2026}
 }</pre>
     <div class="btns reveal d3">
