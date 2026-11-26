@@ -10,7 +10,6 @@
 
 ## News
 
-- **November 25, 2026** — The repository moved to the [simuguard](https://github.com/simuguard) organization, and the project page is now at [simuguard.github.io](https://simuguard.github.io/). Added a step-by-step guide to [repair RoboTwin](#-repair-robotwin).
 - **November 22, 2026** — Added RoboLab and RoboDojo, a comparison of five models against a real robot, and two other simulation errors. Updated the [paper](https://arxiv.org/abs/2610.41857) and the video.
 - **October 2026** — Released the [SimuGuard paper](https://arxiv.org/abs/2610.41857) and open-sourced the code.
 
