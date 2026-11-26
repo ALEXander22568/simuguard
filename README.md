@@ -5,15 +5,15 @@
 <h3>Some failures in robot simulation benchmarks are the simulator's fault, not the policy's.<br>SimuGuard finds them, traces the cause, and fixes it.</h3>
 
 <h4>
-<a href="https://alexander22568.github.io/simuguard/">Project Page</a> &nbsp;|&nbsp;
-<a href="https://alexander22568.github.io/simuguard/#film">Video</a> &nbsp;|&nbsp;
+<a href="https://simuguard.github.io/">Project Page</a> &nbsp;|&nbsp;
+<a href="https://simuguard.github.io/#film">Video</a> &nbsp;|&nbsp;
 <a href="https://arxiv.org/abs/2610.41857">Paper</a> &nbsp;|&nbsp;
 <a href="#quick-start-robotwin">Quick Start</a> &nbsp;|&nbsp;
 <a href="docs/results.md">Results</a> &nbsp;|&nbsp;
 <a href="docs/mechanism.md">Root Cause</a>
 </h4>
 
-<a href="https://alexander22568.github.io/simuguard/#film"><img src="docs/assets/film_poster.jpg" width="820" alt="SimuGuard video, click to watch"></a>
+<a href="https://simuguard.github.io/#film"><img src="docs/assets/film_poster.jpg" width="820" alt="SimuGuard video, click to watch"></a>
 
 </div>
 

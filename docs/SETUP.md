@@ -28,7 +28,7 @@ WS=/path/to/workspace
 RUNTIME=/path/to/RoboTwin-2.0/runtime/lingbot-va-repro
 
 # 1. 拿代码
-git clone https://github.com/ALEXander22568/simuguard $WS/SimuGuard
+git clone https://github.com/simuguard/simuguard $WS/SimuGuard
 
 # 2. 登记要跑的任务
 #    simuguard/adapters/robotwin/tasks.py -> TASK_SPECS
