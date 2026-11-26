@@ -1,31 +1,20 @@
 <div align="center">
 
-<h1>SimuGuard</h1>
+<h2 align="center">SimuGuard: When the Simulator Fails, Not the Policy<br>Auditing Contact Artifacts in Simulated Robot Benchmarks</h2>
 
-<h3>Some failures in robot simulation benchmarks are the simulator's fault, not the policy's.<br>SimuGuard finds them, traces the cause, and fixes it.</h3>
-
-<h4>
-<a href="https://simuguard.github.io/">Project Page</a> &nbsp;|&nbsp;
-<a href="https://simuguard.github.io/#film">Video</a> &nbsp;|&nbsp;
-<a href="https://arxiv.org/abs/2610.41857">Paper</a> &nbsp;|&nbsp;
-<a href="#quick-start-robotwin">Quick Start</a> &nbsp;|&nbsp;
-<a href="#repair-robotwin">Repair</a> &nbsp;|&nbsp;
-<a href="docs/results.md">Results</a> &nbsp;|&nbsp;
-<a href="docs/mechanism.md">Root Cause</a>
-</h4>
+<h2 align="center"><a href="https://simuguard.github.io/">Webpage</a> | <a href="https://arxiv.org/abs/2610.41857">Paper</a> | <a href="https://simuguard.github.io/#film">Video</a> | <a href="docs/results.md">Results</a> | <a href="docs/mechanism.md">Root Cause</a></h2>
 
 <a href="https://simuguard.github.io/#film"><img src="docs/assets/film_poster.jpg" width="820" alt="SimuGuard video, click to watch"></a>
 
 </div>
 
-SimuGuard is an auditing plugin for simulated robot benchmarks. It runs beside the
-benchmark's own evaluation script, records every physics step, and flags objects that move
-faster than the robot or gravity can explain. It supports LIBERO, RoboTwin, RoboCasa,
-RoboDojo and RoboLab.
+## News
 
-## What it finds
+- **November 25, 2026** — The repository moved to the [simuguard](https://github.com/simuguard) organization, and the project page is now at [simuguard.github.io](https://simuguard.github.io/). Added a step-by-step guide to [repair RoboTwin](#-repair-robotwin).
+- **November 22, 2026** — Added RoboLab and RoboDojo, a comparison of five models against a real robot, and two other simulation errors. Updated the [paper](https://arxiv.org/abs/2610.41857) and the video.
+- **October 2026** — Released the [SimuGuard paper](https://arxiv.org/abs/2610.41857) and open-sourced the code.
 
-An object at rest is thrown in a single physics step, while the robot barely moves.
+## ✨ Highlights
 
 <table>
 <tr>
@@ -36,7 +25,19 @@ An object at rest is thrown in a single physics step, while the robot barely mov
 </tr>
 </table>
 
-It also finds two other simulation errors.
+<p align="center"><em>An object at rest is thrown in a single physics step, while the robot barely moves. The benchmark records the episode as a failure of the policy.</em></p>
+
+> SimuGuard is an **auditing plugin**. It runs beside the benchmark's own evaluation script and leaves the evaluation unchanged.
+
+- 🔍 **Finds failures caused by the simulator** — flags objects that move faster than the robot or gravity can explain, at every physics step.
+- 🌐 **Five benchmarks, two engines** — LIBERO, RoboTwin 2.0, RoboCasa, RoboDojo and RoboLab, on PhysX and MuJoCo.
+- 🎞️ **Bit for bit replay** — a recorded episode is reproduced exactly from its seed and controls.
+- 🧪 **One parameter reruns** — the same episode runs again with a single simulation parameter changed, which separates the cause from the symptoms.
+- 🧭 **Root cause located** — on RoboTwin, a fixed threshold in PhysX's collision detection reports an overlap of about two centimeters between two pieces that do not touch. See [docs/mechanism.md](docs/mechanism.md).
+- 🔧 **Repair included** — with a smaller threshold the false contacts disappear, and LingBot-VA rises from 89 to 98 of 100 episodes.
+- 🤖 **Closer to the real robot** — in the repaired engine, five models fall into the same order as on a real robot.
+
+SimuGuard also finds two other simulation errors.
 
 <table>
 <tr>
@@ -45,19 +46,12 @@ It also finds two other simulation errors.
 </tr>
 </table>
 
-## Main results
+## 📊 Results
 
-* **Cause.** On RoboTwin, a fixed threshold in PhysX's collision detection makes the engine
-  report an overlap of about two centimeters between two pieces that do not touch. The solver
-  removes the overlap in one step and throws the object out. See [docs/mechanism.md](docs/mechanism.md).
-* **Repair.** With a smaller threshold the false contacts disappear. On five container tasks,
-  LingBot-VA rises from 89 to 98 of 100 episodes, and no episode has an artifact.
-* **Ranking against a real robot.** As released, RoboTwin ranks HyVLA first, although it is
-  fourth on the real robot. In the repaired engine, five models fall into the same order as on
-  the robot.
+As released, RoboTwin ranks HyVLA first, although it is fourth on the real robot. In the repaired engine, the five models fall into the same order as on the robot.
 
 | Model | RoboTwin | Repaired | Real robot |
-|---|---|---|---|
+| :-- | :-: | :-: | :-: |
 | LingBot-VA | 89/100 | 98/100 | 24/30 |
 | InternVLA-A1 | 86/100 | 98/100 | 23/30 |
 | HyVLA | 90/100 | 94/100 | 20/30 |
@@ -66,26 +60,21 @@ It also finds two other simulation errors.
 
 All tables are in [docs/results.md](docs/results.md).
 
-## How it works
+## 🧩 Supported Benchmarks
 
-1. **Record.** State, controls and contacts at every physics step. The evaluation is unchanged.
-2. **Detect.** A contact that starts motion, then a gravity check, then a carrier check.
-3. **Replay.** A recorded episode is reproduced bit for bit from its seed and controls.
-4. **Rerun.** The same episode runs again with one simulation parameter changed.
-
-## Supported benchmarks
-
-| Benchmark | Engine | Entry point | Notes |
-|---|---|---|---|
-| RoboTwin 2.0 | SAPIEN, PhysX | `simuguard.integrations.robotwin_eval` | [docs/DETAILS.md](docs/DETAILS.md) |
-| RoboDojo | Isaac Sim, PhysX | `simuguard.integrations.robodojo_eval` | [docs/robodojo.md](docs/robodojo.md) |
-| RoboLab | Isaac Sim, PhysX | `simuguard.integrations.robolab_eval` | [docs/DETAILS.md](docs/DETAILS.md) |
-| LIBERO | MuJoCo | `simuguard.adapters.mujoco` | [docs/libero.md](docs/libero.md) |
-| RoboCasa | MuJoCo | `simuguard.adapters.mujoco` | `scripts/robocasa/` |
+| Benchmark | Engine | Entry point |
+| :-- | :-- | :-- |
+| [RoboTwin 2.0](https://github.com/robotwin-Platform/robotwin) | SAPIEN, PhysX | `simuguard.integrations.robotwin_eval` |
+| [RoboDojo](https://github.com/robodojo-benchmark/RoboDojo) | Isaac Sim, PhysX | `simuguard.integrations.robodojo_eval` |
+| [RoboLab](https://github.com/NVlabs/RoboLab) | Isaac Sim, PhysX | `simuguard.integrations.robolab_eval` |
+| [LIBERO](https://github.com/Lifelong-Robot-Learning/LIBERO) | MuJoCo | `simuguard.adapters.mujoco` |
+| [RoboCasa](https://github.com/robocasa/robocasa) | MuJoCo | `simuguard.adapters.mujoco` |
 
 A new benchmark needs an adapter that implements `simuguard.core.adapter.SimAdapter`.
 
-## Quick start (RoboTwin)
+## 🚀 Quick Start
+
+Attach SimuGuard to a RoboTwin environment:
 
 ```python
 from simuguard import MonitorConfig, SubstepMonitor, EpisodeRecorder, default_detectors
@@ -115,7 +104,7 @@ python -m simuguard.integrations.robotwin_eval \
        --eval_batch false --seed 0 --test_num 10 --instruction_type seen --expert_check true
 ```
 
-## Repair RoboTwin
+## 🔧 Repair RoboTwin
 
 RoboTwin 2.0 runs on SAPIEN 3.0.0b1. The repair changes the threshold in a copy of SAPIEN's
 library; the installed package is left as it is.
@@ -138,14 +127,23 @@ python -m simuguard.integrations.robotwin_eval --sim-intervention gjk_fix \
     --robotwin-root /path/to/RoboTwin --simuguard-out runs/eval_repaired -- <evaluator arguments>
 ```
 
-Replay, reruns, output files and validation runs are described in [docs/DETAILS.md](docs/DETAILS.md).
-Environment setup is in [docs/SETUP.md](docs/SETUP.md).
+## 📚 Documentation
 
-## Repository layout
+| Document | Description |
+| :-- | :-- |
+| [Setup](docs/SETUP.md) | Environment setup for RoboTwin with LingBot-VA, in Chinese. |
+| [Details](docs/DETAILS.md) | Replay, reruns, output files and validation runs. |
+| [Root Cause](docs/mechanism.md) | Where the RoboTwin contact artifacts come from, with the evidence at each level. |
+| [Results](docs/results.md) | All result tables. |
+| [Architecture](docs/ARCHITECTURE.md) | Recorder, detectors, replay and adapters. |
+| [RoboDojo](docs/robodojo.md) | Notes on the RoboDojo integration. |
+| [LIBERO](docs/libero.md) | Notes on the LIBERO integration. |
 
-```
+## 🗂️ Repository Structure
+
+```text
 simuguard/core/           recorder, detectors, replay; depends only on numpy
-simuguard/adapters/       robotwin, isaac (RoboDojo, RoboLab), mujoco (LIBERO, RoboCasa)
+simuguard/adapters/       robotwin, isaac for RoboDojo and RoboLab, mujoco for LIBERO and RoboCasa
 simuguard/integrations/   wrappers around each benchmark's own evaluator
 scripts/                  campaigns and analysis for each benchmark
 scripts/mechanism/        the PhysX threshold: reproduction and patch
@@ -153,11 +151,13 @@ docs/                     notes and result tables
 tests/                    unit tests with a toy adapter
 ```
 
+Run the unit tests with:
+
 ```bash
 PYTHONPATH=.:tests python -m unittest discover -s tests
 ```
 
-## Citation
+## 📝 Citation
 
 ```bibtex
 @article{zhou2026simuguard,
@@ -169,3 +169,18 @@ PYTHONPATH=.:tests python -m unittest discover -s tests
   year    = {2026}
 }
 ```
+
+## 🙏 Acknowledgements
+
+SimuGuard builds on [LIBERO](https://github.com/Lifelong-Robot-Learning/LIBERO), [RoboTwin 2.0](https://github.com/robotwin-Platform/robotwin), [RoboCasa](https://github.com/robocasa/robocasa), [RoboDojo](https://github.com/robodojo-benchmark/RoboDojo), [RoboLab](https://github.com/NVlabs/RoboLab), [SAPIEN](https://github.com/haosulab/SAPIEN), [MuJoCo](https://github.com/google-deepmind/mujoco) and [Isaac Sim](https://developer.nvidia.com/isaac/sim). We thank the authors and maintainers for their open-source contributions to the robotics community.
+
+## 🏫 Affiliations
+
+College of AI, Tsinghua University.
+
+<p align="center">
+  <img alt="Python 3.10+" src="https://img.shields.io/badge/Python-3.10+-475569?style=flat-square&logo=python&logoColor=white&labelColor=64748b" height="22"/>&nbsp;
+  <img alt="PhysX" src="https://img.shields.io/badge/Engine-PhysX-475569?style=flat-square&logo=nvidia&logoColor=76B900&labelColor=64748b" height="22"/>&nbsp;
+  <img alt="MuJoCo" src="https://img.shields.io/badge/Engine-MuJoCo-475569?style=flat-square&labelColor=64748b" height="22"/>&nbsp;
+  <img alt="arXiv 2610.41857" src="https://img.shields.io/badge/arXiv-2610.41857-475569?style=flat-square&labelColor=64748b" height="22"/>
+</p>
