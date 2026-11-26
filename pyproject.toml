@@ -7,6 +7,7 @@ name = "simuguard"
 version = "0.1.0.dev0"
 description = "Detect, verify and analyze contact artifacts in simulation-based robot policy evaluation"
 readme = "README.md"
+license = {text = "MIT"}
 requires-python = ">=3.10"
 dependencies = ["numpy>=1.23"]
 

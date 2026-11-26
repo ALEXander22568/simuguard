@@ -178,9 +178,14 @@ SimuGuard builds on [LIBERO](https://github.com/Lifelong-Robot-Learning/LIBERO),
 
 College of AI, Tsinghua University.
 
+## ⚖️ License
+
+Released under the [MIT License](LICENSE).
+
 <p align="center">
   <img alt="Python 3.10+" src="https://img.shields.io/badge/Python-3.10+-475569?style=flat-square&logo=python&logoColor=white&labelColor=64748b" height="22"/>&nbsp;
   <img alt="PhysX" src="https://img.shields.io/badge/Engine-PhysX-475569?style=flat-square&logo=nvidia&logoColor=76B900&labelColor=64748b" height="22"/>&nbsp;
   <img alt="MuJoCo" src="https://img.shields.io/badge/Engine-MuJoCo-475569?style=flat-square&labelColor=64748b" height="22"/>&nbsp;
+  <img alt="License MIT" src="https://img.shields.io/badge/License-MIT-475569?style=flat-square&labelColor=64748b" height="22"/>&nbsp;
   <img alt="arXiv 2610.41857" src="https://img.shields.io/badge/arXiv-2610.41857-475569?style=flat-square&labelColor=64748b" height="22"/>
 </p>
