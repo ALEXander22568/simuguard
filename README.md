@@ -9,6 +9,7 @@
 <a href="https://simuguard.github.io/#film">Video</a> &nbsp;|&nbsp;
 <a href="https://arxiv.org/abs/2610.41857">Paper</a> &nbsp;|&nbsp;
 <a href="#quick-start-robotwin">Quick Start</a> &nbsp;|&nbsp;
+<a href="#repair-robotwin">Repair</a> &nbsp;|&nbsp;
 <a href="docs/results.md">Results</a> &nbsp;|&nbsp;
 <a href="docs/mechanism.md">Root Cause</a>
 </h4>
@@ -114,6 +115,29 @@ python -m simuguard.integrations.robotwin_eval \
        --eval_batch false --seed 0 --test_num 10 --instruction_type seen --expert_check true
 ```
 
+## Repair RoboTwin
+
+RoboTwin 2.0 runs on SAPIEN 3.0.0b1. The repair changes the threshold in a copy of SAPIEN's
+library; the installed package is left as it is.
+
+```bash
+SP=$(python -c "import sapien, os; print(os.path.dirname(os.path.dirname(sapien.__file__)))")
+SITE=/path/to/sapien_patched/site
+mkdir -p $SITE && cp -r $SP/sapien $SP/sapien.libs $SITE/
+python scripts/mechanism/sapien_patch/patch_lib.py \
+    $SP/sapien.libs/libsapien.so $SITE/sapien.libs/libsapien.so $SITE/patch_log.json
+```
+
+The script checks every byte it expects before it writes, and prints `patched 4 sites`.
+To evaluate in the repaired engine, point SimuGuard at the copy and add one flag to the
+command above:
+
+```bash
+export SIMUGUARD_PATCHED_SAPIEN=$SITE
+python -m simuguard.integrations.robotwin_eval --sim-intervention gjk_fix \
+    --robotwin-root /path/to/RoboTwin --simuguard-out runs/eval_repaired -- <evaluator arguments>
+```
+
 Replay, reruns, output files and validation runs are described in [docs/DETAILS.md](docs/DETAILS.md).
 Environment setup is in [docs/SETUP.md](docs/SETUP.md).
 
@@ -125,7 +149,7 @@ simuguard/adapters/       robotwin, isaac (RoboDojo, RoboLab), mujoco (LIBERO, R
 simuguard/integrations/   wrappers around each benchmark's own evaluator
 scripts/                  campaigns and analysis for each benchmark
 scripts/mechanism/        the PhysX threshold: reproduction and patch
-docs/                     notes, result tables, project page
+docs/                     notes and result tables
 tests/                    unit tests with a toy adapter
 ```
 

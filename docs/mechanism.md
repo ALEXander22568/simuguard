@@ -110,4 +110,3 @@ depenetration velocity limit reads 3 m/s at run time.
 * RoboTwin was not run on a complete newer PhysX, only on 5.3.1 with the one threshold changed.
 * One bowl onset is not reproduced by the standalone program; 19 bowl onsets have no deep object to object contact
   and were not analysed.
-* HyVLA was not run in the patched engine.
